@@ -22,7 +22,12 @@ type SessionContextValue = {
   error: string | null;
   preview: boolean;
   enterPreview: () => void;
-  signIn: (input: { serverUrl: string; username: string; password: string }) => Promise<void>;
+  signIn: (input: {
+    serverUrl: string;
+    username: string;
+    password: string;
+    allowInsecure?: boolean;
+  }) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -65,7 +70,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = useCallback(
-    async (input: { serverUrl: string; username: string; password: string }) => {
+    async (input: {
+      serverUrl: string;
+      username: string;
+      password: string;
+      allowInsecure?: boolean;
+    }) => {
       setError(null);
       const response = await fetch("/api/auth/login", {
         method: "POST",

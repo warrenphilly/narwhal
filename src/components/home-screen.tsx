@@ -71,7 +71,7 @@ export function HomeScreen() {
 
   if (signedIn && !loaded) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center text-white/50">
+      <div className="flex min-h-[70vh] items-center justify-center text-zinc-500">
         Loading your library…
       </div>
     );
@@ -82,10 +82,10 @@ export function HomeScreen() {
       <HeroBanner item={hero} />
       <div className="-mt-6 space-y-10">
         {error && (
-          <p className="px-4 text-sm text-red-300 sm:px-8">{error}</p>
+          <p className="px-4 text-sm text-red-600 sm:px-8">{error}</p>
         )}
         {!signedIn && (
-          <p className="px-4 text-sm text-white/45 sm:px-8">
+          <p className="px-4 text-sm text-zinc-500 sm:px-8">
             Sample library. Sign in at the top right to load movies from your Jellyfin server and download them to this laptop.
           </p>
         )}

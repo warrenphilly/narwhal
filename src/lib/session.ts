@@ -8,6 +8,7 @@ export type JellyfinSession = {
   userId: string;
   userName: string;
   deviceId: string;
+  allowInsecure?: boolean;
 };
 
 export function normalizeServerUrl(input: string) {
@@ -21,6 +22,9 @@ export function normalizeServerUrl(input: string) {
   const url = new URL(withProtocol);
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new Error("Server address must start with http or https.");
+  }
+  if (url.hostname === "localhost") {
+    url.hostname = "127.0.0.1";
   }
   return url.origin + (url.pathname === "/" ? "" : url.pathname.replace(/\/+$/, ""));
 }

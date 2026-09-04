@@ -49,22 +49,22 @@ export default function SearchPage() {
   return (
     <AppShell>
       <div className="mx-auto max-w-[1600px] px-4 py-10 sm:px-8">
-        <h1 className="text-4xl font-semibold tracking-tight text-white">Search</h1>
+        <h1 className="text-4xl font-semibold tracking-tight text-zinc-900">Search</h1>
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Movie title"
-          className="mt-6 h-14 max-w-xl rounded-2xl border-white/15 bg-white/8 text-lg text-white"
+          className="mt-6 h-14 max-w-xl rounded-2xl bg-white text-lg"
           autoFocus
         />
-        {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
+        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
         <div className="mt-8 grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {results.map((item) => (
             <PosterCard key={item.Id} item={item} />
           ))}
         </div>
         {trimmed && results.length === 0 && !error && (
-          <p className="mt-16 text-white/45">No titles matched “{trimmed}”.</p>
+          <p className="mt-16 text-zinc-500">No titles matched “{trimmed}”.</p>
         )}
       </div>
     </AppShell>

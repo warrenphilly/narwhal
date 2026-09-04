@@ -17,14 +17,14 @@ export default function DownloadsPage() {
   return (
     <AppShell>
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-8">
-        <h1 className="text-4xl font-semibold tracking-tight text-white">Downloads</h1>
-        <p className="mt-2 text-white/50">
+        <h1 className="text-4xl font-semibold tracking-tight text-zinc-900">Downloads</h1>
+        <p className="mt-2 text-zinc-500">
           Movies you save land on this laptop. Chrome and Edge can pick a folder; other browsers use the usual Downloads folder.
         </p>
         {downloads.length === 0 ? (
-          <div className="mt-16 rounded-3xl border border-white/10 bg-white/5 px-6 py-16 text-center">
-            <p className="text-lg text-white">Nothing saved yet</p>
-            <p className="mt-2 text-sm text-white/50">
+          <div className="mt-16 rounded-3xl border border-zinc-200 bg-white px-6 py-16 text-center">
+            <p className="text-lg text-zinc-900">Nothing saved yet</p>
+            <p className="mt-2 text-sm text-zinc-500">
               Open a movie and choose Download. Your Jellyfin user needs download permission.
             </p>
           </div>
@@ -40,17 +40,17 @@ export default function DownloadsPage() {
               return (
                 <li
                   key={item.id}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4"
+                  className="rounded-2xl border border-zinc-200 bg-white px-5 py-4"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="font-medium text-white">
+                      <p className="font-medium text-zinc-900">
                         {item.title}
                         {item.year ? ` (${item.year})` : ""}
                       </p>
-                      <p className="mt-1 text-sm text-white/50">{progressLabel(item)}</p>
+                      <p className="mt-1 text-sm text-zinc-500">{progressLabel(item)}</p>
                     </div>
-                    <p className="text-xs text-white/40">
+                    <p className="text-xs text-zinc-400">
                       {item.total ? formatBytes(item.total) : item.filename}
                     </p>
                   </div>

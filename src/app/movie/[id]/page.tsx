@@ -41,7 +41,7 @@ export default function MoviePage() {
   if (!resolved && !error) {
     return (
       <AppShell>
-        <p className="px-8 py-20 text-white/60">Loading title…</p>
+        <p className="px-8 py-20 text-zinc-500">Loading title…</p>
       </AppShell>
     );
   }
@@ -49,7 +49,7 @@ export default function MoviePage() {
   if (error || !resolved) {
     return (
       <AppShell>
-        <p className="px-8 py-20 text-white/60">{error || "Title not found."}</p>
+        <p className="px-8 py-20 text-zinc-500">{error || "Title not found."}</p>
       </AppShell>
     );
   }
@@ -89,10 +89,10 @@ export default function MoviePage() {
               : `linear-gradient(135deg, ${from}, ${to})`,
           }}
         />
-        <div className="absolute inset-0 bg-black/55" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#f5f5f7] via-[#f5f5f7]/90 to-[#f5f5f7]/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#f5f5f7] via-[#f5f5f7]/30 to-transparent" />
         <div className="relative mx-auto grid max-w-[1600px] gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[280px_1fr]">
-          <div className="hidden aspect-[2/3] overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10 lg:block">
+          <div className="hidden aspect-[2/3] overflow-hidden rounded-2xl shadow-2xl ring-1 ring-black/10 lg:block">
             {demo ? (
               <div
                 className="size-full"
@@ -108,14 +108,14 @@ export default function MoviePage() {
             )}
           </div>
           <div className="flex flex-col justify-end">
-            <p className="text-xs tracking-[0.24em] text-white/50 uppercase">Movie</p>
-            <h1 className="mt-3 max-w-3xl text-5xl font-semibold tracking-tight text-white sm:text-6xl">
+            <p className="text-xs tracking-[0.24em] text-zinc-500 uppercase">Movie</p>
+            <h1 className="mt-3 max-w-3xl text-5xl font-semibold tracking-tight text-zinc-900 sm:text-6xl">
               {resolved.Name}
             </h1>
-            <div className="mt-4 flex flex-wrap gap-3 text-sm text-white/70">
+            <div className="mt-4 flex flex-wrap gap-3 text-sm text-zinc-600">
               {resolved.ProductionYear && <span>{resolved.ProductionYear}</span>}
               {resolved.OfficialRating && (
-                <span className="rounded border border-white/25 px-1.5 py-0.5 text-xs">
+                <span className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs">
                   {resolved.OfficialRating}
                 </span>
               )}
@@ -124,14 +124,14 @@ export default function MoviePage() {
               {size ? <span>{formatBytes(size)}</span> : null}
             </div>
             {resolved.Overview && (
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/75">
+              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-600">
                 {resolved.Overview}
               </p>
             )}
             <div className="mt-8 flex flex-wrap gap-3">
               <Button
                 size="lg"
-                className="h-12 rounded-full bg-white px-6 text-base text-black hover:bg-white/90"
+                className="h-12 rounded-full px-6 text-base"
                 onClick={() => router.push(`/watch/${resolved.Id}`)}
               >
                 <Play data-icon="inline-start" className="fill-current" />
@@ -140,7 +140,7 @@ export default function MoviePage() {
               <Button
                 size="lg"
                 variant="secondary"
-                className="h-12 rounded-full bg-white/15 px-6 text-base text-white hover:bg-white/25"
+                className="h-12 rounded-full px-6 text-base"
                 disabled={demo || saving}
                 onClick={onDownload}
               >
@@ -149,9 +149,9 @@ export default function MoviePage() {
               </Button>
             </div>
             {resolved.Genres && resolved.Genres.length > 0 && (
-              <p className="mt-8 text-sm text-white/45">{resolved.Genres.join(" · ")}</p>
+              <p className="mt-8 text-sm text-zinc-500">{resolved.Genres.join(" · ")}</p>
             )}
-            {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
+            {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
           </div>
         </div>
       </div>

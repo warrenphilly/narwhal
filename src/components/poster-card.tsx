@@ -27,7 +27,7 @@ export function PosterCard({
         widths[size]
       )}
     >
-      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-[#1c1c1e] shadow-[0_18px_40px_rgba(0,0,0,0.45)] ring-2 ring-transparent transition duration-300 group-hover:scale-[1.06] group-hover:ring-white group-focus-visible:scale-[1.06] group-focus-visible:ring-white">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] ring-2 ring-transparent transition duration-300 group-hover:scale-[1.06] group-hover:ring-zinc-900 group-focus-visible:scale-[1.06] group-focus-visible:ring-zinc-900">
         {demo ? (
           <div
             className="absolute inset-0"
@@ -41,19 +41,19 @@ export function PosterCard({
             className="absolute inset-0 size-full object-cover"
           />
         )}
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-3 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
           <p className="line-clamp-2 text-sm font-medium text-white">{item.Name}</p>
-          <p className="mt-0.5 text-xs text-white/60">
+          <p className="mt-0.5 text-xs text-white/70">
             {[item.ProductionYear, formatRuntime(item.RunTimeTicks)].filter(Boolean).join(" · ")}
           </p>
         </div>
         {typeof progress === "number" && progress > 0 && progress < 100 && (
-          <div className="absolute inset-x-2 bottom-2 h-1 overflow-hidden rounded-full bg-white/20">
+          <div className="absolute inset-x-2 bottom-2 h-1 overflow-hidden rounded-full bg-white/30">
             <div className="h-full bg-white" style={{ width: `${progress}%` }} />
           </div>
         )}
       </div>
-      <p className="mt-2 line-clamp-1 text-sm text-white/80">{item.Name}</p>
+      <p className="mt-2 line-clamp-1 text-sm text-zinc-800">{item.Name}</p>
     </Link>
   );
 }

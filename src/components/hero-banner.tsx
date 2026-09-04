@@ -32,19 +32,19 @@ export function HeroBanner({ item }: { item: JellyfinItem }) {
             : `linear-gradient(135deg, ${from}, ${to})`,
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/75 to-black/10" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#f5f5f7] via-[#f5f5f7]/92 to-[#f5f5f7]/25" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#f5f5f7] via-transparent to-[#f5f5f7]/50" />
       <div className="relative mx-auto flex min-h-[72vh] max-w-[1600px] flex-col justify-end px-4 pb-10 pt-28 sm:px-8 sm:pb-16">
-        <p className="mb-3 text-xs font-semibold tracking-[0.22em] text-white/55 uppercase">
+        <p className="mb-3 text-xs font-semibold tracking-[0.22em] text-zinc-500 uppercase">
           Featured
         </p>
-        <h1 className="max-w-3xl text-5xl font-semibold tracking-tight text-white sm:text-7xl">
+        <h1 className="max-w-3xl text-5xl font-semibold tracking-tight text-zinc-900 sm:text-7xl">
           {item.Name}
         </h1>
-        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-white/70">
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-600">
           {item.ProductionYear && <span>{item.ProductionYear}</span>}
           {item.OfficialRating && (
-            <span className="rounded border border-white/25 px-1.5 py-0.5 text-xs">
+            <span className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs">
               {item.OfficialRating}
             </span>
           )}
@@ -55,14 +55,14 @@ export function HeroBanner({ item }: { item: JellyfinItem }) {
           ))}
         </div>
         {item.Overview && (
-          <p className="mt-5 max-w-xl text-base leading-relaxed text-white/75 sm:text-lg">
+          <p className="mt-5 max-w-xl text-base leading-relaxed text-zinc-600 sm:text-lg">
             {item.Overview}
           </p>
         )}
         <div className="mt-8 flex flex-wrap gap-3">
           <Button
             size="lg"
-            className="h-12 rounded-full bg-white px-6 text-base text-black hover:bg-white/90"
+            className="h-12 rounded-full px-6 text-base"
             onClick={() => router.push(`/watch/${item.Id}`)}
           >
             <Play data-icon="inline-start" className="fill-current" />
@@ -71,7 +71,7 @@ export function HeroBanner({ item }: { item: JellyfinItem }) {
           <Button
             size="lg"
             variant="secondary"
-            className="h-12 rounded-full bg-white/15 px-6 text-base text-white hover:bg-white/25"
+            className="h-12 rounded-full px-6 text-base"
             onClick={() => downloadMovie(item).catch(() => undefined)}
             disabled={demo}
           >
@@ -80,7 +80,7 @@ export function HeroBanner({ item }: { item: JellyfinItem }) {
           </Button>
           <Link
             href={`/movie/${item.Id}`}
-            className="inline-flex h-12 items-center rounded-full px-6 text-base text-white hover:bg-white/10"
+            className="inline-flex h-12 items-center rounded-full px-6 text-base text-zinc-700 hover:bg-black/5"
           >
             Details
           </Link>

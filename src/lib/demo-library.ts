@@ -104,14 +104,14 @@ export function isDemoId(id: string) {
 
 export function demoPosterGradient(id: string) {
   const palettes = [
-    ["#1a1a2e", "#e94560"],
-    ["#0f2027", "#2c5364"],
-    ["#2b1055", "#7597de"],
-    ["#200122", "#6f0000"],
-    ["#0f0c29", "#302b63"],
-    ["#141e30", "#243b55"],
-    ["#1d2b64", "#f8cdda"],
-    ["#0b132b", "#5bc0be"],
+    ["#93c5fd", "#fda4af"],
+    ["#67e8f9", "#818cf8"],
+    ["#f9a8d4", "#c4b5fd"],
+    ["#fdba74", "#fca5a5"],
+    ["#86efac", "#7dd3fc"],
+    ["#fde68a", "#fdba74"],
+    ["#a5b4fc", "#fbcfe8"],
+    ["#99f6e4", "#93c5fd"],
   ];
   const index = Math.abs(
     id.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0)

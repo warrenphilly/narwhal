@@ -6,40 +6,62 @@ import {
   sessionCookieValue,
   type JellyfinSession,
 } from "@/lib/session";
+import { describeConnectError, jellyfinFetch } from "@/lib/jellyfin-request";
 import type { JellyfinAuthResult } from "@/lib/jellyfin-types";
 
 export async function POST(request: Request) {
+  let serverUrl = "";
   try {
     const body = (await request.json()) as {
       serverUrl?: string;
       username?: string;
       password?: string;
+      allowInsecure?: boolean;
     };
-    const serverUrl = normalizeServerUrl(body.serverUrl ?? "");
+    serverUrl = normalizeServerUrl(body.serverUrl ?? "");
     const username = (body.username ?? "").trim();
     const password = body.password ?? "";
+    const allowInsecure = Boolean(body.allowInsecure);
     if (!username) {
       return NextResponse.json({ error: "Username is required." }, { status: 400 });
+    }
+
+    const probe = await jellyfinFetch(
+      `${serverUrl}/System/Info/Public`,
+      { method: "GET" },
+      { allowInsecure, timeoutMs: 8000 }
+    );
+    if (!probe.ok) {
+      return NextResponse.json(
+        {
+          error: `Reached ${serverUrl}, but Jellyfin answered ${probe.status}. Check the address and port.`,
+        },
+        { status: 502 }
+      );
     }
 
     const deviceId =
       globalThis.crypto?.randomUUID?.() ?? `cinema-${Date.now()}`;
     const authUrl = `${serverUrl}/Users/AuthenticateByName`;
-    const response = await fetch(authUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: authHeader({ token: "", deviceId }),
+    const response = await jellyfinFetch(
+      authUrl,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authHeader({ token: "", deviceId }),
+        },
+        body: JSON.stringify({ Username: username, Pw: password, Password: password }),
       },
-      body: JSON.stringify({ Username: username, Pw: password, Password: password }),
-    });
+      { allowInsecure, timeoutMs: 15000 }
+    );
 
     if (!response.ok) {
       const text = await response.text();
       const message =
         response.status === 401
           ? "Wrong username or password."
-          : `Could not reach Jellyfin (${response.status}). ${text.slice(0, 180)}`;
+          : `Jellyfin returned ${response.status}. ${text.slice(0, 180)}`;
       return NextResponse.json({ error: message }, { status: 401 });
     }
 
@@ -50,6 +72,7 @@ export async function POST(request: Request) {
       userId: data.User.Id,
       userName: data.User.Name,
       deviceId,
+      allowInsecure,
     };
 
     const res = NextResponse.json({
@@ -66,8 +89,7 @@ export async function POST(request: Request) {
     });
     return res;
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Sign-in failed.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const message = describeConnectError(error, serverUrl || "your Jellyfin server");
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 }

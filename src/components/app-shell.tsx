@@ -23,10 +23,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="tv-root flex min-h-full flex-col">
-      <header className="sticky top-0 z-40 border-b border-white/5 bg-black/70 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-black/5 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-6 px-4 sm:px-8">
-          <Link href="/" className="flex items-center gap-2 text-white">
-            <span className="flex size-8 items-center justify-center rounded-full bg-white text-black">
+          <Link href="/" className="flex items-center gap-2 text-zinc-900">
+            <span className="flex size-8 items-center justify-center rounded-full bg-zinc-900 text-white">
               <Tv className="size-4" />
             </span>
             <span className="text-[15px] font-semibold tracking-tight">Cinema</span>
@@ -37,8 +37,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "rounded-full px-3 py-1.5 text-sm text-white/55 transition hover:text-white",
-                  pathname === link.href && "bg-white/10 text-white"
+                  "rounded-full px-3 py-1.5 text-sm text-zinc-500 transition hover:text-zinc-900",
+                  pathname === link.href && "bg-zinc-900/5 text-zinc-900"
                 )}
               >
                 {link.label}
@@ -49,7 +49,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Button
               variant="ghost"
               size="icon"
-              className="text-white/70 hover:bg-white/10 hover:text-white"
               onClick={() => router.push("/search")}
               aria-label="Search"
             >
@@ -58,35 +57,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Button
               variant="ghost"
               size="icon"
-              className="relative text-white/70 hover:bg-white/10 hover:text-white md:hidden"
+              className="relative md:hidden"
               onClick={() => router.push("/downloads")}
               aria-label="Downloads"
             >
               <Download />
               {active > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-sky-400" />
+                <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-sky-500" />
               )}
             </Button>
             {session?.signedIn ? (
-              <div className="hidden items-center gap-3 pl-2 text-sm text-white/50 sm:flex">
+              <div className="hidden items-center gap-3 pl-2 text-sm text-zinc-500 sm:flex">
                 <span className="max-w-[180px] truncate">{session.userName}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white/70 hover:bg-white/10 hover:text-white"
-                  onClick={() => signOut()}
-                >
+                <Button variant="ghost" size="sm" onClick={() => signOut()}>
                   <LogOut data-icon="inline-start" />
                   Sign out
                 </Button>
               </div>
             ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-white/70 hover:bg-white/10 hover:text-white"
-                onClick={() => signOut()}
-              >
+              <Button variant="ghost" size="sm" onClick={() => signOut()}>
                 Sign in
               </Button>
             )}
@@ -94,14 +83,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="flex-1 pb-16 md:pb-0">{children}</main>
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-white/10 bg-black/85 backdrop-blur-xl md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-black/10 bg-white/90 backdrop-blur-xl md:hidden">
         {links.map((link) => (
           <Link
             key={link.href}
             href={link.href}
             className={cn(
-              "flex-1 py-3 text-center text-xs text-white/50",
-              pathname === link.href && "text-white"
+              "flex-1 py-3 text-center text-xs text-zinc-500",
+              pathname === link.href && "text-zinc-900"
             )}
           >
             {link.label}

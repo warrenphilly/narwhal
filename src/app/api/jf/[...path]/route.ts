@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authHeader, getSession } from "@/lib/session";
+import { jellyfinFetch } from "@/lib/jellyfin-request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,12 +39,16 @@ async function proxy(request: NextRequest, path: string[]) {
 
   const method = request.method;
   const hasBody = method !== "GET" && method !== "HEAD";
-  const upstream = await fetch(target, {
-    method,
-    headers,
-    body: hasBody ? await request.arrayBuffer() : undefined,
-    redirect: "follow",
-  });
+  const upstream = await jellyfinFetch(
+    target.toString(),
+    {
+      method,
+      headers,
+      body: hasBody ? await request.arrayBuffer() : undefined,
+      redirect: "follow",
+    },
+    { allowInsecure: session.allowInsecure, timeoutMs: 120_000 }
+  );
 
   const out = new Headers();
   upstream.headers.forEach((value, key) => {

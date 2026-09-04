@@ -31,16 +31,16 @@ export default function MoviesPage() {
   return (
     <AppShell>
       <div className="mx-auto max-w-[1600px] px-4 py-10 sm:px-8">
-        <h1 className="text-4xl font-semibold tracking-tight text-white">Movies</h1>
-        <p className="mt-2 text-white/50">Every title in your movie libraries.</p>
-        {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
+        <h1 className="text-4xl font-semibold tracking-tight text-zinc-900">Movies</h1>
+        <p className="mt-2 text-zinc-500">Every title in your movie libraries.</p>
+        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
         <div className="mt-8 grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
           {movies.map((item) => (
             <PosterCard key={item.Id} item={item} size="lg" />
           ))}
         </div>
         {movies.length === 0 && !error && (
-          <p className="mt-16 text-center text-white/45">No movies found on this server.</p>
+          <p className="mt-16 text-center text-zinc-500">No movies found on this server.</p>
         )}
       </div>
     </AppShell>

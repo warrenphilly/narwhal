@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authHeader, getSession } from "@/lib/session";
 import { isDemoId } from "@/lib/demo-library";
+import { jellyfinFetch } from "@/lib/jellyfin-request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,9 +25,11 @@ export async function GET(
 
   const filename = request.nextUrl.searchParams.get("filename") || "movie.bin";
   const url = `${session.serverUrl}/Items/${encodeURIComponent(itemId)}/Download`;
-  const upstream = await fetch(url, {
-    headers: { Authorization: authHeader(session) },
-  });
+  const upstream = await jellyfinFetch(
+    url,
+    { headers: { Authorization: authHeader(session) } },
+    { allowInsecure: session.allowInsecure }
+  );
 
   if (!upstream.ok || !upstream.body) {
     const text = await upstream.text().catch(() => "");

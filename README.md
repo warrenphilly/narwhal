@@ -13,9 +13,10 @@ Open [http://localhost:43123](http://localhost:43123).
 
 ## Connect your server
 
-1. Enter the Jellyfin address (example: `http://192.168.1.20:8096` or a HTTPS URL).
-2. Sign in with a Jellyfin username and password.
-3. Open a movie and choose **Download to laptop**.
+1. Run Cinema on the **same computer** as Jellyfin (or use a URL this computer can actually reach, such as a LAN IP, Tailscale name, or HTTPS domain). `localhost` inside the cloud preview is not your laptop.
+2. Enter the Jellyfin address (example: `http://127.0.0.1:8096`).
+3. If you use HTTPS with a homemade certificate, check **Allow self-signed certificate**.
+4. Sign in, open a movie, and choose **Download to laptop**.
 
 Chrome and Edge can ask where to save the file and show in-app progress. Other browsers send the file to the usual Downloads folder.
 
