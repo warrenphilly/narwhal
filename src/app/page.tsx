@@ -6,15 +6,7 @@ import { LoginScreen } from "@/components/login-screen";
 import { useSession } from "@/components/session-provider";
 
 export default function HomePage() {
-  const { session, loading, preview } = useSession();
-
-  if (loading) {
-    return (
-      <div className="tv-root flex min-h-full items-center justify-center text-white/50">
-        Starting Cinema…
-      </div>
-    );
-  }
+  const { session, preview } = useSession();
 
   if (!session?.signedIn && !preview) {
     return <LoginScreen />;

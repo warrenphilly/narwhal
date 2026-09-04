@@ -43,7 +43,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/auth/session", { cache: "no-store" })
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    fetch("/api/auth/session", { cache: "no-store", signal: controller.signal })
       .then((response) => response.json() as Promise<SessionInfo>)
       .then((data) => {
         if (!cancelled) setSession(data);
@@ -52,10 +54,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         if (!cancelled) setSession({ signedIn: false });
       })
       .finally(() => {
+        clearTimeout(timer);
         if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
     };
   }, []);
 
