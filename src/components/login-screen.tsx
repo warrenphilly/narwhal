@@ -109,7 +109,7 @@ export function LoginScreen() {
             Preview the home screen
           </Button>
           <p className="text-xs leading-relaxed text-zinc-500">
-            Use the address from the Jellyfin dashboard. localhost only works when Cinema runs on the same computer as Jellyfin. Enable Downloads for your user if you want files saved here.
+            Open Cinema at http://127.0.0.1:3000 — include the port. For Jellyfin, use the address from the dashboard (often http://192.168.x.x:8096). Enable Downloads for your user if you want files saved here.
           </p>
         </form>
       </div>

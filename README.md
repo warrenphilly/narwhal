@@ -11,15 +11,17 @@ npm install
 npm run dev
 ```
 
-When the terminal says it is ready, open **http://127.0.0.1:43123** — not `0.0.0.0`, and not port 3000.
+Wait until the terminal says **Ready**. Then open this **exact** address:
 
-`npm run dev` now always uses port **43123** and listens on your laptop’s network interfaces, so you can also open `http://YOUR-LAPTOP-IP:43123` from another device on the same Wi‑Fi.
+**http://127.0.0.1:3000**
+
+That `ERR_CONNECTION_REFUSED` / “localhost refused to connect” page means the browser opened `http://localhost` with no port (port 80). Cinema is on **3000**, so include the port.
+
+Do not open `http://0.0.0.0`. From another phone/laptop on the same Wi‑Fi, use `http://YOUR-LAPTOP-IP:3000`.
 
 ## Connect Jellyfin on your LAN
 
-Cinema and Jellyfin should both be reachable from the computer running Cinema.
-
-1. In the Jellyfin dashboard, copy the server URL. On your home network that is usually `http://192.168.x.x:8096` (the PC or NAS that hosts Jellyfin).
+1. In the Jellyfin dashboard, copy the server URL. On your home network that is usually `http://192.168.x.x:8096`.
 2. Paste that into Cinema. Use `http://127.0.0.1:8096` only if Jellyfin is on **this same laptop**.
 3. If Jellyfin uses a homemade HTTPS certificate, check **Allow self-signed certificate**.
 4. Sign in, open a movie, and choose **Download to laptop**.
@@ -37,4 +39,4 @@ npm run build
 npm start
 ```
 
-Then open http://127.0.0.1:43123.
+Then open http://127.0.0.1:3000.
