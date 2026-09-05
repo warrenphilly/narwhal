@@ -2,35 +2,39 @@
 
 A laptop Jellyfin client with an Apple TV-style home screen. Browse your movie library, play titles in the browser, and download the original files to this computer.
 
-## Run it
+## Run it on your laptop
+
+From the project folder:
 
 ```bash
 npm install
-npm run dev -- --port 43123
+npm run dev
 ```
 
-Open [http://localhost:43123](http://localhost:43123).
+When the terminal says it is ready, open **http://127.0.0.1:43123** — not `0.0.0.0`, and not port 3000.
 
-## Connect your server
+`npm run dev` now always uses port **43123** and listens on your laptop’s network interfaces, so you can also open `http://YOUR-LAPTOP-IP:43123` from another device on the same Wi‑Fi.
 
-1. Run Cinema on the **same computer** as Jellyfin (or use a URL this computer can actually reach, such as a LAN IP, Tailscale name, or HTTPS domain). `localhost` inside the cloud preview is not your laptop.
-2. Enter the Jellyfin address (example: `http://127.0.0.1:8096`).
-3. If you use HTTPS with a homemade certificate, check **Allow self-signed certificate**.
+## Connect Jellyfin on your LAN
+
+Cinema and Jellyfin should both be reachable from the computer running Cinema.
+
+1. In the Jellyfin dashboard, copy the server URL. On your home network that is usually `http://192.168.x.x:8096` (the PC or NAS that hosts Jellyfin).
+2. Paste that into Cinema. Use `http://127.0.0.1:8096` only if Jellyfin is on **this same laptop**.
+3. If Jellyfin uses a homemade HTTPS certificate, check **Allow self-signed certificate**.
 4. Sign in, open a movie, and choose **Download to laptop**.
 
-Chrome and Edge can ask where to save the file and show in-app progress. Other browsers send the file to the usual Downloads folder.
-
-Your Jellyfin user needs the **Download** permission. In the Jellyfin dashboard: Users → your user → enable downloads (and allow the media to be downloaded).
-
-This app talks to Jellyfin from your laptop through a local proxy, so the server does not need extra CORS setup.
+Your Jellyfin user needs the **Download** permission: Users → your user → enable downloads.
 
 ## Preview without a server
 
-Use **Preview the home screen** on the sign-in page to see the layout with sample titles. Sample titles cannot be downloaded or played.
+Use **Preview the home screen** to see the layout with sample titles. Those cannot play or download.
 
 ## Production
 
 ```bash
 npm run build
-npm start -- --port 43123
+npm start
 ```
+
+Then open http://127.0.0.1:43123.
