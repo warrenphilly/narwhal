@@ -16,6 +16,7 @@ export function PosterCard({
   size?: "sm" | "md" | "lg";
 }) {
   const demo = isDemoId(item.Id);
+  const imageId = item.Type === "Episode" && item.SeriesId ? item.SeriesId : item.Id;
   const [from, to] = demoPosterGradient(item.Id);
   const progress = item.UserData?.PlayedPercentage;
   const widths = { sm: "w-[120px]", md: "w-[168px]", lg: "w-[210px]" };
@@ -37,7 +38,7 @@ export function PosterCard({
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={imageUrl(item.Id, { maxHeight: 540 })}
+            src={imageUrl(imageId, { maxHeight: 540 })}
             alt=""
             className="absolute inset-0 size-full object-cover"
           />

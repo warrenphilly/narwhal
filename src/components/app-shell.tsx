@@ -8,7 +8,6 @@ import { useSession } from "@/components/session-provider";
 import { useDownloads } from "@/components/downloads-provider";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/back-button";
 import { homeHref, lastTab } from "@/lib/media-tab";
 import { cn } from "@/lib/utils";
 
@@ -76,7 +75,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="tv-root flex min-h-full flex-col">
       <ScrollHeader key={pathname}>
         <div className="page-gutter mx-auto flex h-20 items-center gap-6">
-          <BackButton className="hidden sm:inline-flex" />
           <Link href={homeHref(lastTab())} className="flex items-center gap-2 text-zinc-900 dark:text-zinc-50">
             <span className="flex size-8 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
               <Tv className="size-4" />

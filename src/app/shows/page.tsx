@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { PageBack } from "@/components/back-button";
 import { LoginScreen } from "@/components/login-screen";
 import { PosterCard } from "@/components/poster-card";
 import { useSession } from "@/components/session-provider";
@@ -31,6 +32,7 @@ export default function ShowsPage() {
   return (
     <AppShell>
       <div className="page-gutter py-10 pt-28">
+        <PageBack />
         <h1 className="text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">TV Shows</h1>
         <p className="mt-2 text-zinc-500">Every series in your TV libraries.</p>
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}

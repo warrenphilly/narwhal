@@ -1,12 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Play } from "lucide-react";
+import { ChevronDown, Play } from "lucide-react";
 import { Carousel } from "@/components/carousel";
 import { imageUrl } from "@/lib/client-api";
 import { formatRuntime } from "@/lib/jellyfin-types";
 import type { JellyfinItem, MediaStream } from "@/lib/jellyfin-types";
 import { demoPosterGradient, isDemoId } from "@/lib/demo-library";
+import { cn } from "@/lib/utils";
 
 const LANG: Record<string, string> = {
   en: "English",
@@ -171,12 +173,22 @@ export function TitleGenres({ item }: { item: JellyfinItem }) {
 }
 
 export function TitleCast({ item }: { item: JellyfinItem }) {
+  const [open, setOpen] = useState(false);
   const cast = (item.People ?? []).filter((person) => !person.Type || person.Type === "Actor");
   if (!cast.length) return null;
   return (
     <div className="mt-8">
-      <p className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">Cast</p>
-      <Carousel className="mt-2" itemGap="gap-3" alignStart>
+      <button
+        type="button"
+        className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-zinc-500 uppercase hover:text-zinc-800 dark:hover:text-zinc-200"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        Cast
+        <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+      <Carousel className="mt-3" itemGap="gap-3" alignStart>
         {cast.map((person, index) => {
           const personId = person.Id;
           const [from, to] = demoPosterGradient(personId || person.Name || String(index));
@@ -205,6 +217,7 @@ export function TitleCast({ item }: { item: JellyfinItem }) {
           );
         })}
       </Carousel>
+      )}
     </div>
   );
 }

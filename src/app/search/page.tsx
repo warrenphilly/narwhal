@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { PageBack } from "@/components/back-button";
 import { LoginScreen } from "@/components/login-screen";
 import { PosterCard } from "@/components/poster-card";
 import { Input } from "@/components/ui/input";
@@ -49,6 +50,7 @@ export default function SearchPage() {
   return (
     <AppShell>
       <div className="page-gutter py-10 pt-28">
+        <PageBack />
         <h1 className="text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Search</h1>
         <Input
           value={query}

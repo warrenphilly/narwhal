@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { homeHref, lastTab } from "@/lib/media-tab";
+import { cn } from "@/lib/utils";
 
 export function BackButton({ className }: { className?: string }) {
   const pathname = usePathname();
@@ -24,4 +25,8 @@ export function BackButton({ className }: { className?: string }) {
       Back
     </Button>
   );
+}
+
+export function PageBack({ className }: { className?: string }) {
+  return <BackButton className={cn("-ml-2 mb-3 self-start", className)} />;
 }

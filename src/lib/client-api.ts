@@ -2,7 +2,7 @@ import type { JellyfinItem, JellyfinItemsResult, MediaStream, PlaybackInfo } fro
 import { authHeader, getConnection } from "@/lib/jellyfin-connection";
 
 const ITEM_FIELDS =
-  "Overview,Genres,PrimaryImageAspectRatio,MediaSources,CanDownload,ProductionYear,CommunityRating,CriticRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,People,Studios,RemoteTrailers,Taglines,Status,ProductionLocations,ChildCount,MediaStreams";
+  "Overview,Genres,PrimaryImageAspectRatio,MediaSources,CanDownload,ProductionYear,DateCreated,PremiereDate,CommunityRating,CriticRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,People,Studios,RemoteTrailers,Taglines,Status,ProductionLocations,ChildCount,MediaStreams";
 
 async function jf<T>(path: string, init?: RequestInit): Promise<T> {
   const direct = getConnection();
@@ -89,11 +89,49 @@ export async function fetchResume(userId: string) {
   return data.Items ?? [];
 }
 
-export async function fetchLatest(userId: string, itemType: "Movie" | "Series" = "Movie") {
+export async function fetchLatest(userId: string, itemType: "Movie" | "Series" | "Episode" = "Movie") {
   const items = await jf<JellyfinItem[]>(
     `Users/${encodeURIComponent(userId)}/Items/Latest?IncludeItemTypes=${itemType}&Limit=24&Fields=${ITEM_FIELDS}`
   );
   return Array.isArray(items) ? items : [];
+}
+
+export async function fetchUnplayedRecent(
+  userId: string,
+  itemType: "Movie" | "Series" | "Episode"
+) {
+  const data = await jf<JellyfinItemsResult>(
+    `Users/${encodeURIComponent(userId)}/Items?IncludeItemTypes=${itemType}&Recursive=true&SortBy=DateCreated&SortOrder=Descending&Filters=IsUnplayed&Fields=${ITEM_FIELDS}&Limit=24`
+  );
+  return data.Items ?? [];
+}
+
+const NEW_MS = 21 * 24 * 60 * 60 * 1000;
+
+export function isNewRelease(item: JellyfinItem) {
+  const stamps = [item.DateCreated, item.PremiereDate];
+  return stamps.some((raw) => {
+    if (!raw) return false;
+    const time = new Date(raw).getTime();
+    return !Number.isNaN(time) && Date.now() - time < NEW_MS;
+  });
+}
+
+export function uniqueItems(items: JellyfinItem[]) {
+  const seen = new Set<string>();
+  const next: JellyfinItem[] = [];
+  for (const item of items) {
+    if (seen.has(item.Id)) continue;
+    seen.add(item.Id);
+    next.push(item);
+  }
+  return next;
+}
+
+export function featuredWithNewReleases(current: JellyfinItem[], incoming: JellyfinItem[]) {
+  const fresh = uniqueItems(incoming.filter(isNewRelease));
+  if (!fresh.length) return current;
+  return uniqueItems([...fresh, ...current]);
 }
 
 export async function fetchPlayableId(userId: string, item: JellyfinItem) {

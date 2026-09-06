@@ -6,7 +6,14 @@ import { HeroBanner } from "@/components/hero-banner";
 import { MediaPills } from "@/components/media-pills";
 import { Shelf } from "@/components/shelf";
 import { useSession } from "@/components/session-provider";
-import { fetchLatest, fetchMovies, fetchResume, fetchShows } from "@/lib/client-api";
+import {
+  featuredWithNewReleases,
+  fetchLatest,
+  fetchMovies,
+  fetchResume,
+  fetchShows,
+  fetchUnplayedRecent,
+} from "@/lib/client-api";
 import { DEMO_MOVIES, DEMO_SHOWS } from "@/lib/demo-library";
 import { rememberTab, tabFromSearch } from "@/lib/media-tab";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
@@ -35,6 +42,10 @@ export function HomeScreen() {
   const [resume, setResume] = useState<JellyfinItem[]>([]);
   const [latestMovies, setLatestMovies] = useState<JellyfinItem[]>([]);
   const [latestShows, setLatestShows] = useState<JellyfinItem[]>([]);
+  const [latestEpisodes, setLatestEpisodes] = useState<JellyfinItem[]>([]);
+  const [unplayedMovies, setUnplayedMovies] = useState<JellyfinItem[]>([]);
+  const [unplayedEpisodes, setUnplayedEpisodes] = useState<JellyfinItem[]>([]);
+  const [unplayedSeries, setUnplayedSeries] = useState<JellyfinItem[]>([]);
   const [movies, setMovies] = useState<JellyfinItem[]>([]);
   const [shows, setShows] = useState<JellyfinItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -49,18 +60,38 @@ export function HomeScreen() {
       fetchResume(session.userId).catch(() => [] as JellyfinItem[]),
       fetchLatest(session.userId, "Movie").catch(() => [] as JellyfinItem[]),
       fetchLatest(session.userId, "Series").catch(() => [] as JellyfinItem[]),
+      fetchLatest(session.userId, "Episode").catch(() => [] as JellyfinItem[]),
+      fetchUnplayedRecent(session.userId, "Movie").catch(() => [] as JellyfinItem[]),
+      fetchUnplayedRecent(session.userId, "Episode").catch(() => [] as JellyfinItem[]),
+      fetchUnplayedRecent(session.userId, "Series").catch(() => [] as JellyfinItem[]),
       fetchMovies(session.userId),
       fetchShows(session.userId).catch(() => [] as JellyfinItem[]),
     ])
-      .then(([nextResume, nextLatestMovies, nextLatestShows, nextMovies, nextShows]) => {
-        if (cancelled) return;
-        setResume(nextResume);
-        setLatestMovies(nextLatestMovies);
-        setLatestShows(nextLatestShows);
-        setMovies(nextMovies);
-        setShows(nextShows);
-        setError(null);
-      })
+      .then(
+        ([
+          nextResume,
+          nextLatestMovies,
+          nextLatestShows,
+          nextLatestEpisodes,
+          nextUnplayedMovies,
+          nextUnplayedEpisodes,
+          nextUnplayedSeries,
+          nextMovies,
+          nextShows,
+        ]) => {
+          if (cancelled) return;
+          setResume(nextResume);
+          setLatestMovies(nextLatestMovies);
+          setLatestShows(nextLatestShows);
+          setLatestEpisodes(nextLatestEpisodes);
+          setUnplayedMovies(nextUnplayedMovies);
+          setUnplayedEpisodes(nextUnplayedEpisodes);
+          setUnplayedSeries(nextUnplayedSeries);
+          setMovies(nextMovies);
+          setShows(nextShows);
+          setError(null);
+        }
+      )
       .catch((err: unknown) => {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Could not load your library.");
@@ -85,7 +116,14 @@ export function HomeScreen() {
   const allMovies = signedIn ? movies : DEMO_MOVIES;
   const allShows = signedIn ? shows : DEMO_SHOWS;
 
-  const featured = tab === "movies" ? movieLatest : showLatest;
+  const featuredMovies = featuredWithNewReleases(movieLatest, [...unplayedMovies, ...movieLatest]);
+  const featuredShows = featuredWithNewReleases(showLatest, [
+    ...latestEpisodes,
+    ...unplayedEpisodes,
+    ...unplayedSeries,
+    ...showLatest,
+  ]);
+  const featured = tab === "movies" ? featuredMovies : featuredShows;
   const watching = tab === "movies" ? movieResume : showResume;
   const catalog = tab === "movies" ? allMovies : allShows;
   const genres = useMemo(() => groupByGenre(catalog), [catalog]);
@@ -116,8 +154,8 @@ export function HomeScreen() {
           </p>
         )}
         <Shelf title="Currently watching" items={watching} variant="continue" />
-        {tab === "shows" && <Shelf title="Featured" items={showLatest} />}
-        {tab === "movies" && <Shelf title="Recently added" items={movieLatest} />}
+        {tab === "shows" && <Shelf title="Featured" items={featuredShows} />}
+        {tab === "movies" && <Shelf title="Recently added" items={featuredMovies} />}
         {genres.map(([genre, items]) => (
           <Shelf key={`${tab}-${genre}`} title={genre} items={items} />
         ))}

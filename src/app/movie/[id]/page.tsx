@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Download, Play } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { PageBack } from "@/components/back-button";
 import { LoginScreen } from "@/components/login-screen";
 import { EpisodeRow } from "@/components/episode-row";
 import { TitleCast, TitleGenres, TitleMeta, TitlePoster } from "@/components/title-facts";
@@ -60,7 +61,10 @@ export default function MoviePage() {
   if (!resolved && !error) {
     return (
       <AppShell>
-        <p className="px-8 py-24 text-zinc-500">Loading title…</p>
+        <div className="page-gutter pt-28">
+          <PageBack />
+          <p className="text-zinc-500">Loading title…</p>
+        </div>
       </AppShell>
     );
   }
@@ -68,7 +72,10 @@ export default function MoviePage() {
   if (error || !resolved) {
     return (
       <AppShell>
-        <p className="px-8 py-24 text-zinc-500">{error || "Title not found."}</p>
+        <div className="page-gutter pt-28">
+          <PageBack />
+          <p className="text-zinc-500">{error || "Title not found."}</p>
+        </div>
       </AppShell>
     );
   }
@@ -105,7 +112,7 @@ export default function MoviePage() {
 
   return (
     <AppShell>
-      <div className="relative flex h-dvh max-h-dvh flex-col overflow-hidden">
+      <div className="relative flex min-h-dvh flex-col">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -116,6 +123,7 @@ export default function MoviePage() {
         />
         <div className="hero-wash absolute inset-0" />
         <div className="relative mx-auto flex h-full w-full max-w-[1600px] min-h-0 flex-col justify-end px-4 pt-24 pb-8 sm:px-8">
+          <PageBack className="text-zinc-800 hover:bg-black/6 dark:text-zinc-100 dark:hover:bg-white/10" />
           <div className="flex items-start gap-8">
             <TitlePoster item={resolved} />
             <div className="flex min-w-0 flex-1 flex-col lg:max-h-[315px] xl:max-h-[360px]">

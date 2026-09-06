@@ -53,6 +53,8 @@ export type JellyfinItem = {
   Type?: string;
   Overview?: string;
   ProductionYear?: number;
+  DateCreated?: string;
+  PremiereDate?: string;
   OfficialRating?: string;
   CommunityRating?: number;
   CriticRating?: number;

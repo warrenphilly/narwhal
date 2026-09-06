@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Download, Play, Shuffle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { PageBack } from "@/components/back-button";
 import { LoginScreen } from "@/components/login-screen";
 import { Button } from "@/components/ui/button";
 import { WatchedButton } from "@/components/watched-button";
@@ -152,7 +153,10 @@ export default function ShowPage() {
   if (!resolved && !error) {
     return (
       <AppShell>
-        <p className="page-gutter py-20 text-zinc-500">Loading show…</p>
+        <div className="page-gutter py-20 pt-28">
+          <PageBack />
+          <p className="text-zinc-500">Loading show…</p>
+        </div>
       </AppShell>
     );
   }
@@ -160,7 +164,10 @@ export default function ShowPage() {
   if (error || !resolved) {
     return (
       <AppShell>
-        <p className="page-gutter py-20 text-zinc-500">{error || "Show not found."}</p>
+        <div className="page-gutter py-20 pt-28">
+          <PageBack />
+          <p className="text-zinc-500">{error || "Show not found."}</p>
+        </div>
       </AppShell>
     );
   }
@@ -241,6 +248,7 @@ export default function ShowPage() {
         />
         <div className="hero-wash absolute inset-0" />
         <div className="relative mx-auto flex max-w-[1600px] flex-col px-4 pt-28 pb-10 sm:px-8">
+          <PageBack className="text-zinc-800 hover:bg-black/6 dark:text-zinc-100 dark:hover:bg-white/10" />
           <div className="flex items-start gap-8">
             <TitlePoster item={resolved} />
             <div className="flex min-w-0 flex-1 flex-col lg:max-h-[315px] xl:max-h-[360px]">
