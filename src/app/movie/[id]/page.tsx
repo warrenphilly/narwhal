@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Download, Play, Shuffle } from "lucide-react";
+import { Download, Play } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { LoginScreen } from "@/components/login-screen";
 import { EpisodeRow } from "@/components/episode-row";
-import { TitleCast, TitleMeta, TitlePoster } from "@/components/title-facts";
+import { TitleCast, TitleGenres, TitleMeta, TitlePoster } from "@/components/title-facts";
 import { Button } from "@/components/ui/button";
+import { WatchedButton } from "@/components/watched-button";
 import { useDownloads } from "@/components/downloads-provider";
 import { useSession } from "@/components/session-provider";
-import { fetchLocalTrailers, fetchMovie, fetchMovies, fetchPlaybackInfo, imageUrl } from "@/lib/client-api";
+import { fetchLocalTrailers, fetchMovie, fetchPlaybackInfo, imageUrl, setPlayed } from "@/lib/client-api";
 import { DEMO_MOVIES, demoPosterGradient, isDemoId } from "@/lib/demo-library";
 import type { JellyfinItem, MediaStream } from "@/lib/jellyfin-types";
 
@@ -24,6 +25,7 @@ export default function MoviePage() {
   const [streams, setStreams] = useState<MediaStream[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [played, setPlayedState] = useState(false);
   const demoItem = DEMO_MOVIES.find((movie) => movie.Id === params.id) ?? null;
 
   useEffect(() => {
@@ -36,6 +38,7 @@ export default function MoviePage() {
           return;
         }
         setItem(next);
+        setPlayedState(Boolean(next.UserData?.Played));
         setStreams(next.MediaSources?.[0]?.MediaStreams ?? []);
       })
       .catch((err: unknown) =>
@@ -80,18 +83,11 @@ export default function MoviePage() {
       });
   const movie = resolved;
 
-  async function shuffleMovie() {
-    if (demo) {
-      const pool = DEMO_MOVIES.filter((entry) => entry.Id !== movie.Id);
-      const pick = pool[Math.floor(Math.random() * pool.length)] ?? movie;
-      router.push(`/movie/${pick.Id}`);
-      return;
-    }
-    if (!session?.userId) return;
-    const movies = await fetchMovies(session.userId).catch(() => [] as JellyfinItem[]);
-    const pool = movies.filter((entry) => entry.Id !== movie.Id);
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    if (pick) router.push(`/movie/${pick.Id}`);
+  async function togglePlayed() {
+    const next = !played;
+    setPlayedState(next);
+    if (!session?.userId || demo) return;
+    await setPlayed(session.userId, movie.Id, next).catch(() => setPlayedState(!next));
   }
 
   async function onDownload() {
@@ -125,9 +121,12 @@ export default function MoviePage() {
             <div className="flex min-w-0 flex-1 flex-col lg:max-h-[315px] xl:max-h-[360px]">
               <div className="min-h-0 overflow-hidden">
                 <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
-                <h1 className="mt-3 text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
-                  {resolved.Name}
-                </h1>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <h1 className="text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
+                    {resolved.Name}
+                  </h1>
+                  <TitleGenres item={resolved} />
+                </div>
                 <TitleMeta item={resolved} streams={streams} trailers={trailers} />
                 {resolved.Taglines?.[0] && (
                   <p className="mt-3 text-base italic text-zinc-700 dark:text-zinc-200">{resolved.Taglines[0]}</p>
@@ -158,15 +157,7 @@ export default function MoviePage() {
                   <Download data-icon="inline-start" />
                   {demo ? "Connect to download" : saving ? "Saving…" : "Download to laptop"}
                 </Button>
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="h-12 rounded-full px-6 text-base"
-                  onClick={() => shuffleMovie()}
-                >
-                  <Shuffle data-icon="inline-start" />
-                  Shuffle
-                </Button>
+                <WatchedButton played={played} onToggle={() => togglePlayed()} disabled={demo} />
               </div>
             </div>
           </div>
@@ -174,7 +165,12 @@ export default function MoviePage() {
         </div>
       </div>
       <div className="page-gutter relative z-10 mx-auto max-w-[1600px] pb-20">
-        <EpisodeRow item={resolved} eyebrow="Movie" />
+        <EpisodeRow
+          item={resolved}
+          eyebrow="Movie"
+          downloading={saving}
+          onDownload={() => onDownload().catch(() => undefined)}
+        />
       </div>
     </AppShell>
   );

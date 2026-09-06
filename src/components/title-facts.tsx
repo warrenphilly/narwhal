@@ -130,13 +130,6 @@ export function TitleMeta({
           </span>
         )}
       </div>
-      {(item.Genres ?? []).length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {(item.Genres ?? []).map((genre) => (
-            <Pill key={genre}>{genre}</Pill>
-          ))}
-        </div>
-      )}
       <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">
         {audio.length > 0 && <span>{audio.join(", ")}</span>}
         {local.map((trailer) => (
@@ -162,6 +155,17 @@ export function TitleMeta({
           </a>
         ))}
       </div>
+    </div>
+  );
+}
+
+export function TitleGenres({ item }: { item: JellyfinItem }) {
+  if (!item.Genres?.length) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {item.Genres.map((genre) => (
+        <Pill key={genre}>{genre}</Pill>
+      ))}
     </div>
   );
 }

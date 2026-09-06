@@ -8,7 +8,7 @@ import { Shelf } from "@/components/shelf";
 import { useSession } from "@/components/session-provider";
 import { fetchLatest, fetchMovies, fetchResume, fetchShows } from "@/lib/client-api";
 import { DEMO_MOVIES, DEMO_SHOWS } from "@/lib/demo-library";
-import { tabFromSearch } from "@/lib/media-tab";
+import { rememberTab, tabFromSearch } from "@/lib/media-tab";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 
 function groupByGenre(items: JellyfinItem[]) {
@@ -29,6 +29,9 @@ export function HomeScreen() {
   const { session } = useSession();
   const searchParams = useSearchParams();
   const tab = tabFromSearch(searchParams.get("tab"));
+  useEffect(() => {
+    rememberTab(tab);
+  }, [tab]);
   const [resume, setResume] = useState<JellyfinItem[]>([]);
   const [latestMovies, setLatestMovies] = useState<JellyfinItem[]>([]);
   const [latestShows, setLatestShows] = useState<JellyfinItem[]>([]);

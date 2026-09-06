@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { BackButton } from "@/components/back-button";
 import { LoginScreen } from "@/components/login-screen";
 import { VideoPlayer } from "@/components/video-player";
 import { useSession } from "@/components/session-provider";
@@ -33,6 +34,9 @@ export default function WatchPage() {
     <div className="fixed inset-0 z-50 bg-black">
       {demo || !item ? (
         <div className="flex size-full items-center justify-center px-6">
+          <div className="absolute left-4 top-4">
+            <BackButton className="text-white hover:bg-white/10 hover:text-white" />
+          </div>
           <div className="max-w-lg rounded-3xl border border-white/15 bg-white/5 p-10 text-center">
             <p className="text-2xl font-semibold text-white">Playback needs your server</p>
             <p className="mt-3 text-white/60">

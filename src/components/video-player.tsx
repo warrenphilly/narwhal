@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import {
   fetchPlaybackInfo,
   reportPlaybackStart,
+  reportPlaybackStopped,
+  setPlayed,
   streamUrl,
   subtitleTracks,
 } from "@/lib/client-api";
@@ -75,6 +77,7 @@ export function VideoPlayer({
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    let marked = false;
     const start = ticksToSeconds(item.UserData?.PlaybackPositionTicks);
     const onLoaded = () => {
       if (start > 5 && start < video.duration - 5) {
@@ -90,15 +93,30 @@ export function VideoPlayer({
       reportPlaybackStart(item.Id);
       onTime();
     };
+    const markDone = () => {
+      if (marked) return;
+      marked = true;
+      reportPlaybackStopped(item.Id, item.RunTimeTicks);
+      if (userId) setPlayed(userId, item.Id, true).catch(() => undefined);
+    };
+    const onEnded = () => markDone();
+    const onTimeWatch = () => {
+      onTime();
+      if (video.duration && video.currentTime / video.duration >= 0.9) {
+        markDone();
+      }
+    };
     video.addEventListener("loadedmetadata", onLoaded);
-    video.addEventListener("timeupdate", onTime);
+    video.addEventListener("timeupdate", onTimeWatch);
     video.addEventListener("play", onPlay);
+    video.addEventListener("ended", onEnded);
     return () => {
       video.removeEventListener("loadedmetadata", onLoaded);
-      video.removeEventListener("timeupdate", onTime);
+      video.removeEventListener("timeupdate", onTimeWatch);
       video.removeEventListener("play", onPlay);
+      video.removeEventListener("ended", onEnded);
     };
-  }, [item.Id, item.UserData?.PlaybackPositionTicks]);
+  }, [item.Id, item.RunTimeTicks, item.UserData?.PlaybackPositionTicks, userId]);
 
   return (
     <div className="relative size-full">

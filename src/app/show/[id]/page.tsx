@@ -2,13 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Play, Shuffle } from "lucide-react";
+import { Download, Play, Shuffle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { LoginScreen } from "@/components/login-screen";
 import { Button } from "@/components/ui/button";
+import { WatchedButton } from "@/components/watched-button";
+import { useDownloads } from "@/components/downloads-provider";
 import { useSession } from "@/components/session-provider";
 import { EpisodeRow } from "@/components/episode-row";
-import { TitleCast, TitleMeta, TitlePoster } from "@/components/title-facts";
+import { TitleCast, TitleGenres, TitleMeta, TitlePoster } from "@/components/title-facts";
 import {
   fetchEpisodes,
   fetchLocalTrailers,
@@ -17,6 +19,7 @@ import {
   fetchPlaybackInfo,
   fetchSeasons,
   imageUrl,
+  setPlayed,
 } from "@/lib/client-api";
 import { episodeLabel } from "@/lib/clock";
 import { DEMO_SHOWS, demoPosterGradient, isDemoId } from "@/lib/demo-library";
@@ -51,6 +54,7 @@ export default function ShowPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { session, loading, preview } = useSession();
+  const { downloadMovie } = useDownloads();
   const [show, setShow] = useState<JellyfinItem | null>(null);
   const [seasons, setSeasons] = useState<JellyfinItem[]>([]);
   const [episodes, setEpisodes] = useState<JellyfinItem[]>([]);
@@ -59,6 +63,8 @@ export default function ShowPage() {
   const [trailers, setTrailers] = useState<JellyfinItem[]>([]);
   const [streams, setStreams] = useState<MediaStream[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [played, setPlayedState] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
   const demoShow = DEMO_SHOWS.find((item) => item.Id === params.id) ?? null;
 
   useEffect(() => {
@@ -82,6 +88,7 @@ export default function ShowPage() {
           return;
         }
         setShow(item);
+        setPlayedState(Boolean(item.UserData?.Played));
         setSeasons(nextSeasons);
         setNextUp(upcoming);
         setSeasonId(nextSeasons[0]?.Id ?? null);
@@ -185,6 +192,29 @@ export default function ShowPage() {
     if (nextUp) router.push(`/watch/${nextUp.Id}`);
   }
 
+  async function togglePlayed() {
+    const next = !played;
+    setPlayedState(next);
+    if (!session?.userId || demo) return;
+    await setPlayed(session.userId, series.Id, next).catch(() => setPlayedState(!next));
+  }
+
+  async function downloadItem(item: JellyfinItem) {
+    if (demo) return;
+    setSavingId(item.Id);
+    await downloadMovie(item).catch(() => undefined);
+    setSavingId(null);
+  }
+
+  async function downloadSeason() {
+    if (demo || !session?.userId) return;
+    for (const episode of listed) {
+      setSavingId(episode.Id);
+      await downloadMovie(episode).catch(() => undefined);
+    }
+    setSavingId(null);
+  }
+
   async function shufflePlay() {
     if (demo) {
       const pick = listed[Math.floor(Math.random() * listed.length)];
@@ -218,9 +248,12 @@ export default function ShowPage() {
                 <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">
                   Series
                 </p>
-                <h1 className="mt-3 text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
-                  {resolved.Name}
-                </h1>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <h1 className="text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
+                    {resolved.Name}
+                  </h1>
+                  <TitleGenres item={resolved} />
+                </div>
                 <TitleMeta
                   item={resolved}
                   streams={streams}
@@ -261,6 +294,7 @@ export default function ShowPage() {
                   <Shuffle data-icon="inline-start" />
                   Shuffle
                 </Button>
+                <WatchedButton played={played} onToggle={() => togglePlayed()} disabled={demo} />
               </div>
             </div>
           </div>
@@ -279,19 +313,30 @@ export default function ShowPage() {
                 <p className="py-6 text-sm text-zinc-500">No seasons yet.</p>
               )}
               {seasonList.map((season) => (
-                <button
-                  key={season.Id}
-                  type="button"
-                  onClick={() => setSeasonId(season.Id)}
-                  className={cn(
-                    "w-full py-2 text-left text-sm transition",
-                    season.Id === activeSeasonId
-                      ? "font-semibold text-zinc-950 dark:text-zinc-50"
-                      : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-                  )}
-                >
-                  {season.Name}
-                </button>
+                <div key={season.Id} className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setSeasonId(season.Id)}
+                    className={cn(
+                      "min-w-0 flex-1 py-2 text-left text-sm transition",
+                      season.Id === activeSeasonId
+                        ? "font-semibold text-zinc-950 dark:text-zinc-50"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                    )}
+                  >
+                    {season.Name}
+                  </button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 shrink-0"
+                    disabled={demo || season.Id !== activeSeasonId || Boolean(savingId)}
+                    aria-label={`Download ${season.Name}`}
+                    onClick={() => downloadSeason()}
+                  >
+                    <Download className="size-4" />
+                  </Button>
+                </div>
               ))}
             </div>
           </aside>
@@ -301,7 +346,12 @@ export default function ShowPage() {
               <p className="py-10 text-zinc-500">No episodes in this season yet.</p>
             )}
             {listed.map((episode) => (
-              <EpisodeRow key={episode.Id} item={episode} />
+              <EpisodeRow
+                key={episode.Id}
+                item={episode}
+                downloading={savingId === episode.Id}
+                onDownload={() => downloadItem(episode)}
+              />
             ))}
             </div>
           </div>

@@ -22,7 +22,9 @@ async function jf<T>(path: string, init?: RequestInit): Promise<T> {
     const data = (await response.json().catch(() => null)) as { error?: string } | null;
     throw new Error(data?.error || `Jellyfin request failed (${response.status})`);
   }
-  return (await response.json()) as T;
+  const text = await response.text();
+  if (!text) return {} as T;
+  return JSON.parse(text) as T;
 }
 
 export function continueImageUrl(item: JellyfinItem) {
@@ -181,6 +183,27 @@ export function subtitleTracks(itemId: string, info: PlaybackInfo | null) {
       isDefault: Boolean(stream.IsDefault),
       src: subtitleUrl(itemId, source.Id!, stream.Index),
     }));
+}
+
+export async function setPlayed(userId: string, itemId: string, played: boolean) {
+  await jf<Record<string, never>>(
+    `Users/${encodeURIComponent(userId)}/PlayedItems/${encodeURIComponent(itemId)}`,
+    { method: played ? "POST" : "DELETE" }
+  );
+}
+
+export async function reportPlaybackStopped(itemId: string, positionTicks?: number) {
+  const direct = getConnection();
+  const url = direct ? `${direct.serverUrl}/Sessions/Playing/Stopped` : "/api/jf/Sessions/Playing/Stopped";
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (direct) {
+    headers.Authorization = authHeader(direct.deviceId, direct.token);
+  }
+  await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ ItemId: itemId, PositionTicks: positionTicks ?? 0 }),
+  }).catch(() => undefined);
 }
 
 export async function reportPlaybackStart(itemId: string) {
