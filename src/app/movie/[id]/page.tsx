@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Download, Play } from "lucide-react";
+import { Download, Play, Shuffle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { LoginScreen } from "@/components/login-screen";
 import { EpisodeRow } from "@/components/episode-row";
@@ -10,7 +10,7 @@ import { TitleCast, TitleMeta, TitlePoster } from "@/components/title-facts";
 import { Button } from "@/components/ui/button";
 import { useDownloads } from "@/components/downloads-provider";
 import { useSession } from "@/components/session-provider";
-import { fetchLocalTrailers, fetchMovie, fetchPlaybackInfo, imageUrl } from "@/lib/client-api";
+import { fetchLocalTrailers, fetchMovie, fetchMovies, fetchPlaybackInfo, imageUrl } from "@/lib/client-api";
 import { DEMO_MOVIES, demoPosterGradient, isDemoId } from "@/lib/demo-library";
 import type { JellyfinItem, MediaStream } from "@/lib/jellyfin-types";
 
@@ -80,6 +80,20 @@ export default function MoviePage() {
       });
   const movie = resolved;
 
+  async function shuffleMovie() {
+    if (demo) {
+      const pool = DEMO_MOVIES.filter((entry) => entry.Id !== movie.Id);
+      const pick = pool[Math.floor(Math.random() * pool.length)] ?? movie;
+      router.push(`/movie/${pick.Id}`);
+      return;
+    }
+    if (!session?.userId) return;
+    const movies = await fetchMovies(session.userId).catch(() => [] as JellyfinItem[]);
+    const pool = movies.filter((entry) => entry.Id !== movie.Id);
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    if (pick) router.push(`/movie/${pick.Id}`);
+  }
+
   async function onDownload() {
     setSaving(true);
     setError(null);
@@ -108,42 +122,53 @@ export default function MoviePage() {
         <div className="relative mx-auto flex h-full w-full max-w-[1600px] min-h-0 flex-col justify-end px-4 pt-24 pb-8 sm:px-8">
           <div className="flex items-start gap-8">
             <TitlePoster item={resolved} />
-            <div className="min-w-0 flex-1 overflow-hidden lg:max-h-[315px] xl:max-h-[360px]">
-              <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
-              <h1 className="mt-3 text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
-                {resolved.Name}
-              </h1>
-              <TitleMeta item={resolved} streams={streams} trailers={trailers} />
-              {resolved.Taglines?.[0] && (
-                <p className="mt-3 text-base italic text-zinc-700 dark:text-zinc-200">{resolved.Taglines[0]}</p>
-              )}
-              {resolved.Overview && (
-                <p className="mt-5 text-lg leading-relaxed text-zinc-800 dark:text-zinc-100">
-                  {resolved.Overview}
-                </p>
-              )}
-              {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+            <div className="flex min-w-0 flex-1 flex-col lg:max-h-[315px] xl:max-h-[360px]">
+              <div className="min-h-0 overflow-hidden">
+                <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
+                <h1 className="mt-3 text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
+                  {resolved.Name}
+                </h1>
+                <TitleMeta item={resolved} streams={streams} trailers={trailers} />
+                {resolved.Taglines?.[0] && (
+                  <p className="mt-3 text-base italic text-zinc-700 dark:text-zinc-200">{resolved.Taglines[0]}</p>
+                )}
+                {resolved.Overview && (
+                  <p className="mt-5 text-lg leading-relaxed text-zinc-800 dark:text-zinc-100">
+                    {resolved.Overview}
+                  </p>
+                )}
+                {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+              </div>
+              <div className="mt-auto flex flex-wrap gap-3 pt-4">
+                <Button
+                  size="lg"
+                  className="h-12 rounded-full px-6 text-base"
+                  onClick={() => router.push(`/watch/${resolved.Id}`)}
+                >
+                  <Play data-icon="inline-start" className="fill-current" />
+                  Play
+                </Button>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="h-12 rounded-full px-6 text-base"
+                  disabled={demo || saving}
+                  onClick={onDownload}
+                >
+                  <Download data-icon="inline-start" />
+                  {demo ? "Connect to download" : saving ? "Saving…" : "Download to laptop"}
+                </Button>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="h-12 rounded-full px-6 text-base"
+                  onClick={() => shuffleMovie()}
+                >
+                  <Shuffle data-icon="inline-start" />
+                  Shuffle
+                </Button>
+              </div>
             </div>
-          </div>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button
-              size="lg"
-              className="h-12 rounded-full px-6 text-base"
-              onClick={() => router.push(`/watch/${resolved.Id}`)}
-            >
-              <Play data-icon="inline-start" className="fill-current" />
-              Play
-            </Button>
-            <Button
-              size="lg"
-              variant="secondary"
-              className="h-12 rounded-full px-6 text-base"
-              disabled={demo || saving}
-              onClick={onDownload}
-            >
-              <Download data-icon="inline-start" />
-              {demo ? "Connect to download" : saving ? "Saving…" : "Download to laptop"}
-            </Button>
           </div>
           <TitleCast item={resolved} />
         </div>
