@@ -94,7 +94,7 @@ export function describeConnectError(error: unknown, serverUrl: string) {
   const localHint =
     "localhost only works when Cinema and Jellyfin run on the same computer. If you are using the cloud preview, that address is not your laptop — run Cinema locally, or use a public/Tailscale URL.";
   const tailscaleHint =
-    "Use http://100.x.x.x:8096 (not https). Tailscale must be connected on this Mac, and Cinema must be npm run dev on this Mac (http://127.0.0.1:3000). First open that same http address in Safari — if the browser cannot load Jellyfin, Cinema cannot either.";
+    "Tailscale is probably fine. On TrueNAS, Jellyfin often listens only on the home LAN, not 100.x:8096. In Terminal on this Mac run: curl -m 5 http://100.121.26.58:8096/System/Info/Public — if that hangs, enable a Tailscale subnet route on the NAS (or Tailscale Serve on 8096), then use the NAS home IP (192.168.x.x:8096) while Tailscale is on.";
 
   if (err.name === "TimeoutError" || code === "ABORT_ERR" || text.includes("abort") || text.includes("timeout")) {
     return `Timed out reaching ${serverUrl}. ${tailscale ? tailscaleHint : local ? localHint : "Check the address, port, and that Jellyfin is running."}`;

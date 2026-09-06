@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSession } from "@/components/session-provider";
+import { browserCanReachJellyfin } from "@/lib/reach-jellyfin";
 
 export function LoginScreen() {
   const { signIn, error, enterPreview } = useSession();
-  const [serverUrl, setServerUrl] = useState("https://");
+  const [serverUrl, setServerUrl] = useState("http://100.121.26.58:8096");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [allowInsecure, setAllowInsecure] = useState(false);
@@ -57,7 +58,21 @@ export function LoginScreen() {
         body: JSON.stringify(tunnelFields),
       });
       const data = (await response.json()) as { ok?: boolean; message?: string };
-      setProbeMessage(data.message || (data.ok ? "Reached Jellyfin." : "Could not reach the server."));
+      if (data.ok) {
+        setProbeMessage(data.message || "Reached Jellyfin.");
+        return;
+      }
+      const fromBrowser = await browserCanReachJellyfin(serverUrl);
+      if (fromBrowser) {
+        setProbeMessage(
+          "This browser can see Jellyfin, but Cinema’s server cannot. You are on the Cursor preview, not http://127.0.0.1:3000 from npm run dev on this Mac."
+        );
+        return;
+      }
+      setProbeMessage(
+        data.message ||
+          "Tailscale can see the NAS, but nothing answered on port 8096. On TrueNAS, Jellyfin usually listens on the home LAN, not 100.x. Advertise a subnet route for your home network, or use Tailscale Serve for port 8096."
+      );
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : "Probe failed.");
     } finally {
