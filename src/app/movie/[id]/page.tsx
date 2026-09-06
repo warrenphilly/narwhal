@@ -5,13 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import { Download, Play } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { LoginScreen } from "@/components/login-screen";
+import { TitleFacts, TitlePoster } from "@/components/title-facts";
 import { Button } from "@/components/ui/button";
 import { useDownloads } from "@/components/downloads-provider";
 import { useSession } from "@/components/session-provider";
-import { fetchMovie, imageUrl } from "@/lib/client-api";
+import { fetchLocalTrailers, fetchMovie, fetchPlaybackInfo, imageUrl } from "@/lib/client-api";
 import { DEMO_MOVIES, demoPosterGradient, isDemoId } from "@/lib/demo-library";
-import { formatBytes, formatRuntime } from "@/lib/jellyfin-types";
-import type { JellyfinItem } from "@/lib/jellyfin-types";
+import { formatBytes } from "@/lib/jellyfin-types";
+import type { JellyfinItem, MediaStream } from "@/lib/jellyfin-types";
 
 export default function MoviePage() {
   const params = useParams<{ id: string }>();
@@ -19,6 +20,8 @@ export default function MoviePage() {
   const { session, loading, preview } = useSession();
   const { downloadMovie } = useDownloads();
   const [item, setItem] = useState<JellyfinItem | null>(null);
+  const [trailers, setTrailers] = useState<JellyfinItem[]>([]);
+  const [streams, setStreams] = useState<MediaStream[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const demoItem = DEMO_MOVIES.find((movie) => movie.Id === params.id) ?? null;
@@ -33,10 +36,17 @@ export default function MoviePage() {
           return;
         }
         setItem(next);
+        setStreams(next.MediaSources?.[0]?.MediaStreams ?? []);
       })
       .catch((err: unknown) =>
         setError(err instanceof Error ? err.message : "Could not open this title.")
       );
+    fetchLocalTrailers(session.userId, id)
+      .then(setTrailers)
+      .catch(() => setTrailers([]));
+    fetchPlaybackInfo(id, session.userId)
+      .then((info) => setStreams(info.MediaSources?.[0]?.MediaStreams ?? []))
+      .catch(() => undefined);
   }, [params.id, session?.userId, router]);
 
   if (loading) return <div className="tv-root min-h-full" />;
@@ -47,7 +57,7 @@ export default function MoviePage() {
   if (!resolved && !error) {
     return (
       <AppShell>
-        <p className="px-8 py-20 text-zinc-500">Loading title…</p>
+        <p className="px-8 py-24 text-zinc-500">Loading title…</p>
       </AppShell>
     );
   }
@@ -55,7 +65,7 @@ export default function MoviePage() {
   if (error || !resolved) {
     return (
       <AppShell>
-        <p className="px-8 py-20 text-zinc-500">{error || "Title not found."}</p>
+        <p className="px-8 py-24 text-zinc-500">{error || "Title not found."}</p>
       </AppShell>
     );
   }
@@ -86,7 +96,7 @@ export default function MoviePage() {
 
   return (
     <AppShell>
-      <div className="relative min-h-[88vh] overflow-hidden">
+      <div className="relative overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -96,23 +106,9 @@ export default function MoviePage() {
           }}
         />
         <div className="hero-wash absolute inset-0" />
-        <div className="relative mx-auto grid max-w-[1600px] gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[280px_1fr]">
-          <div className="hidden aspect-[2/3] overflow-hidden rounded-2xl shadow-2xl ring-1 ring-black/10 lg:block">
-            {demo ? (
-              <div
-                className="size-full"
-                style={{ background: `linear-gradient(160deg, ${from}, ${to})` }}
-              />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={imageUrl(resolved.Id, { maxHeight: 800 })}
-                alt=""
-                className="size-full object-cover"
-              />
-            )}
-          </div>
-          <div className="flex flex-col justify-end">
+        <div className="relative mx-auto flex max-w-[1600px] items-stretch gap-8 px-4 pt-28 pb-12 sm:px-8">
+          <TitlePoster item={resolved} />
+          <div className="min-w-0 flex-1">
             <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
             <h1 className="mt-3 max-w-3xl text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
               {resolved.Name}
@@ -120,14 +116,16 @@ export default function MoviePage() {
             <div className="mt-4 flex flex-wrap gap-3 text-sm font-medium text-zinc-800 dark:text-zinc-100">
               {resolved.ProductionYear && <span>{resolved.ProductionYear}</span>}
               {resolved.OfficialRating && (
-                <span className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs">
+                <span className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs dark:border-zinc-600">
                   {resolved.OfficialRating}
                 </span>
               )}
               {resolved.CommunityRating && <span>{resolved.CommunityRating.toFixed(1)} ★</span>}
-              {resolved.RunTimeTicks && <span>{formatRuntime(resolved.RunTimeTicks)}</span>}
               {size ? <span>{formatBytes(size)}</span> : null}
             </div>
+            {resolved.Taglines?.[0] && (
+              <p className="mt-3 text-base italic text-zinc-700 dark:text-zinc-200">{resolved.Taglines[0]}</p>
+            )}
             {resolved.Overview && (
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-800 dark:text-zinc-100">
                 {resolved.Overview}
@@ -154,8 +152,9 @@ export default function MoviePage() {
               </Button>
             </div>
             {resolved.Genres && resolved.Genres.length > 0 && (
-              <p className="mt-8 text-sm text-zinc-500">{resolved.Genres.join(" · ")}</p>
+              <p className="mt-6 text-sm text-zinc-500">{resolved.Genres.join(" · ")}</p>
             )}
+            <TitleFacts item={resolved} streams={streams} trailers={trailers} />
             {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
           </div>
         </div>

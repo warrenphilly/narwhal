@@ -2,7 +2,7 @@ import type { JellyfinItem, JellyfinItemsResult, MediaStream, PlaybackInfo } fro
 import { authHeader, getConnection } from "@/lib/jellyfin-connection";
 
 const ITEM_FIELDS =
-  "Overview,Genres,PrimaryImageAspectRatio,MediaSources,CanDownload,ProductionYear,CommunityRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber";
+  "Overview,Genres,PrimaryImageAspectRatio,MediaSources,CanDownload,ProductionYear,CommunityRating,CriticRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,People,Studios,RemoteTrailers,Taglines,Status,ProductionLocations,ChildCount,MediaStreams";
 
 async function jf<T>(path: string, init?: RequestInit): Promise<T> {
   const direct = getConnection();
@@ -136,6 +136,13 @@ export async function fetchNextUp(userId: string, seriesId: string) {
     `Shows/NextUp?UserId=${encodeURIComponent(userId)}&SeriesId=${encodeURIComponent(seriesId)}&Limit=1&Fields=${ITEM_FIELDS}`
   );
   return data.Items?.[0] ?? null;
+}
+
+export async function fetchLocalTrailers(userId: string, itemId: string) {
+  const data = await jf<JellyfinItemsResult | JellyfinItem[]>(
+    `Users/${encodeURIComponent(userId)}/Items/${encodeURIComponent(itemId)}/LocalTrailers?Fields=${ITEM_FIELDS}`
+  );
+  return Array.isArray(data) ? data : data.Items ?? [];
 }
 
 export async function searchMovies(userId: string, query: string) {

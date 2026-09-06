@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Download, LogOut, Moon, Search, Sun, Tv } from "lucide-react";
 import { useSession } from "@/components/session-provider";
 import { useDownloads } from "@/components/downloads-provider";
@@ -35,6 +35,36 @@ function NavItems({ className, itemClass }: { className?: string; itemClass: (ac
   );
 }
 
+function ScrollHeader({ children }: { children: React.ReactNode }) {
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y < 24) {
+        setHidden(false);
+      } else if (y > last + 6) {
+        setHidden(true);
+      } else if (y < last - 6) {
+        setHidden(false);
+      }
+      last = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return (
+    <header
+      className={cn(
+        "fixed inset-x-0 top-0 z-40 border-b border-black/8 bg-[var(--page-bg)]/95 backdrop-blur-md transition-transform duration-200 dark:border-white/10",
+        hidden ? "-translate-y-full" : "translate-y-0"
+      )}
+    >
+      {children}
+    </header>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -42,20 +72,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { theme, toggle } = useTheme();
   const { downloads } = useDownloads();
   const active = downloads.filter((item) => item.status === "saving").length;
-  const overlay =
-    pathname === "/" || pathname.startsWith("/show/") || pathname.startsWith("/movie/");
 
   return (
     <div className="tv-root flex min-h-full flex-col">
-      <header
-        className={cn(
-          "sticky top-0 z-40",
-          overlay
-            ? "-mb-16 border-transparent bg-gradient-to-b from-[var(--page-bg)] via-[var(--page-bg)]/75 to-transparent"
-            : "border-b border-black/5 bg-gradient-to-b from-[var(--page-bg)] to-[var(--page-bg)]/80 dark:border-white/8"
-        )}
-      >
-        <div className="page-gutter mx-auto flex h-16 items-center gap-6">
+      <ScrollHeader key={pathname}>
+        <div className="page-gutter mx-auto flex h-20 items-center gap-6">
           <Link href={homeHref("movies")} className="flex items-center gap-2 text-zinc-900 dark:text-zinc-50">
             <span className="flex size-8 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
               <Tv className="size-4" />
@@ -123,7 +144,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </div>
-      </header>
+      </ScrollHeader>
       <main className="flex-1 pb-16 md:pb-0">{children}</main>
       <Suspense fallback={<nav className="fixed inset-x-0 bottom-0 z-40 md:hidden" />}>
         <NavItems

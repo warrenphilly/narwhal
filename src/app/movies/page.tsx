@@ -30,7 +30,7 @@ export default function MoviesPage() {
 
   return (
     <AppShell>
-      <div className="page-gutter py-10 pt-24">
+      <div className="page-gutter py-10 pt-28">
         <h1 className="text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Movies</h1>
         <p className="mt-2 text-zinc-500">Every title in your movie libraries.</p>
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}

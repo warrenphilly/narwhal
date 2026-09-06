@@ -12,6 +12,13 @@ const demo: JellyfinItem[] = [
     RunTimeTicks: 7_800_000_0000,
     Genres: ["Thriller", "Drama"],
     CanDownload: false,
+    People: [
+      { Name: "Mara Ellison", Role: "Captain Vale", Type: "Actor" },
+      { Name: "Jonah Reed", Role: "Dock clerk", Type: "Actor" },
+      { Name: "Ivy Chen", Type: "Director" },
+    ],
+    Studios: [{ Name: "North Pier" }],
+    RemoteTrailers: [{ Name: "Official trailer", Url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }],
   },
   {
     Id: "demo-circuit",
@@ -110,6 +117,12 @@ export const DEMO_SHOWS: JellyfinItem[] = [
     CommunityRating: 8.3,
     Genres: ["Drama"],
     CanDownload: false,
+    Status: "Continuing",
+    People: [
+      { Name: "Lena Ortiz", Role: "Harbor lead", Type: "Actor" },
+      { Name: "Sam Whit", Role: "Night ferry", Type: "Actor" },
+    ],
+    Studios: [{ Name: "Dockside Pictures" }],
   },
   {
     Id: "demo-show-orbit",
@@ -132,6 +145,11 @@ export const DEMO_SHOWS: JellyfinItem[] = [
     CommunityRating: 7.8,
     Genres: ["Mystery"],
     CanDownload: false,
+    Status: "Ended",
+    People: [
+      { Name: "Priya Shah", Role: "Cartographer", Type: "Actor" },
+      { Name: "Eli Voss", Role: "Surveyor", Type: "Actor" },
+    ],
   },
   {
     Id: "demo-show-salt",

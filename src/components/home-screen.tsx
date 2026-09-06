@@ -98,7 +98,7 @@ export function HomeScreen() {
   return (
     <div className="pb-16">
       <div className="relative">
-        <div className="pointer-events-none absolute inset-x-0 top-20 z-20 flex justify-center">
+        <div className="pointer-events-none absolute inset-x-0 top-24 z-20 flex justify-center">
           <div className="pointer-events-auto">
             <MediaPills value={tab} />
           </div>

@@ -34,6 +34,19 @@ export type PlaybackInfo = {
   MediaSources?: MediaSource[];
 };
 
+export type JellyfinPerson = {
+  Id?: string;
+  Name?: string;
+  Role?: string;
+  Type?: string;
+  PrimaryImageTag?: string;
+};
+
+export type RemoteTrailer = {
+  Url?: string;
+  Name?: string;
+};
+
 export type JellyfinItem = {
   Id: string;
   Name: string;
@@ -49,6 +62,13 @@ export type JellyfinItem = {
   SeriesId?: string;
   ParentIndexNumber?: number;
   IndexNumber?: number;
+  Status?: string;
+  Taglines?: string[];
+  Studios?: { Name?: string }[];
+  ProductionLocations?: string[];
+  People?: JellyfinPerson[];
+  RemoteTrailers?: RemoteTrailer[];
+  ChildCount?: number;
   CanDownload?: boolean;
   UserData?: {
     PlaybackPositionTicks?: number;

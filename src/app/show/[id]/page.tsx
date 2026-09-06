@@ -7,18 +7,21 @@ import { AppShell } from "@/components/app-shell";
 import { LoginScreen } from "@/components/login-screen";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/components/session-provider";
+import { TitleFacts, TitlePoster } from "@/components/title-facts";
 import {
   continueImageUrl,
   fetchEpisodes,
+  fetchLocalTrailers,
   fetchMovie,
   fetchNextUp,
+  fetchPlaybackInfo,
   fetchSeasons,
   imageUrl,
 } from "@/lib/client-api";
 import { episodeLabel } from "@/lib/clock";
 import { DEMO_SHOWS, demoPosterGradient, isDemoId } from "@/lib/demo-library";
 import { formatRuntime } from "@/lib/jellyfin-types";
-import type { JellyfinItem } from "@/lib/jellyfin-types";
+import type { JellyfinItem, MediaStream } from "@/lib/jellyfin-types";
 import { cn } from "@/lib/utils";
 
 function demoSeasons(show: JellyfinItem): JellyfinItem[] {
@@ -54,17 +57,20 @@ export default function ShowPage() {
   const [episodes, setEpisodes] = useState<JellyfinItem[]>([]);
   const [nextUp, setNextUp] = useState<JellyfinItem | null>(null);
   const [seasonId, setSeasonId] = useState<string | null>(null);
+  const [trailers, setTrailers] = useState<JellyfinItem[]>([]);
+  const [streams, setStreams] = useState<MediaStream[]>([]);
   const [error, setError] = useState<string | null>(null);
   const demoShow = DEMO_SHOWS.find((item) => item.Id === params.id) ?? null;
 
   useEffect(() => {
     const id = params.id;
-    if (!id || isDemoId(id) || !session?.userId) return;
+    const userId = session?.userId;
+    if (!id || isDemoId(id) || !userId) return;
     let cancelled = false;
     Promise.all([
-      fetchMovie(session.userId, id),
-      fetchSeasons(session.userId, id).catch(() => [] as JellyfinItem[]),
-      fetchNextUp(session.userId, id).catch(() => null),
+      fetchMovie(userId, id),
+      fetchSeasons(userId, id).catch(() => [] as JellyfinItem[]),
+      fetchNextUp(userId, id).catch(() => null),
     ])
       .then(([item, nextSeasons, upcoming]) => {
         if (cancelled) return;
@@ -81,6 +87,9 @@ export default function ShowPage() {
         setNextUp(upcoming);
         setSeasonId(nextSeasons[0]?.Id ?? null);
         setError(null);
+        fetchLocalTrailers(userId, id)
+          .then(setTrailers)
+          .catch(() => setTrailers([]));
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -93,11 +102,19 @@ export default function ShowPage() {
   }, [params.id, session?.userId, router]);
 
   useEffect(() => {
-    if (!session?.userId || !show || isDemoId(show.Id) || !seasonId) return;
+    const userId = session?.userId;
+    if (!userId || !show || isDemoId(show.Id) || !seasonId) return;
     let cancelled = false;
-    fetchEpisodes(session.userId, show.Id, seasonId)
+    fetchEpisodes(userId, show.Id, seasonId)
       .then((items) => {
         if (!cancelled) setEpisodes(items);
+        const sample = items[0];
+        if (!sample) return;
+        fetchPlaybackInfo(sample.Id, userId)
+          .then((info) => {
+            if (!cancelled) setStreams(info.MediaSources?.[0]?.MediaStreams ?? []);
+          })
+          .catch(() => undefined);
       })
       .catch(() => {
         if (!cancelled) setEpisodes([]);
@@ -171,7 +188,7 @@ export default function ShowPage() {
 
   return (
     <AppShell>
-      <div className="relative min-h-[70vh] overflow-hidden">
+      <div className="relative overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -181,23 +198,9 @@ export default function ShowPage() {
           }}
         />
         <div className="hero-wash absolute inset-0" />
-        <div className="relative mx-auto grid max-w-[1600px] gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[240px_1fr]">
-          <div className="hidden aspect-[2/3] overflow-hidden rounded-2xl shadow-2xl ring-1 ring-black/10 lg:block dark:ring-white/10">
-            {demo ? (
-              <div
-                className="size-full"
-                style={{ background: `linear-gradient(160deg, ${from}, ${to})` }}
-              />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={imageUrl(resolved.Id, { maxHeight: 800 })}
-                alt=""
-                className="size-full object-cover"
-              />
-            )}
-          </div>
-          <div className="flex flex-col justify-end">
+        <div className="relative mx-auto flex max-w-[1600px] items-stretch gap-8 px-4 pt-28 pb-10 sm:px-8">
+          <TitlePoster item={resolved} />
+          <div className="min-w-0 flex-1">
             <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">
               Series
             </p>
@@ -240,54 +243,54 @@ export default function ShowPage() {
               )}
             </div>
             {resolved.Genres && resolved.Genres.length > 0 && (
-              <p className="mt-8 text-sm text-zinc-500">{resolved.Genres.join(" · ")}</p>
+              <p className="mt-6 text-sm text-zinc-500">{resolved.Genres.join(" · ")}</p>
             )}
+            <TitleFacts item={resolved} streams={streams} trailers={trailers} />
           </div>
         </div>
       </div>
 
-      <div className="page-gutter relative z-10 mx-auto max-w-[1600px] -mt-10 pb-20">
-        <div className="overflow-hidden rounded-[28px] border border-zinc-200/80 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:border-white/10 dark:bg-zinc-900">
-          <div className="grid md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[260px_minmax(0,1fr)]">
-            <aside className="bg-zinc-50/90 md:border-r md:border-zinc-200/70 dark:bg-white/[0.04] dark:md:border-white/10">
-              <p className="px-4 pt-4 pb-2 text-xs font-semibold tracking-[0.18em] text-zinc-500 uppercase">
-                Seasons
-              </p>
-              <div className="flex flex-col gap-1 p-2 pt-0">
-                {seasonList.length === 0 && (
-                  <p className="px-3 py-6 text-sm text-zinc-500">No seasons yet.</p>
-                )}
-                {seasonList.map((season) => (
-                  <button
-                    key={season.Id}
-                    type="button"
-                    onClick={() => setSeasonId(season.Id)}
-                    className={cn(
-                      "flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm transition",
-                      season.Id === activeSeasonId
-                        ? "bg-white text-zinc-950 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-50 dark:ring-white/10"
-                        : "text-zinc-600 hover:bg-white/70 dark:text-zinc-300 dark:hover:bg-white/6"
-                    )}
-                  >
-                    <span className="font-medium">{season.Name}</span>
-                  </button>
-                ))}
-              </div>
-            </aside>
-
-            <div className="min-w-0 p-2 sm:p-3">
-              {listed.length === 0 && (
-                <p className="px-3 py-10 text-zinc-500">No episodes in this season yet.</p>
+      <div className="page-gutter relative z-10 mx-auto max-w-[1600px] pb-20">
+        <div className="grid md:grid-cols-[200px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)]">
+          <aside>
+            <p className="pb-3 text-xs font-semibold tracking-[0.18em] text-zinc-500 uppercase">
+              Seasons
+            </p>
+            <div className="flex flex-col">
+              {seasonList.length === 0 && (
+                <p className="py-6 text-sm text-zinc-500">No seasons yet.</p>
               )}
-              {listed.map((episode) => {
-                const progress = episode.UserData?.PlayedPercentage;
-                return (
-                  <button
-                    key={episode.Id}
-                    type="button"
-                    onClick={() => router.push(`/watch/${episode.Id}`)}
-                    className="flex w-full gap-4 rounded-2xl p-3 text-left transition hover:bg-zinc-50 dark:hover:bg-white/6"
-                  >
+              {seasonList.map((season) => (
+                <button
+                  key={season.Id}
+                  type="button"
+                  onClick={() => setSeasonId(season.Id)}
+                  className={cn(
+                    "w-full py-2 text-left text-sm transition",
+                    season.Id === activeSeasonId
+                      ? "font-semibold text-zinc-950 dark:text-zinc-50"
+                      : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                  )}
+                >
+                  {season.Name}
+                </button>
+              ))}
+            </div>
+          </aside>
+
+          <div className="min-w-0">
+            {listed.length === 0 && (
+              <p className="py-10 text-zinc-500">No episodes in this season yet.</p>
+            )}
+            {listed.map((episode) => {
+              const progress = episode.UserData?.PlayedPercentage;
+              return (
+                <button
+                  key={episode.Id}
+                  type="button"
+                  onClick={() => router.push(`/watch/${episode.Id}`)}
+                  className="flex w-full gap-4 py-4 text-left transition hover:bg-zinc-900/[0.03] dark:hover:bg-white/[0.03]"
+                >
                     <div className="relative aspect-video w-[168px] shrink-0 overflow-hidden rounded-xl bg-zinc-200 sm:w-[220px] dark:bg-zinc-800">
                       {demo ? (
                         <div
@@ -331,7 +334,6 @@ export default function ShowPage() {
             </div>
           </div>
         </div>
-      </div>
     </AppShell>
   );
 }
