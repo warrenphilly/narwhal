@@ -313,12 +313,12 @@ export default function ShowPage() {
                 <p className="py-6 text-sm text-zinc-500">No seasons yet.</p>
               )}
               {seasonList.map((season) => (
-                <div key={season.Id} className="flex items-center gap-1">
+                <div key={season.Id} className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setSeasonId(season.Id)}
                     className={cn(
-                      "min-w-0 flex-1 py-2 text-left text-sm transition",
+                      "py-2 text-left text-sm transition",
                       season.Id === activeSeasonId
                         ? "font-semibold text-zinc-950 dark:text-zinc-50"
                         : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
