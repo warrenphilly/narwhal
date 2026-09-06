@@ -1,8 +1,8 @@
-import type { JellyfinItem, JellyfinItemsResult } from "@/lib/jellyfin-types";
+import type { JellyfinItem, JellyfinItemsResult, MediaStream, PlaybackInfo } from "@/lib/jellyfin-types";
 import { authHeader, getConnection } from "@/lib/jellyfin-connection";
 
 const ITEM_FIELDS =
-  "Overview,Genres,PrimaryImageAspectRatio,MediaSources,CanDownload,ProductionYear,CommunityRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData";
+  "Overview,Genres,PrimaryImageAspectRatio,MediaSources,CanDownload,ProductionYear,CommunityRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber";
 
 async function jf<T>(path: string, init?: RequestInit): Promise<T> {
   const direct = getConnection();
@@ -23,6 +23,16 @@ async function jf<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(data?.error || `Jellyfin request failed (${response.status})`);
   }
   return (await response.json()) as T;
+}
+
+export function continueImageUrl(item: JellyfinItem) {
+  if (item.ImageTags?.Thumb) {
+    return imageUrl(item.Id, { type: "Thumb", maxWidth: 720 });
+  }
+  if (item.BackdropImageTags?.[0]) {
+    return imageUrl(item.Id, { type: "Backdrop", maxWidth: 720 });
+  }
+  return imageUrl(item.Id, { maxWidth: 720 });
 }
 
 export function imageUrl(itemId: string, options?: { type?: string; maxWidth?: number; maxHeight?: number; tag?: string }) {
@@ -107,6 +117,37 @@ export async function searchMovies(userId: string, query: string) {
     `Users/${encodeURIComponent(userId)}/Items?SearchTerm=${encodeURIComponent(query)}&IncludeItemTypes=Movie,Series&Recursive=true&Fields=${ITEM_FIELDS}&Limit=40`
   );
   return data.Items ?? [];
+}
+
+export async function fetchPlaybackInfo(itemId: string, userId: string) {
+  return jf<PlaybackInfo>(`Items/${encodeURIComponent(itemId)}/PlaybackInfo?UserId=${encodeURIComponent(userId)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ UserId: userId }),
+  });
+}
+
+export function subtitleUrl(itemId: string, mediaSourceId: string, index: number) {
+  const direct = getConnection();
+  const path = `Videos/${encodeURIComponent(itemId)}/${encodeURIComponent(mediaSourceId)}/Subtitles/${index}/Stream.vtt`;
+  if (direct) {
+    return `${direct.serverUrl}/${path}?api_key=${encodeURIComponent(direct.token)}`;
+  }
+  return `/api/jf/${path}`;
+}
+
+export function subtitleTracks(itemId: string, info: PlaybackInfo | null) {
+  const source = info?.MediaSources?.[0];
+  if (!source?.Id) return [];
+  return (source.MediaStreams ?? [])
+    .filter((stream): stream is MediaStream & { Index: number } => stream.Type === "Subtitle" && typeof stream.Index === "number")
+    .map((stream) => ({
+      index: stream.Index,
+      label: stream.DisplayTitle || stream.Language || `Subtitle ${stream.Index}`,
+      language: stream.Language || "und",
+      isDefault: Boolean(stream.IsDefault),
+      src: subtitleUrl(itemId, source.Id!, stream.Index),
+    }));
 }
 
 export async function reportPlaybackStart(itemId: string) {

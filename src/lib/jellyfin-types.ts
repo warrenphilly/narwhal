@@ -10,12 +10,28 @@ export type JellyfinAuthResult = {
   User: JellyfinUser;
 };
 
+export type MediaStream = {
+  Type?: string;
+  Index?: number;
+  Language?: string;
+  DisplayTitle?: string;
+  IsDefault?: boolean;
+  IsForced?: boolean;
+  Codec?: string;
+};
+
 export type MediaSource = {
   Id?: string;
   Size?: number;
   Container?: string;
   Name?: string;
   Path?: string;
+  DefaultSubtitleStreamIndex?: number;
+  MediaStreams?: MediaStream[];
+};
+
+export type PlaybackInfo = {
+  MediaSources?: MediaSource[];
 };
 
 export type JellyfinItem = {
@@ -31,6 +47,8 @@ export type JellyfinItem = {
   Genres?: string[];
   SeriesName?: string;
   SeriesId?: string;
+  ParentIndexNumber?: number;
+  IndexNumber?: number;
   CanDownload?: boolean;
   UserData?: {
     PlaybackPositionTicks?: number;

@@ -109,7 +109,7 @@ export function HomeScreen() {
             Sample library. Sign in at the top right to load titles from your Jellyfin server.
           </p>
         )}
-        <Shelf title="Currently watching" items={watching} />
+        <Shelf title="Currently watching" items={watching} variant="continue" />
         {tab === "shows" && <Shelf title="Featured" items={showLatest} />}
         {tab === "movies" && <Shelf title="Recently added" items={movieLatest} />}
         {genres.map(([genre, items]) => (

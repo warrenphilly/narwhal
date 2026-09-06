@@ -5,8 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoginScreen } from "@/components/login-screen";
+import { VideoPlayer } from "@/components/video-player";
 import { useSession } from "@/components/session-provider";
-import { fetchMovie, streamUrl } from "@/lib/client-api";
+import { fetchMovie } from "@/lib/client-api";
+import { episodeLabel } from "@/lib/clock";
 import { DEMO_MOVIES, DEMO_SHOWS, isDemoId } from "@/lib/demo-library";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 
@@ -30,7 +32,9 @@ export default function WatchPage() {
 
   const item = demoItem ?? remoteItem;
   const demo = !item || isDemoId(item.Id);
-  const title = item?.SeriesName ? `${item.SeriesName} · ${item.Name}` : item?.Name ?? "Playing";
+  const title = item?.SeriesName
+    ? `${item.SeriesName} · ${episodeLabel(item)}`
+    : item?.Name ?? "Playing";
 
   return (
     <div className="fixed inset-0 z-50 bg-black">
@@ -45,7 +49,7 @@ export default function WatchPage() {
         </Button>
         <p className="truncate text-sm text-white/80">{title}</p>
       </div>
-      {demo ? (
+      {demo || !item ? (
         <div className="flex size-full items-center justify-center px-6">
           <div className="max-w-lg rounded-3xl border border-white/15 bg-white/5 p-10 text-center">
             <p className="text-2xl font-semibold text-white">Playback needs your server</p>
@@ -55,12 +59,7 @@ export default function WatchPage() {
           </div>
         </div>
       ) : (
-        <video
-          className="size-full bg-black object-contain"
-          src={streamUrl(params.id)}
-          controls
-          autoPlay
-        />
+        <VideoPlayer item={item} userId={session?.userId} />
       )}
     </div>
   );
