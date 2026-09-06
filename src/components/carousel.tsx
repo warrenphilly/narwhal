@@ -8,10 +8,12 @@ export function Carousel({
   children,
   className,
   itemGap = "gap-4",
+  alignStart = false,
 }: {
   children: React.ReactNode;
   className?: string;
   itemGap?: string;
+  alignStart?: boolean;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(false);
@@ -70,7 +72,7 @@ export function Carousel({
         ref={scroller}
         className={cn(
           "shelf-scroll flex overflow-x-auto pb-2 pt-1",
-          (canPrev || canNext) && "px-12",
+          !alignStart && (canPrev || canNext) && "px-12",
           itemGap
         )}
       >

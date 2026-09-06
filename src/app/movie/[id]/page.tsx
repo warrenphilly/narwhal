@@ -105,7 +105,8 @@ export default function MoviePage() {
           }}
         />
         <div className="hero-wash absolute inset-0" />
-        <div className="relative mx-auto flex w-full max-w-[1600px] flex-1 items-end gap-8 px-4 pt-28 pb-12 sm:px-8">
+        <div className="relative mx-auto flex w-full max-w-[1600px] flex-1 flex-col justify-end px-4 pt-28 pb-12 sm:px-8">
+          <div className="flex items-start gap-8">
           <TitlePoster item={resolved} />
           <div className="min-w-0 flex-1">
             <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
@@ -143,13 +144,12 @@ export default function MoviePage() {
             </div>
             {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
           </div>
+          </div>
+          <TitleCast item={resolved} />
         </div>
       </div>
-      <div className="page-gutter relative z-10 mx-auto max-w-[1600px] pb-8">
+      <div className="page-gutter relative z-10 mx-auto max-w-[1600px] pb-20">
         <EpisodeRow item={resolved} eyebrow="Movie" />
-      </div>
-      <div className="page-gutter mx-auto max-w-[1600px] pb-20">
-        <TitleCast item={resolved} />
       </div>
     </AppShell>
   );

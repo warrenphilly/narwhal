@@ -170,9 +170,9 @@ export function TitleCast({ item }: { item: JellyfinItem }) {
   const cast = (item.People ?? []).filter((person) => !person.Type || person.Type === "Actor");
   if (!cast.length) return null;
   return (
-    <div className="mt-2">
+    <div className="mt-8">
       <p className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">Cast</p>
-      <Carousel className="mt-2 -mx-2" itemGap="gap-3">
+      <Carousel className="mt-2" itemGap="gap-3" alignStart>
         {cast.map((person, index) => {
           const personId = person.Id;
           const [from, to] = demoPosterGradient(personId || person.Name || String(index));

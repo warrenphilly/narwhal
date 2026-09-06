@@ -197,7 +197,8 @@ export default function ShowPage() {
           }}
         />
         <div className="hero-wash absolute inset-0" />
-        <div className="relative mx-auto flex max-w-[1600px] items-start gap-8 px-4 pt-28 pb-10 sm:px-8">
+        <div className="relative mx-auto flex max-w-[1600px] flex-col px-4 pt-28 pb-10 sm:px-8">
+          <div className="flex items-start gap-8">
           <TitlePoster item={resolved} />
           <div className="min-w-0 flex-1">
             <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">
@@ -238,10 +239,12 @@ export default function ShowPage() {
               )}
             </div>
           </div>
+          </div>
+          <TitleCast item={resolved} />
         </div>
       </div>
 
-      <div className="page-gutter relative z-10 mx-auto max-w-[1600px] pb-8">
+      <div className="page-gutter relative z-10 mx-auto max-w-[1600px] pb-20">
         <div className="grid md:grid-cols-[200px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)]">
           <aside>
             <p className="pb-3 text-xs font-semibold tracking-[0.18em] text-zinc-500 uppercase">
@@ -279,9 +282,6 @@ export default function ShowPage() {
             </div>
           </div>
         </div>
-      <div className="page-gutter mx-auto max-w-[1600px] pb-20">
-        <TitleCast item={resolved} />
-      </div>
     </AppShell>
   );
 }
