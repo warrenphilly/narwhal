@@ -112,7 +112,7 @@ export default function MoviePage() {
 
   return (
     <AppShell>
-      <div className="relative flex min-h-dvh flex-col">
+      <div className="relative">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -122,34 +122,32 @@ export default function MoviePage() {
           }}
         />
         <div className="hero-wash absolute inset-0" />
-        <div className="relative mx-auto flex h-full w-full max-w-[1600px] min-h-0 flex-col justify-end px-4 pt-24 pb-8 sm:px-8">
+        <div className="relative mx-auto flex w-full max-w-[1600px] flex-col px-4 pt-24 pb-8 sm:px-8">
           <PageBack className="text-zinc-800 hover:bg-black/6 dark:text-zinc-100 dark:hover:bg-white/10" />
-          <div className="flex items-start gap-8">
-            <TitlePoster item={resolved} />
-            <div className="flex min-w-0 flex-1 flex-col lg:max-h-[315px] xl:max-h-[360px]">
-              <div className="min-h-0 overflow-hidden">
-                <div className="flex flex-wrap items-center gap-3">
-                  <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
-                  <TitleGenres item={resolved} />
-                </div>
-                <h1 className="mt-3 text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
-                  {resolved.Name}
-                </h1>
-                <TitleMeta item={resolved} streams={streams} trailers={trailers} />
-                {resolved.Taglines?.[0] && (
-                  <p className="mt-3 text-base italic text-zinc-700 dark:text-zinc-200">{resolved.Taglines[0]}</p>
-                )}
-                {resolved.Overview && (
-                  <p className="mt-5 text-lg leading-relaxed text-zinc-800 dark:text-zinc-100">
-                    {resolved.Overview}
-                  </p>
-                )}
-                {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+          <div className="flex items-start gap-6">
+            <TitlePoster item={resolved} compact />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
+                <TitleGenres item={resolved} />
               </div>
-              <div className="mt-auto flex flex-wrap gap-3 pt-4">
+              <h1 className="mt-2 text-4xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-5xl dark:text-white">
+                {resolved.Name}
+              </h1>
+              <TitleMeta item={resolved} streams={streams} trailers={trailers} />
+              {resolved.Taglines?.[0] && (
+                <p className="mt-2 text-sm italic text-zinc-700 dark:text-zinc-200">{resolved.Taglines[0]}</p>
+              )}
+              {resolved.Overview && (
+                <p className="mt-3 line-clamp-4 text-base leading-relaxed text-zinc-800 dark:text-zinc-100">
+                  {resolved.Overview}
+                </p>
+              )}
+              {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+              <div className="mt-4 flex flex-wrap gap-3">
                 <Button
                   size="lg"
-                  className="h-12 rounded-full px-6 text-base"
+                  className="h-11 rounded-full px-6 text-base"
                   onClick={() => router.push(`/watch/${resolved.Id}`)}
                 >
                   <Play data-icon="inline-start" className="fill-current" />
@@ -158,7 +156,7 @@ export default function MoviePage() {
                 <Button
                   size="lg"
                   variant="secondary"
-                  className="h-12 rounded-full px-6 text-base"
+                  className="h-11 rounded-full px-6 text-base"
                   disabled={demo || saving}
                   onClick={onDownload}
                 >
@@ -170,15 +168,15 @@ export default function MoviePage() {
             </div>
           </div>
           <TitleCast item={resolved} />
+          <div className="mt-2">
+            <EpisodeRow
+              item={resolved}
+              eyebrow="Movie"
+              downloading={saving}
+              onDownload={() => onDownload().catch(() => undefined)}
+            />
+          </div>
         </div>
-      </div>
-      <div className="page-gutter relative z-10 mx-auto max-w-[1600px] pb-20">
-        <EpisodeRow
-          item={resolved}
-          eyebrow="Movie"
-          downloading={saving}
-          onDownload={() => onDownload().catch(() => undefined)}
-        />
       </div>
     </AppShell>
   );

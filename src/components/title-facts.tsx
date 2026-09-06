@@ -66,11 +66,11 @@ function Dot() {
   return <span className="text-zinc-400" aria-hidden>•</span>;
 }
 
-export function TitlePoster({ item }: { item: JellyfinItem }) {
+export function TitlePoster({ item, compact }: { item: JellyfinItem; compact?: boolean }) {
   const demo = isDemoId(item.Id);
   const [from, to] = demoPosterGradient(item.Id);
   return (
-    <div className="hidden w-[210px] shrink-0 xl:w-[240px] lg:block">
+    <div className={cn("hidden shrink-0 lg:block", compact ? "w-[168px] xl:w-[186px]" : "w-[210px] xl:w-[240px]")}>
       <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] dark:bg-zinc-800">
         {demo ? (
           <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, ${from}, ${to})` }} />
