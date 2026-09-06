@@ -15,6 +15,10 @@ const demo: JellyfinItem[] = [
     People: [
       { Name: "Mara Ellison", Role: "Captain Vale", Type: "Actor" },
       { Name: "Jonah Reed", Role: "Dock clerk", Type: "Actor" },
+      { Name: "Noor Hale", Role: "Dispatcher", Type: "Actor" },
+      { Name: "Kit Alvarez", Role: "Stevedore", Type: "Actor" },
+      { Name: "Rae Quinn", Role: "Pilot", Type: "Actor" },
+      { Name: "Theo Park", Role: "Harbor master", Type: "Actor" },
       { Name: "Ivy Chen", Type: "Director" },
     ],
     Studios: [{ Name: "North Pier" }],
@@ -121,6 +125,10 @@ export const DEMO_SHOWS: JellyfinItem[] = [
     People: [
       { Name: "Lena Ortiz", Role: "Harbor lead", Type: "Actor" },
       { Name: "Sam Whit", Role: "Night ferry", Type: "Actor" },
+      { Name: "June Hale", Role: "Radio", Type: "Actor" },
+      { Name: "Omar Singh", Role: "Crane operator", Type: "Actor" },
+      { Name: "Bea Cole", Role: "Cook", Type: "Actor" },
+      { Name: "Nico Berg", Role: "Watchman", Type: "Actor" },
     ],
     Studios: [{ Name: "Dockside Pictures" }],
   },
@@ -149,6 +157,10 @@ export const DEMO_SHOWS: JellyfinItem[] = [
     People: [
       { Name: "Priya Shah", Role: "Cartographer", Type: "Actor" },
       { Name: "Eli Voss", Role: "Surveyor", Type: "Actor" },
+      { Name: "Ada Wren", Role: "Archivist", Type: "Actor" },
+      { Name: "Miles Cho", Role: "Printer", Type: "Actor" },
+      { Name: "Soren Vale", Role: "Tide reader", Type: "Actor" },
+      { Name: "Hana Ortiz", Role: "Skipper", Type: "Actor" },
     ],
   },
   {

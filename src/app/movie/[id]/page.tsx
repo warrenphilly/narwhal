@@ -106,7 +106,7 @@ export default function MoviePage() {
           }}
         />
         <div className="hero-wash absolute inset-0" />
-        <div className="relative mx-auto flex max-w-[1600px] items-stretch gap-8 px-4 pt-28 pb-12 sm:px-8">
+        <div className="relative mx-auto flex max-w-[1600px] items-start gap-8 px-4 pt-28 pb-12 sm:px-8">
           <TitlePoster item={resolved} />
           <div className="min-w-0 flex-1">
             <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>

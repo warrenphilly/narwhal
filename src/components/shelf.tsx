@@ -1,5 +1,6 @@
 "use client";
 
+import { Carousel } from "@/components/carousel";
 import { ContinueCard } from "@/components/continue-card";
 import { PosterCard } from "@/components/poster-card";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
@@ -17,7 +18,7 @@ export function Shelf({
   return (
     <section className="space-y-4">
       <h2 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">{title}</h2>
-      <div className="shelf-scroll -mx-1 flex gap-4 overflow-x-auto pb-4 pt-2">
+      <Carousel>
         {items.map((item) =>
           variant === "continue" ? (
             <ContinueCard key={item.Id} item={item} />
@@ -25,7 +26,7 @@ export function Shelf({
             <PosterCard key={item.Id} item={item} />
           )
         )}
-      </div>
+      </Carousel>
     </section>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Play } from "lucide-react";
+import { Carousel } from "@/components/carousel";
 import { imageUrl } from "@/lib/client-api";
 import { formatRuntime } from "@/lib/jellyfin-types";
 import type { JellyfinItem, MediaStream } from "@/lib/jellyfin-types";
@@ -56,17 +57,19 @@ export function TitlePoster({ item }: { item: JellyfinItem }) {
   const demo = isDemoId(item.Id);
   const [from, to] = demoPosterGradient(item.Id);
   return (
-    <div className="hidden w-[140px] shrink-0 self-stretch overflow-hidden rounded-xl bg-zinc-200 lg:block xl:w-[156px] dark:bg-zinc-800">
-      {demo ? (
-        <div className="h-full min-h-[160px]" style={{ background: `linear-gradient(160deg, ${from}, ${to})` }} />
-      ) : (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={imageUrl(item.Id, { maxHeight: 480 })}
-          alt=""
-          className="h-full w-full object-cover"
-        />
-      )}
+    <div className="hidden w-[168px] shrink-0 lg:block">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] dark:bg-zinc-800">
+        {demo ? (
+          <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, ${from}, ${to})` }} />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageUrl(item.Id, { maxHeight: 540 })}
+            alt=""
+            className="absolute inset-0 size-full object-cover"
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -86,9 +89,7 @@ export function TitleFacts({
   const subs = demo ? ["English", "Spanish"] : streamLabels(streams, "Subtitle");
   const remote = item.RemoteTrailers?.filter((row) => row.Url) ?? [];
   const local = trailers ?? [];
-  const cast = (item.People ?? [])
-    .filter((person) => !person.Type || person.Type === "Actor")
-    .slice(0, 8);
+  const cast = (item.People ?? []).filter((person) => !person.Type || person.Type === "Actor");
   const directors = (item.People ?? []).filter((person) => person.Type === "Director");
   const runtime = formatRuntime(item.RunTimeTicks);
 
@@ -196,14 +197,35 @@ export function TitleFacts({
       {cast.length > 0 && (
         <div>
           <p className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">Cast</p>
-          <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2">
-            {cast.map((person) => (
-              <li key={`${person.Id}-${person.Name}`} className="text-sm">
-                <span className="font-medium text-zinc-900 dark:text-zinc-50">{person.Name}</span>
-                {person.Role && <span className="text-zinc-500"> · {person.Role}</span>}
-              </li>
-            ))}
-          </ul>
+          <Carousel className="mt-3 -mx-2" itemGap="gap-3">
+            {cast.map((person, index) => {
+              const personId = person.Id;
+              const [from, to] = demoPosterGradient(personId || person.Name || String(index));
+              return (
+                <div key={`${personId}-${person.Name}`} className="w-[120px] shrink-0 snap-start">
+                  <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-200 dark:bg-zinc-800">
+                    {personId && !isDemoId(personId) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={imageUrl(personId, { maxHeight: 360, tag: person.PrimaryImageTag })}
+                        alt=""
+                        className="absolute inset-0 size-full object-cover"
+                      />
+                    ) : (
+                      <div
+                        className="absolute inset-0"
+                        style={{ background: `linear-gradient(160deg, ${from}, ${to})` }}
+                      />
+                    )}
+                  </div>
+                  <p className="mt-2 line-clamp-1 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                    {person.Name}
+                  </p>
+                  {person.Role && <p className="line-clamp-1 text-xs text-zinc-500">{person.Role}</p>}
+                </div>
+              );
+            })}
+          </Carousel>
         </div>
       )}
     </div>

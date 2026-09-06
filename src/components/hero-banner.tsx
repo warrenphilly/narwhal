@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Download, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDownloads } from "@/components/downloads-provider";
 import { formatRuntime } from "@/lib/jellyfin-types";
@@ -118,19 +118,37 @@ export function HeroBanner({ items }: { items: JellyfinItem[] }) {
           </Link>
         </div>
         {lineup.length > 1 && (
-          <div className="mt-8 flex gap-2">
-            {lineup.map((entry, dot) => (
-              <button
-                key={entry.Id}
-                type="button"
-                aria-label={`Show ${entry.Name}`}
-                onClick={() => setIndex(dot)}
-                className={cn(
-                  "h-1.5 rounded-full transition-all",
-                  dot === safeIndex ? "w-8 bg-zinc-900 dark:bg-zinc-100" : "w-3 bg-zinc-900/25 dark:bg-white/30"
-                )}
-              />
-            ))}
+          <div className="mt-8 flex items-center gap-3">
+            <button
+              type="button"
+              aria-label="Previous featured title"
+              onClick={() => setIndex((current) => current - 1 + lineup.length)}
+              className="flex size-10 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-md ring-1 ring-black/8 dark:bg-zinc-800 dark:text-zinc-50 dark:ring-white/10"
+            >
+              <ChevronLeft className="size-5" />
+            </button>
+            <div className="flex gap-2">
+              {lineup.map((entry, dot) => (
+                <button
+                  key={entry.Id}
+                  type="button"
+                  aria-label={`Show ${entry.Name}`}
+                  onClick={() => setIndex(dot)}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all",
+                    dot === safeIndex ? "w-8 bg-zinc-900 dark:bg-zinc-100" : "w-3 bg-zinc-900/25 dark:bg-white/30"
+                  )}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              aria-label="Next featured title"
+              onClick={() => setIndex((current) => current + 1)}
+              className="flex size-10 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-md ring-1 ring-black/8 dark:bg-zinc-800 dark:text-zinc-50 dark:ring-white/10"
+            >
+              <ChevronRight className="size-5" />
+            </button>
           </div>
         )}
       </div>
