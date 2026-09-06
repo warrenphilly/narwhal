@@ -2,34 +2,35 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { HeroBanner } from "@/components/hero-banner";
+import { MediaPills, type MediaTab } from "@/components/media-pills";
 import { Shelf } from "@/components/shelf";
 import { useSession } from "@/components/session-provider";
-import { fetchLatest, fetchMovies, fetchResume } from "@/lib/client-api";
-import { DEMO_MOVIES } from "@/lib/demo-library";
+import { fetchLatest, fetchMovies, fetchResume, fetchShows } from "@/lib/client-api";
+import { DEMO_MOVIES, DEMO_SHOWS } from "@/lib/demo-library";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 
-function groupByGenre(movies: JellyfinItem[]) {
+function groupByGenre(items: JellyfinItem[]) {
   const map = new Map<string, JellyfinItem[]>();
-  for (const movie of movies) {
-    for (const genre of movie.Genres ?? []) {
+  for (const item of items) {
+    for (const genre of item.Genres ?? []) {
       const list = map.get(genre) ?? [];
-      list.push(movie);
+      list.push(item);
       map.set(genre, list);
     }
   }
   return [...map.entries()]
     .sort((a, b) => b[1].length - a[1].length)
-    .slice(0, 4);
+    .slice(0, 5);
 }
-
-const demoResume = DEMO_MOVIES.slice(0, 4);
-const demoMovies = [...DEMO_MOVIES].sort((a, b) => a.Name.localeCompare(b.Name));
 
 export function HomeScreen() {
   const { session } = useSession();
+  const [tab, setTab] = useState<MediaTab>("movies");
   const [resume, setResume] = useState<JellyfinItem[]>([]);
-  const [latest, setLatest] = useState<JellyfinItem[]>([]);
+  const [latestMovies, setLatestMovies] = useState<JellyfinItem[]>([]);
+  const [latestShows, setLatestShows] = useState<JellyfinItem[]>([]);
   const [movies, setMovies] = useState<JellyfinItem[]>([]);
+  const [shows, setShows] = useState<JellyfinItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -40,14 +41,18 @@ export function HomeScreen() {
     let cancelled = false;
     Promise.all([
       fetchResume(session.userId).catch(() => [] as JellyfinItem[]),
-      fetchLatest(session.userId).catch(() => [] as JellyfinItem[]),
+      fetchLatest(session.userId, "Movie").catch(() => [] as JellyfinItem[]),
+      fetchLatest(session.userId, "Series").catch(() => [] as JellyfinItem[]),
       fetchMovies(session.userId),
+      fetchShows(session.userId).catch(() => [] as JellyfinItem[]),
     ])
-      .then(([nextResume, nextLatest, nextMovies]) => {
+      .then(([nextResume, nextLatestMovies, nextLatestShows, nextMovies, nextShows]) => {
         if (cancelled) return;
         setResume(nextResume);
-        setLatest(nextLatest);
+        setLatestMovies(nextLatestMovies);
+        setLatestShows(nextLatestShows);
         setMovies(nextMovies);
+        setShows(nextShows);
         setError(null);
       })
       .catch((err: unknown) => {
@@ -63,11 +68,21 @@ export function HomeScreen() {
     };
   }, [signedIn, session?.userId]);
 
-  const shownResume = signedIn ? resume : demoResume;
-  const shownLatest = signedIn ? latest : DEMO_MOVIES;
-  const shownMovies = signedIn ? movies : demoMovies;
-  const hero = shownLatest[0] ?? shownMovies[0] ?? DEMO_MOVIES[0];
-  const genres = useMemo(() => groupByGenre(shownMovies), [shownMovies]);
+  const movieResume = signedIn
+    ? resume.filter((item) => item.Type === "Movie" || !item.Type)
+    : DEMO_MOVIES.slice(0, 4);
+  const showResume = signedIn
+    ? resume.filter((item) => item.Type === "Episode" || item.Type === "Series")
+    : DEMO_SHOWS.slice(0, 2);
+  const movieLatest = signedIn ? latestMovies : DEMO_MOVIES;
+  const showLatest = signedIn ? latestShows : DEMO_SHOWS;
+  const allMovies = signedIn ? movies : DEMO_MOVIES;
+  const allShows = signedIn ? shows : DEMO_SHOWS;
+
+  const featured = tab === "movies" ? movieLatest : showLatest;
+  const watching = tab === "movies" ? movieResume : showResume;
+  const catalog = tab === "movies" ? allMovies : allShows;
+  const genres = useMemo(() => groupByGenre(catalog), [catalog]);
 
   if (signedIn && !loaded) {
     return (
@@ -79,22 +94,28 @@ export function HomeScreen() {
 
   return (
     <div className="pb-16">
-      <HeroBanner item={hero} />
-      <div className="-mt-6 space-y-10">
-        {error && (
-          <p className="px-4 text-sm text-red-600 sm:px-8">{error}</p>
-        )}
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-x-0 top-6 z-20 flex justify-center">
+          <div className="pointer-events-auto">
+            <MediaPills value={tab} onChange={setTab} />
+          </div>
+        </div>
+        <HeroBanner items={featured} />
+      </div>
+      <div className="page-gutter -mt-6 space-y-10">
+        {error && <p className="text-sm text-red-600">{error}</p>}
         {!signedIn && (
-          <p className="px-4 text-sm text-zinc-500 sm:px-8">
-            Sample library. Sign in at the top right to load movies from your Jellyfin server and download them to this laptop.
+          <p className="text-sm text-zinc-500">
+            Sample library. Sign in at the top right to load titles from your Jellyfin server.
           </p>
         )}
-        <Shelf title="Continue Watching" items={shownResume} />
-        <Shelf title="Recently Added" items={shownLatest} />
+        <Shelf title="Currently watching" items={watching} />
+        {tab === "shows" && <Shelf title="Featured" items={showLatest} />}
+        {tab === "movies" && <Shelf title="Recently added" items={movieLatest} />}
         {genres.map(([genre, items]) => (
-          <Shelf key={genre} title={genre} items={items} />
+          <Shelf key={`${tab}-${genre}`} title={genre} items={items} />
         ))}
-        <Shelf title="All Movies" items={shownMovies} />
+        <Shelf title={tab === "movies" ? "All movies" : "All TV shows"} items={catalog} />
       </div>
     </div>
   );

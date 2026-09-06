@@ -53,7 +53,9 @@ export function PosterCard({
           </div>
         )}
       </div>
-      <p className="mt-2 line-clamp-1 text-sm text-zinc-800">{item.Name}</p>
+      <p className="mt-2 line-clamp-1 text-sm text-zinc-800">
+        {item.SeriesName || item.Name}
+      </p>
     </Link>
   );
 }

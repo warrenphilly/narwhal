@@ -95,8 +95,56 @@ const demo: JellyfinItem[] = [
 
 export const DEMO_MOVIES = demo.map((item, index) => ({
   ...item,
+  Type: "Movie",
   RunTimeTicks: 6_000_000_0000 + index * 300_000_0000,
 }));
+
+export const DEMO_SHOWS: JellyfinItem[] = [
+  {
+    Id: "demo-show-harbor",
+    Name: "Dockside",
+    Type: "Series",
+    Overview: "A weekly dispatch from a working port after the last ferry leaves.",
+    ProductionYear: 2024,
+    OfficialRating: "TV-14",
+    CommunityRating: 8.3,
+    Genres: ["Drama"],
+    CanDownload: false,
+  },
+  {
+    Id: "demo-show-orbit",
+    Name: "Relay",
+    Type: "Series",
+    Overview: "Night operators keep a mountain radio alive through winter.",
+    ProductionYear: 2023,
+    OfficialRating: "TV-PG",
+    CommunityRating: 8.1,
+    Genres: ["Science Fiction"],
+    CanDownload: false,
+  },
+  {
+    Id: "demo-show-atlas",
+    Name: "Folded Maps",
+    Type: "Series",
+    Overview: "Cartographers argue over a coast that will not stay still.",
+    ProductionYear: 2022,
+    OfficialRating: "TV-PG",
+    CommunityRating: 7.8,
+    Genres: ["Mystery"],
+    CanDownload: false,
+  },
+  {
+    Id: "demo-show-salt",
+    Name: "Low Tide",
+    Type: "Series",
+    Overview: "A kitchen on the pier cooks only what the morning boats bring in.",
+    ProductionYear: 2025,
+    OfficialRating: "TV-G",
+    CommunityRating: 7.6,
+    Genres: ["Comedy"],
+    CanDownload: false,
+  },
+];
 
 export function isDemoId(id: string) {
   return id.startsWith("demo-");

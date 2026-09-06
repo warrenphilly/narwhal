@@ -13,10 +13,8 @@ export function Shelf({
   if (!items.length) return null;
   return (
     <section className="space-y-4">
-      <h2 className="px-4 text-xl font-semibold tracking-tight text-zinc-900 sm:px-8">
-        {title}
-      </h2>
-      <div className="shelf-scroll flex gap-4 overflow-x-auto px-4 pb-4 pt-2 sm:px-8">
+      <h2 className="text-xl font-semibold tracking-tight text-zinc-900">{title}</h2>
+      <div className="shelf-scroll -mx-1 flex gap-4 overflow-x-auto pb-4 pt-2">
         {items.map((item) => (
           <PosterCard key={item.Id} item={item} />
         ))}

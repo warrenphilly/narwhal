@@ -24,7 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="tv-root flex min-h-full flex-col">
       <header className="sticky top-0 z-40 border-b border-black/5 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-6 px-4 sm:px-8">
+        <div className="page-gutter mx-auto flex h-16 items-center gap-6">
           <Link href="/" className="flex items-center gap-2 text-zinc-900">
             <span className="flex size-8 items-center justify-center rounded-full bg-zinc-900 text-white">
               <Tv className="size-4" />

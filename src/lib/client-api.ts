@@ -63,18 +63,37 @@ export async function fetchMovies(userId: string) {
   return data.Items ?? [];
 }
 
-export async function fetchResume(userId: string) {
+export async function fetchShows(userId: string) {
   const data = await jf<JellyfinItemsResult>(
-    `Users/${encodeURIComponent(userId)}/Items/Resume?MediaTypes=Video&Fields=${ITEM_FIELDS}&Limit=24`
+    `Users/${encodeURIComponent(userId)}/Items?IncludeItemTypes=Series&Recursive=true&SortBy=SortName&SortOrder=Ascending&Fields=${ITEM_FIELDS}&Limit=200`
   );
-  return (data.Items ?? []).filter((item) => item.Type === "Movie" || !item.Type);
+  return data.Items ?? [];
 }
 
-export async function fetchLatest(userId: string) {
+export async function fetchResume(userId: string) {
+  const data = await jf<JellyfinItemsResult>(
+    `Users/${encodeURIComponent(userId)}/Items/Resume?MediaTypes=Video&Fields=${ITEM_FIELDS}&Limit=40`
+  );
+  return data.Items ?? [];
+}
+
+export async function fetchLatest(userId: string, itemType: "Movie" | "Series" = "Movie") {
   const items = await jf<JellyfinItem[]>(
-    `Users/${encodeURIComponent(userId)}/Items/Latest?IncludeItemTypes=Movie&Limit=24&Fields=${ITEM_FIELDS}`
+    `Users/${encodeURIComponent(userId)}/Items/Latest?IncludeItemTypes=${itemType}&Limit=24&Fields=${ITEM_FIELDS}`
   );
   return Array.isArray(items) ? items : [];
+}
+
+export async function fetchPlayableId(userId: string, item: JellyfinItem) {
+  if (item.Type !== "Series") return item.Id;
+  const next = await jf<JellyfinItemsResult>(
+    `Shows/NextUp?UserId=${encodeURIComponent(userId)}&SeriesId=${encodeURIComponent(item.Id)}&Limit=1&Fields=${ITEM_FIELDS}`
+  );
+  if (next.Items?.[0]?.Id) return next.Items[0].Id;
+  const episodes = await jf<JellyfinItemsResult>(
+    `Shows/${encodeURIComponent(item.Id)}/Episodes?UserId=${encodeURIComponent(userId)}&Limit=1&Fields=${ITEM_FIELDS}`
+  );
+  return episodes.Items?.[0]?.Id ?? item.Id;
 }
 
 export async function fetchMovie(userId: string, id: string) {
@@ -85,7 +104,7 @@ export async function fetchMovie(userId: string, id: string) {
 
 export async function searchMovies(userId: string, query: string) {
   const data = await jf<JellyfinItemsResult>(
-    `Users/${encodeURIComponent(userId)}/Items?SearchTerm=${encodeURIComponent(query)}&IncludeItemTypes=Movie&Recursive=true&Fields=${ITEM_FIELDS}&Limit=40`
+    `Users/${encodeURIComponent(userId)}/Items?SearchTerm=${encodeURIComponent(query)}&IncludeItemTypes=Movie,Series&Recursive=true&Fields=${ITEM_FIELDS}&Limit=40`
   );
   return data.Items ?? [];
 }

@@ -29,6 +29,8 @@ export type JellyfinItem = {
   CriticRating?: number;
   RunTimeTicks?: number;
   Genres?: string[];
+  SeriesName?: string;
+  SeriesId?: string;
   CanDownload?: boolean;
   UserData?: {
     PlaybackPositionTicks?: number;

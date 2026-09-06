@@ -135,6 +135,11 @@
   color: #18181b;
 }
 
+.page-gutter {
+  padding-left: clamp(1.5rem, 6vw, 5.5rem);
+  padding-right: clamp(1.5rem, 6vw, 5.5rem);
+}
+
 .shelf-scroll {
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
