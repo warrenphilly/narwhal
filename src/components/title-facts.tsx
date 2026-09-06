@@ -103,7 +103,6 @@ export function TitleMeta({
     : streamLabels(streams, "Audio");
   const remote = item.RemoteTrailers?.filter((row) => row.Url) ?? [];
   const local = trailers ?? [];
-  const studios = (item.Studios ?? []).map((studio) => studio.Name).filter(Boolean);
   const facts = [
     item.ProductionYear ? String(item.ProductionYear) : "",
     formatRuntime(item.RunTimeTicks),
@@ -131,14 +130,15 @@ export function TitleMeta({
           </span>
         )}
       </div>
+      {(item.Genres ?? []).length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {(item.Genres ?? []).map((genre) => (
+            <Pill key={genre}>{genre}</Pill>
+          ))}
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">
         {audio.length > 0 && <span>{audio.join(", ")}</span>}
-        {studios.length > 0 && (
-          <>
-            {audio.length > 0 && <Dot />}
-            <span>{studios.join(", ")}</span>
-          </>
-        )}
         {local.map((trailer) => (
           <button
             key={trailer.Id}
@@ -162,13 +162,6 @@ export function TitleMeta({
           </a>
         ))}
       </div>
-      {(item.Genres ?? []).length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {(item.Genres ?? []).map((genre) => (
-            <Pill key={genre}>{genre}</Pill>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -177,7 +170,7 @@ export function TitleCast({ item }: { item: JellyfinItem }) {
   const cast = (item.People ?? []).filter((person) => !person.Type || person.Type === "Actor");
   if (!cast.length) return null;
   return (
-    <div className="mt-6">
+    <div className="mt-2">
       <p className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">Cast</p>
       <Carousel className="mt-2 -mx-2" itemGap="gap-3">
         {cast.map((person, index) => {

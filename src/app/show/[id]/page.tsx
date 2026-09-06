@@ -7,9 +7,9 @@ import { AppShell } from "@/components/app-shell";
 import { LoginScreen } from "@/components/login-screen";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/components/session-provider";
+import { EpisodeRow } from "@/components/episode-row";
 import { TitleCast, TitleMeta, TitlePoster } from "@/components/title-facts";
 import {
-  continueImageUrl,
   fetchEpisodes,
   fetchLocalTrailers,
   fetchMovie,
@@ -20,7 +20,6 @@ import {
 } from "@/lib/client-api";
 import { episodeLabel } from "@/lib/clock";
 import { DEMO_SHOWS, demoPosterGradient, isDemoId } from "@/lib/demo-library";
-import { formatRuntime } from "@/lib/jellyfin-types";
 import type { JellyfinItem, MediaStream } from "@/lib/jellyfin-types";
 import { cn } from "@/lib/utils";
 
@@ -238,12 +237,11 @@ export default function ShowPage() {
                 </Button>
               )}
             </div>
-            <TitleCast item={resolved} />
           </div>
         </div>
       </div>
 
-      <div className="page-gutter relative z-10 mx-auto max-w-[1600px] pb-20">
+      <div className="page-gutter relative z-10 mx-auto max-w-[1600px] pb-8">
         <div className="grid md:grid-cols-[200px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)]">
           <aside>
             <p className="pb-3 text-xs font-semibold tracking-[0.18em] text-zinc-500 uppercase">
@@ -275,58 +273,15 @@ export default function ShowPage() {
             {listed.length === 0 && (
               <p className="py-10 text-zinc-500">No episodes in this season yet.</p>
             )}
-            {listed.map((episode) => {
-              const progress = episode.UserData?.PlayedPercentage;
-              return (
-                <button
-                  key={episode.Id}
-                  type="button"
-                  onClick={() => router.push(`/watch/${episode.Id}`)}
-                  className="flex w-full gap-4 py-4 text-left transition hover:bg-zinc-900/[0.03] dark:hover:bg-white/[0.03]"
-                >
-                    <div className="relative aspect-video w-[168px] shrink-0 overflow-hidden rounded-xl bg-zinc-200 sm:w-[220px] dark:bg-zinc-800">
-                      {demo ? (
-                        <div
-                          className="absolute inset-0"
-                          style={{ background: `linear-gradient(160deg, ${from}, ${to})` }}
-                        />
-                      ) : (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={continueImageUrl(episode)}
-                          alt=""
-                          className="absolute inset-0 size-full object-cover"
-                        />
-                      )}
-                      {typeof progress === "number" && progress > 0 && progress < 100 && (
-                        <div className="absolute inset-x-0 bottom-0 h-1 bg-black/30">
-                          <div className="h-full bg-white" style={{ width: `${progress}%` }} />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1 py-1">
-                      <p className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                        {episodeLabel(episode)}
-                      </p>
-                      <p className="mt-1 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-                        {episode.Name}
-                      </p>
-                      <p className="mt-1 text-sm text-zinc-500">
-                        {formatRuntime(episode.RunTimeTicks)}
-                        {episode.UserData?.Played ? " · Watched" : ""}
-                      </p>
-                      {episode.Overview && (
-                        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                          {episode.Overview}
-                        </p>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
+            {listed.map((episode) => (
+              <EpisodeRow key={episode.Id} item={episode} />
+            ))}
             </div>
           </div>
         </div>
+      <div className="page-gutter mx-auto max-w-[1600px] pb-20">
+        <TitleCast item={resolved} />
+      </div>
     </AppShell>
   );
 }

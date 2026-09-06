@@ -5,13 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import { Download, Play } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { LoginScreen } from "@/components/login-screen";
+import { EpisodeRow } from "@/components/episode-row";
 import { TitleCast, TitleMeta, TitlePoster } from "@/components/title-facts";
 import { Button } from "@/components/ui/button";
 import { useDownloads } from "@/components/downloads-provider";
 import { useSession } from "@/components/session-provider";
 import { fetchLocalTrailers, fetchMovie, fetchPlaybackInfo, imageUrl } from "@/lib/client-api";
 import { DEMO_MOVIES, demoPosterGradient, isDemoId } from "@/lib/demo-library";
-import { formatBytes } from "@/lib/jellyfin-types";
 import type { JellyfinItem, MediaStream } from "@/lib/jellyfin-types";
 
 export default function MoviePage() {
@@ -78,7 +78,6 @@ export default function MoviePage() {
         type: resolved.BackdropImageTags?.length ? "Backdrop" : "Primary",
         maxWidth: 1920,
       });
-  const size = resolved.MediaSources?.[0]?.Size;
   const movie = resolved;
 
   async function onDownload() {
@@ -96,7 +95,7 @@ export default function MoviePage() {
 
   return (
     <AppShell>
-      <div className="relative overflow-hidden">
+      <div className="relative flex min-h-screen flex-col overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -106,19 +105,14 @@ export default function MoviePage() {
           }}
         />
         <div className="hero-wash absolute inset-0" />
-        <div className="relative mx-auto flex max-w-[1600px] items-start gap-8 px-4 pt-28 pb-12 sm:px-8">
+        <div className="relative mx-auto flex w-full max-w-[1600px] flex-1 items-end gap-8 px-4 pt-28 pb-12 sm:px-8">
           <TitlePoster item={resolved} />
           <div className="min-w-0 flex-1">
             <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
             <h1 className="mt-3 max-w-3xl text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
               {resolved.Name}
             </h1>
-            <TitleMeta
-              item={resolved}
-              streams={streams}
-              trailers={trailers}
-              extras={size ? [formatBytes(size)] : []}
-            />
+            <TitleMeta item={resolved} streams={streams} trailers={trailers} />
             {resolved.Taglines?.[0] && (
               <p className="mt-3 text-base italic text-zinc-700 dark:text-zinc-200">{resolved.Taglines[0]}</p>
             )}
@@ -147,10 +141,15 @@ export default function MoviePage() {
                 {demo ? "Connect to download" : saving ? "Saving…" : "Download to laptop"}
               </Button>
             </div>
-            <TitleCast item={resolved} />
             {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
           </div>
         </div>
+      </div>
+      <div className="page-gutter relative z-10 mx-auto max-w-[1600px] pb-8">
+        <EpisodeRow item={resolved} eyebrow="Movie" />
+      </div>
+      <div className="page-gutter mx-auto max-w-[1600px] pb-20">
+        <TitleCast item={resolved} />
       </div>
     </AppShell>
   );
