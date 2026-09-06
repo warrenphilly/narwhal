@@ -6,14 +6,11 @@ import { continueImageUrl } from "@/lib/client-api";
 import { episodeLabel } from "@/lib/clock";
 import { demoPosterGradient, isDemoId } from "@/lib/demo-library";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
-import { cn } from "@/lib/utils";
 
 export function ContinueCard({ item }: { item: JellyfinItem }) {
   const demo = isDemoId(item.Id);
   const [from, to] = demoPosterGradient(item.Id);
   const progress = item.UserData?.PlayedPercentage;
-  const ratio = item.PrimaryImageAspectRatio;
-  const landscape = !ratio || ratio >= 1;
   const title = item.SeriesName || item.Name;
   const detail =
     item.Type === "Episode"
@@ -25,12 +22,7 @@ export function ContinueCard({ item }: { item: JellyfinItem }) {
       href={`/watch/${item.Id}`}
       className="group relative w-[280px] shrink-0 snap-start outline-none sm:w-[340px]"
     >
-      <div
-        className={cn(
-          "relative overflow-hidden rounded-xl bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] ring-2 ring-transparent transition duration-300 group-hover:scale-[1.03] group-hover:ring-zinc-900 group-focus-visible:scale-[1.03] group-focus-visible:ring-zinc-900",
-          landscape ? "aspect-video" : "aspect-[2/3]"
-        )}
-      >
+      <div className="relative aspect-video overflow-hidden rounded-xl bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] ring-2 ring-transparent transition duration-300 group-hover:scale-[1.03] group-hover:ring-zinc-900 group-focus-visible:scale-[1.03] group-focus-visible:ring-zinc-900 dark:bg-zinc-800 dark:group-hover:ring-zinc-100 dark:group-focus-visible:ring-zinc-100">
         {demo ? (
           <div
             className="absolute inset-0"
@@ -55,7 +47,7 @@ export function ContinueCard({ item }: { item: JellyfinItem }) {
           </div>
         )}
       </div>
-      <p className="mt-2 line-clamp-1 text-sm font-medium text-zinc-900">{title}</p>
+      <p className="mt-2 line-clamp-1 text-sm font-medium text-zinc-900 dark:text-zinc-50">{title}</p>
       <p className="line-clamp-1 text-xs text-zinc-500">{detail}</p>
     </Link>
   );

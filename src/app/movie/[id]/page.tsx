@@ -27,11 +27,17 @@ export default function MoviePage() {
     const id = params.id;
     if (!id || isDemoId(id) || !session?.userId) return;
     fetchMovie(session.userId, id)
-      .then(setItem)
+      .then((next) => {
+        if (next.Type === "Series") {
+          router.replace(`/show/${next.Id}`);
+          return;
+        }
+        setItem(next);
+      })
       .catch((err: unknown) =>
         setError(err instanceof Error ? err.message : "Could not open this title.")
       );
-  }, [params.id, session?.userId]);
+  }, [params.id, session?.userId, router]);
 
   if (loading) return <div className="tv-root min-h-full" />;
   if (!session?.signedIn && !preview) return <LoginScreen />;
@@ -89,8 +95,7 @@ export default function MoviePage() {
               : `linear-gradient(135deg, ${from}, ${to})`,
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#f5f5f7] via-[#f5f5f7]/90 to-[#f5f5f7]/40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#f5f5f7] via-[#f5f5f7]/30 to-transparent" />
+        <div className="hero-wash absolute inset-0" />
         <div className="relative mx-auto grid max-w-[1600px] gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[280px_1fr]">
           <div className="hidden aspect-[2/3] overflow-hidden rounded-2xl shadow-2xl ring-1 ring-black/10 lg:block">
             {demo ? (
@@ -108,11 +113,11 @@ export default function MoviePage() {
             )}
           </div>
           <div className="flex flex-col justify-end">
-            <p className="text-xs tracking-[0.24em] text-zinc-500 uppercase">Movie</p>
-            <h1 className="mt-3 max-w-3xl text-5xl font-semibold tracking-tight text-zinc-900 sm:text-6xl">
+            <p className="text-xs tracking-[0.24em] text-zinc-500 uppercase dark:text-zinc-400">Movie</p>
+            <h1 className="mt-3 max-w-3xl text-5xl font-semibold tracking-tight text-zinc-900 sm:text-6xl dark:text-zinc-50">
               {resolved.Name}
             </h1>
-            <div className="mt-4 flex flex-wrap gap-3 text-sm text-zinc-600">
+            <div className="mt-4 flex flex-wrap gap-3 text-sm text-zinc-600 dark:text-zinc-300">
               {resolved.ProductionYear && <span>{resolved.ProductionYear}</span>}
               {resolved.OfficialRating && (
                 <span className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs">
@@ -124,7 +129,7 @@ export default function MoviePage() {
               {size ? <span>{formatBytes(size)}</span> : null}
             </div>
             {resolved.Overview && (
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-600">
+              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
                 {resolved.Overview}
               </p>
             )}

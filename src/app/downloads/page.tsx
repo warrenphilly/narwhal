@@ -17,13 +17,13 @@ export default function DownloadsPage() {
   return (
     <AppShell>
       <div className="page-gutter mx-auto max-w-3xl py-10">
-        <h1 className="text-4xl font-semibold tracking-tight text-zinc-900">Downloads</h1>
+        <h1 className="text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Downloads</h1>
         <p className="mt-2 text-zinc-500">
           Movies you save land on this laptop. Chrome and Edge can pick a folder; other browsers use the usual Downloads folder.
         </p>
         {downloads.length === 0 ? (
-          <div className="mt-16 rounded-3xl border border-zinc-200 bg-white px-6 py-16 text-center">
-            <p className="text-lg text-zinc-900">Nothing saved yet</p>
+          <div className="mt-16 rounded-3xl border border-zinc-200 bg-white px-6 py-16 text-center dark:border-white/10 dark:bg-zinc-900">
+            <p className="text-lg text-zinc-900 dark:text-zinc-50">Nothing saved yet</p>
             <p className="mt-2 text-sm text-zinc-500">
               Open a movie and choose Download. Your Jellyfin user needs download permission.
             </p>
@@ -40,11 +40,11 @@ export default function DownloadsPage() {
               return (
                 <li
                   key={item.id}
-                  className="rounded-2xl border border-zinc-200 bg-white px-5 py-4"
+                  className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 dark:border-white/10 dark:bg-zinc-900"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="font-medium text-zinc-900">
+                      <p className="font-medium text-zinc-900 dark:text-zinc-50">
                         {item.title}
                         {item.year ? ` (${item.year})` : ""}
                       </p>

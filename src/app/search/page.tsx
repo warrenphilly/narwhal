@@ -7,7 +7,7 @@ import { PosterCard } from "@/components/poster-card";
 import { Input } from "@/components/ui/input";
 import { useSession } from "@/components/session-provider";
 import { searchMovies } from "@/lib/client-api";
-import { DEMO_MOVIES } from "@/lib/demo-library";
+import { DEMO_MOVIES, DEMO_SHOWS } from "@/lib/demo-library";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 
 export default function SearchPage() {
@@ -36,7 +36,7 @@ export default function SearchPage() {
   const results = useMemo(() => {
     if (!trimmed) return [];
     if (!session?.signedIn) {
-      return DEMO_MOVIES.filter((item) =>
+      return [...DEMO_MOVIES, ...DEMO_SHOWS].filter((item) =>
         item.Name.toLowerCase().includes(trimmed.toLowerCase())
       );
     }
@@ -49,7 +49,7 @@ export default function SearchPage() {
   return (
     <AppShell>
       <div className="page-gutter py-10">
-        <h1 className="text-4xl font-semibold tracking-tight text-zinc-900">Search</h1>
+        <h1 className="text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Search</h1>
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}

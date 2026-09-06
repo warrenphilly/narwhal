@@ -16,8 +16,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geist.variable} h-full antialiased`}>
-      <body className="min-h-full bg-[#f5f5f7] font-sans text-zinc-900">
+    <html lang="en" className={`${geist.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `document.documentElement.classList.toggle('dark',localStorage.getItem('cinema-theme')==='dark')`,
+          }}
+        />
+      </head>
+      <body className="min-h-full bg-[var(--page-bg)] font-sans text-[var(--page-fg)]">
         <Providers>{children}</Providers>
       </body>
     </html>

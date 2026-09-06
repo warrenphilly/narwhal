@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   fetchPlaybackInfo,
   reportPlaybackStart,
@@ -8,6 +12,7 @@ import {
   subtitleTracks,
 } from "@/lib/client-api";
 import { formatFinishTime, ticksToSeconds } from "@/lib/clock";
+import { playerTitleHref } from "@/lib/item-href";
 import type { JellyfinItem, PlaybackInfo } from "@/lib/jellyfin-types";
 
 export function VideoPlayer({
@@ -17,11 +22,21 @@ export function VideoPlayer({
   item: JellyfinItem;
   userId?: string;
 }) {
+  const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [info, setInfo] = useState<PlaybackInfo | null>(null);
   const [track, setTrack] = useState("off");
   const [finishAt, setFinishAt] = useState("");
   const tracks = useMemo(() => subtitleTracks(item.Id, info), [item.Id, info]);
+  const headline = item.SeriesName || item.Name;
+  const detail =
+    item.Type === "Episode"
+      ? [item.ParentIndexNumber && item.IndexNumber ? `S${item.ParentIndexNumber} · E${item.IndexNumber}` : null, item.Name]
+          .filter(Boolean)
+          .join("  ·  ")
+      : item.ProductionYear
+        ? String(item.ProductionYear)
+        : "";
 
   useEffect(() => {
     if (!userId) return;
@@ -107,28 +122,54 @@ export function VideoPlayer({
           />
         ))}
       </video>
-      <div className="pointer-events-none absolute inset-x-0 bottom-16 flex items-end justify-between px-5">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/80 via-black/35 to-transparent px-4 pt-4 pb-16">
+        <div className="pointer-events-auto flex items-start gap-3">
+          <Button
+            variant="ghost"
+            className="mt-0.5 shrink-0 text-white hover:bg-white/10 hover:text-white"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft data-icon="inline-start" />
+            Back
+          </Button>
+          <div className="min-w-0 flex-1">
+            <Link
+              href={playerTitleHref(item)}
+              className="block truncate text-2xl font-semibold tracking-tight text-white hover:underline sm:text-3xl"
+            >
+              {headline}
+            </Link>
+            {detail && <p className="mt-0.5 truncate text-sm text-white/65">{detail}</p>}
+          </div>
+          <div className="flex shrink-0 items-center gap-2 pt-1">
+            {finishAt && (
+              <p className="hidden rounded-full bg-black/55 px-3 py-1 text-sm text-white sm:block">
+                Finishes at {finishAt}
+              </p>
+            )}
+            {tracks.length > 0 && (
+              <label className="flex items-center gap-2 rounded-full bg-black/55 px-3 py-1 text-sm text-white">
+                Subs
+                <select
+                  className="max-w-[160px] bg-transparent text-white outline-none"
+                  value={track}
+                  onChange={(event) => setTrack(event.target.value)}
+                >
+                  <option value="off">Off</option>
+                  {tracks.map((entry) => (
+                    <option key={entry.index} value={String(entry.index)}>
+                      {entry.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+        </div>
         {finishAt && (
-          <p className="rounded-full bg-black/55 px-3 py-1 text-sm text-white">
+          <p className="mt-2 rounded-full bg-black/55 px-3 py-1 text-sm text-white sm:hidden">
             Finishes at {finishAt}
           </p>
-        )}
-        {tracks.length > 0 && (
-          <label className="pointer-events-auto flex items-center gap-2 rounded-full bg-black/55 px-3 py-1 text-sm text-white">
-            Subs
-            <select
-              className="bg-transparent text-white outline-none"
-              value={track}
-              onChange={(event) => setTrack(event.target.value)}
-            >
-              <option value="off">Off</option>
-              {tracks.map((entry) => (
-                <option key={entry.index} value={String(entry.index)}>
-                  {entry.label}
-                </option>
-              ))}
-            </select>
-          </label>
         )}
       </div>
     </div>

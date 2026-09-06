@@ -112,6 +112,32 @@ export async function fetchMovie(userId: string, id: string) {
   );
 }
 
+export async function fetchSeasons(userId: string, seriesId: string) {
+  const data = await jf<JellyfinItemsResult>(
+    `Shows/${encodeURIComponent(seriesId)}/Seasons?UserId=${encodeURIComponent(userId)}&Fields=${ITEM_FIELDS}`
+  );
+  return data.Items ?? [];
+}
+
+export async function fetchEpisodes(userId: string, seriesId: string, seasonId?: string) {
+  const params = new URLSearchParams({
+    UserId: userId,
+    Fields: ITEM_FIELDS,
+  });
+  if (seasonId) params.set("SeasonId", seasonId);
+  const data = await jf<JellyfinItemsResult>(
+    `Shows/${encodeURIComponent(seriesId)}/Episodes?${params.toString()}`
+  );
+  return data.Items ?? [];
+}
+
+export async function fetchNextUp(userId: string, seriesId: string) {
+  const data = await jf<JellyfinItemsResult>(
+    `Shows/NextUp?UserId=${encodeURIComponent(userId)}&SeriesId=${encodeURIComponent(seriesId)}&Limit=1&Fields=${ITEM_FIELDS}`
+  );
+  return data.Items?.[0] ?? null;
+}
+
 export async function searchMovies(userId: string, query: string) {
   const data = await jf<JellyfinItemsResult>(
     `Users/${encodeURIComponent(userId)}/Items?SearchTerm=${encodeURIComponent(query)}&IncludeItemTypes=Movie,Series&Recursive=true&Fields=${ITEM_FIELDS}&Limit=40`

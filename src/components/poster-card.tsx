@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { imageUrl } from "@/lib/client-api";
+import { titlePageHref } from "@/lib/item-href";
 import { formatRuntime } from "@/lib/jellyfin-types";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 import { demoPosterGradient, isDemoId } from "@/lib/demo-library";
@@ -21,13 +22,13 @@ export function PosterCard({
 
   return (
     <Link
-      href={`/movie/${item.Id}`}
+      href={titlePageHref(item)}
       className={cn(
         "poster-card group relative shrink-0 snap-start outline-none",
         widths[size]
       )}
     >
-      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] ring-2 ring-transparent transition duration-300 group-hover:scale-[1.06] group-hover:ring-zinc-900 group-focus-visible:scale-[1.06] group-focus-visible:ring-zinc-900">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] ring-2 ring-transparent transition duration-300 group-hover:scale-[1.06] group-hover:ring-zinc-900 group-focus-visible:scale-[1.06] group-focus-visible:ring-zinc-900 dark:bg-zinc-800 dark:group-hover:ring-zinc-100 dark:group-focus-visible:ring-zinc-100">
         {demo ? (
           <div
             className="absolute inset-0"
@@ -53,7 +54,7 @@ export function PosterCard({
           </div>
         )}
       </div>
-      <p className="mt-2 line-clamp-1 text-sm text-zinc-800">
+      <p className="mt-2 line-clamp-1 text-sm text-zinc-800 dark:text-zinc-200">
         {item.SeriesName || item.Name}
       </p>
     </Link>

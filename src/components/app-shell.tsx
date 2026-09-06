@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Download, LogOut, Search, Tv } from "lucide-react";
+import { Download, LogOut, Moon, Search, Sun, Tv } from "lucide-react";
 import { useSession } from "@/components/session-provider";
 import { useDownloads } from "@/components/downloads-provider";
+import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -18,15 +19,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { session, signOut } = useSession();
+  const { theme, toggle } = useTheme();
   const { downloads } = useDownloads();
   const active = downloads.filter((item) => item.status === "saving").length;
 
   return (
     <div className="tv-root flex min-h-full flex-col">
-      <header className="sticky top-0 z-40 border-b border-black/5 bg-white/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-black/5 bg-white/80 backdrop-blur-xl dark:border-white/8 dark:bg-zinc-950/75">
         <div className="page-gutter mx-auto flex h-16 items-center gap-6">
-          <Link href="/" className="flex items-center gap-2 text-zinc-900">
-            <span className="flex size-8 items-center justify-center rounded-full bg-zinc-900 text-white">
+          <Link href="/" className="flex items-center gap-2 text-zinc-900 dark:text-zinc-50">
+            <span className="flex size-8 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
               <Tv className="size-4" />
             </span>
             <span className="text-[15px] font-semibold tracking-tight">Cinema</span>
@@ -37,8 +39,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "rounded-full px-3 py-1.5 text-sm text-zinc-500 transition hover:text-zinc-900",
-                  pathname === link.href && "bg-zinc-900/5 text-zinc-900"
+                  "rounded-full px-3 py-1.5 text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100",
+                  pathname === link.href && "bg-zinc-900/5 text-zinc-900 dark:bg-white/10 dark:text-zinc-50"
                 )}
               >
                 {link.label}
@@ -46,6 +48,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggle}
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {theme === "dark" ? <Sun /> : <Moon />}
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -67,7 +77,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               )}
             </Button>
             {session?.signedIn ? (
-              <div className="hidden items-center gap-3 pl-2 text-sm text-zinc-500 sm:flex">
+              <div className="hidden items-center gap-3 pl-2 text-sm text-zinc-500 sm:flex dark:text-zinc-400">
                 <span className="max-w-[180px] truncate">{session.userName}</span>
                 <Button variant="ghost" size="sm" onClick={() => signOut()}>
                   <LogOut data-icon="inline-start" />
@@ -83,14 +93,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="flex-1 pb-16 md:pb-0">{children}</main>
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-black/10 bg-white/90 backdrop-blur-xl md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-black/10 bg-white/90 backdrop-blur-xl md:hidden dark:border-white/10 dark:bg-zinc-950/90">
         {links.map((link) => (
           <Link
             key={link.href}
             href={link.href}
             className={cn(
               "flex-1 py-3 text-center text-xs text-zinc-500",
-              pathname === link.href && "text-zinc-900"
+              pathname === link.href && "text-zinc-900 dark:text-zinc-50"
             )}
           >
             {link.label}

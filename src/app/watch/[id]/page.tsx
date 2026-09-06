@@ -1,14 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useParams } from "next/navigation";
 import { LoginScreen } from "@/components/login-screen";
 import { VideoPlayer } from "@/components/video-player";
 import { useSession } from "@/components/session-provider";
 import { fetchMovie } from "@/lib/client-api";
-import { episodeLabel } from "@/lib/clock";
 import { DEMO_MOVIES, DEMO_SHOWS, isDemoId } from "@/lib/demo-library";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 
@@ -16,7 +13,6 @@ const DEMO_TITLES = [...DEMO_MOVIES, ...DEMO_SHOWS];
 
 export default function WatchPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const { session, loading, preview } = useSession();
   const [remoteItem, setRemoteItem] = useState<JellyfinItem | null>(null);
   const demoItem = DEMO_TITLES.find((movie) => movie.Id === params.id) ?? null;
@@ -32,23 +28,9 @@ export default function WatchPage() {
 
   const item = demoItem ?? remoteItem;
   const demo = !item || isDemoId(item.Id);
-  const title = item?.SeriesName
-    ? `${item.SeriesName} · ${episodeLabel(item)}`
-    : item?.Name ?? "Playing";
 
   return (
     <div className="fixed inset-0 z-50 bg-black">
-      <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-3 bg-gradient-to-b from-black/80 to-transparent px-4 py-4">
-        <Button
-          variant="ghost"
-          className="text-white hover:bg-white/10 hover:text-white"
-          onClick={() => router.back()}
-        >
-          <ArrowLeft data-icon="inline-start" />
-          Back
-        </Button>
-        <p className="truncate text-sm text-white/80">{title}</p>
-      </div>
       {demo || !item ? (
         <div className="flex size-full items-center justify-center px-6">
           <div className="max-w-lg rounded-3xl border border-white/15 bg-white/5 p-10 text-center">
