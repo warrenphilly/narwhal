@@ -43,7 +43,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [preview, setPreview] = useState(false);
+  const [preview, setPreview] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.sessionStorage.getItem("cinema-preview") === "1";
+  });
 
   const refresh = useCallback(async () => {
     const response = await fetch("/api/auth/session", { cache: "no-store" });
@@ -104,6 +107,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       const data = (await response.json()) as SessionInfo & { error?: string };
       if (response.ok) {
         setConnection(null);
+        window.sessionStorage.removeItem("cinema-preview");
         setPreview(false);
         setSession({ ...data, signedIn: true });
         return;
@@ -115,6 +119,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           password: input.password,
         });
         setConnection(direct);
+        window.sessionStorage.removeItem("cinema-preview");
         setPreview(false);
         setSession({
           signedIn: true,
@@ -131,10 +136,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const enterPreview = useCallback(() => setPreview(true), []);
+  const enterPreview = useCallback(() => {
+    window.sessionStorage.setItem("cinema-preview", "1");
+    setPreview(true);
+  }, []);
 
   const signOut = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST" });
+    window.sessionStorage.removeItem("cinema-preview");
     setConnection(null);
     setSession({ signedIn: false });
     setPreview(false);
