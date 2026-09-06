@@ -119,7 +119,8 @@ export const DEMO_SHOWS: JellyfinItem[] = [
     ProductionYear: 2024,
     OfficialRating: "TV-14",
     CommunityRating: 8.3,
-    Genres: ["Drama"],
+    RunTimeTicks: 1_320_000_0000,
+    Genres: ["Drama", "Mystery"],
     CanDownload: false,
     Status: "Continuing",
     People: [
@@ -151,9 +152,11 @@ export const DEMO_SHOWS: JellyfinItem[] = [
     ProductionYear: 2022,
     OfficialRating: "TV-PG",
     CommunityRating: 7.8,
-    Genres: ["Mystery"],
+    RunTimeTicks: 1_320_000_0000,
+    Genres: ["Animation", "Sci-Fi & Fantasy", "Action & Adventure", "Kids"],
     CanDownload: false,
     Status: "Ended",
+    Studios: [{ Name: "The WB" }, { Name: "The CW" }],
     People: [
       { Name: "Priya Shah", Role: "Cartographer", Type: "Actor" },
       { Name: "Eli Voss", Role: "Surveyor", Type: "Actor" },

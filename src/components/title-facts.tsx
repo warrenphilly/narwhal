@@ -52,8 +52,16 @@ function streamLabels(streams: MediaStream[] | undefined, type: string) {
   );
 }
 
-function Chip({ children }: { children: React.ReactNode }) {
-  return <span>{children}</span>;
+function Pill({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-full bg-zinc-900/8 px-2.5 py-0.5 text-xs font-medium text-zinc-800 dark:bg-white/12 dark:text-zinc-100">
+      {children}
+    </span>
+  );
+}
+
+function Dot() {
+  return <span className="text-zinc-400" aria-hidden>•</span>;
 }
 
 export function TitlePoster({ item }: { item: JellyfinItem }) {
@@ -90,61 +98,69 @@ export function TitleMeta({
 }) {
   const router = useRouter();
   const demo = isDemoId(item.Id);
-  const audio = demo ? ["English"] : streamLabels(streams, "Audio");
-  const subs = demo ? ["English", "Spanish"] : streamLabels(streams, "Subtitle");
+  const audio = demo
+    ? ["Spanish", "English", "Portuguese"]
+    : streamLabels(streams, "Audio");
   const remote = item.RemoteTrailers?.filter((row) => row.Url) ?? [];
   const local = trailers ?? [];
-  const directors = (item.People ?? [])
-    .filter((person) => person.Type === "Director")
-    .map((person) => person.Name)
-    .filter(Boolean);
   const studios = (item.Studios ?? []).map((studio) => studio.Name).filter(Boolean);
-  const chips = [
+  const facts = [
     item.ProductionYear ? String(item.ProductionYear) : "",
     formatRuntime(item.RunTimeTicks),
     item.CommunityRating ? `${item.CommunityRating.toFixed(1)} ★` : "",
-    item.CriticRating ? `${item.CriticRating} critic` : "",
-    audio.length ? audio.join(", ") : "",
-    subs.length ? `Subs ${subs.join(", ")}` : "",
-    directors.length ? directors.join(", ") : "",
-    studios.length ? studios.join(", ") : "",
-    item.Status ?? "",
-    ...(item.Genres ?? []),
     ...extras,
   ].filter(Boolean);
 
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-medium text-zinc-800 dark:text-zinc-100">
-      {item.OfficialRating && (
-        <span className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs dark:border-zinc-600">
-          {item.OfficialRating}
-        </span>
-      )}
-      {chips.map((chip, index) => (
-        <Chip key={`${chip}-${index}`}>{chip}</Chip>
-      ))}
-      {local.map((trailer) => (
-        <button
-          key={trailer.Id}
-          type="button"
-          className="inline-flex items-center gap-1 text-sm font-medium hover:underline"
-          onClick={() => router.push(`/watch/${trailer.Id}`)}
-        >
-          <Play className="size-3 fill-current" />
-          {trailer.Name || "Trailer"}
-        </button>
-      ))}
-      {remote.map((trailer) => (
-        <a
-          key={trailer.Url}
-          href={trailer.Url}
-          target="_blank"
-          rel="noreferrer"
-          className="hover:underline"
-        >
-          {trailer.Name || "Trailer"}
-        </a>
-      ))}
+    <div className="mt-4 space-y-2">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm font-medium text-zinc-800 dark:text-zinc-100">
+        {item.OfficialRating && (
+          <span className="rounded border border-zinc-400/80 px-1.5 py-0.5 text-xs font-semibold tracking-wide dark:border-zinc-500">
+            {item.OfficialRating}
+          </span>
+        )}
+        {facts.map((fact, index) => (
+          <span key={`${fact}-${index}`} className="inline-flex items-center gap-2.5">
+            {(item.OfficialRating || index > 0) && <Dot />}
+            {fact}
+          </span>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">
+        {audio.length > 0 && <span>{audio.join(", ")}</span>}
+        {studios.length > 0 && (
+          <>
+            {audio.length > 0 && <Dot />}
+            <span>{studios.join(", ")}</span>
+          </>
+        )}
+        {item.Status && <Pill>{item.Status}</Pill>}
+        {(item.Genres ?? []).map((genre) => (
+          <Pill key={genre}>{genre}</Pill>
+        ))}
+        {local.map((trailer) => (
+          <button
+            key={trailer.Id}
+            type="button"
+            className="inline-flex items-center gap-1 hover:underline"
+            onClick={() => router.push(`/watch/${trailer.Id}`)}
+          >
+            <Play className="size-3 fill-current" />
+            {trailer.Name || "Trailer"}
+          </button>
+        ))}
+        {remote.map((trailer) => (
+          <a
+            key={trailer.Url}
+            href={trailer.Url}
+            target="_blank"
+            rel="noreferrer"
+            className="hover:underline"
+          >
+            {trailer.Name || "Trailer"}
+          </a>
+        ))}
+      </div>
     </div>
   );
 }
