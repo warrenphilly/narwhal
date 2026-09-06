@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authHeader, getSession } from "@/lib/session";
-import { jellyfinFetch } from "@/lib/jellyfin-request";
+import { jellyfinFetch, tunnelFromSession } from "@/lib/jellyfin-request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,7 +47,7 @@ async function proxy(request: NextRequest, path: string[]) {
       body: hasBody ? await request.arrayBuffer() : undefined,
       redirect: "follow",
     },
-    { allowInsecure: session.allowInsecure, timeoutMs: 120_000 }
+    { ...tunnelFromSession(session), timeoutMs: 120_000 }
   );
 
   const out = new Headers();

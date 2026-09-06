@@ -9,21 +9,57 @@ import { useSession } from "@/components/session-provider";
 
 export function LoginScreen() {
   const { signIn, error, enterPreview } = useSession();
-  const [serverUrl, setServerUrl] = useState("http://127.0.0.1:8096");
+  const [serverUrl, setServerUrl] = useState("https://");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [allowInsecure, setAllowInsecure] = useState(false);
+  const [showTunnel, setShowTunnel] = useState(true);
+  const [cfAccessClientId, setCfAccessClientId] = useState("");
+  const [cfAccessClientSecret, setCfAccessClientSecret] = useState("");
+  const [cfAccessJwt, setCfAccessJwt] = useState("");
   const [busy, setBusy] = useState(false);
+  const [probeMessage, setProbeMessage] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+
+  const tunnelFields = {
+    serverUrl,
+    allowInsecure,
+    cfAccessClientId,
+    cfAccessClientSecret,
+    cfAccessJwt,
+  };
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
     setLocalError(null);
     try {
-      await signIn({ serverUrl, username, password, allowInsecure });
+      await signIn({
+        username,
+        password,
+        ...tunnelFields,
+      });
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : "Could not sign in.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function testTunnel() {
+    setBusy(true);
+    setProbeMessage(null);
+    setLocalError(null);
+    try {
+      const response = await fetch("/api/auth/probe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(tunnelFields),
+      });
+      const data = (await response.json()) as { ok?: boolean; message?: string };
+      setProbeMessage(data.message || (data.ok ? "Reached Jellyfin." : "Could not reach the server."));
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : "Probe failed.");
     } finally {
       setBusy(false);
     }
@@ -60,13 +96,13 @@ export function LoginScreen() {
               id="server"
               value={serverUrl}
               onChange={(event) => setServerUrl(event.target.value)}
-              placeholder="http://127.0.0.1:8096"
+              placeholder="https://jellyfin.yourdomain.com"
               className="h-11 bg-white"
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
+            <Label htmlFor="username">Jellyfin username</Label>
             <Input
               id="username"
               value={username}
@@ -76,7 +112,7 @@ export function LoginScreen() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">Jellyfin password</Label>
             <Input
               id="password"
               type="password"
@@ -85,6 +121,51 @@ export function LoginScreen() {
               className="h-11 bg-white"
             />
           </div>
+          <button
+            type="button"
+            className="text-left text-sm text-zinc-600 underline-offset-4 hover:underline"
+            onClick={() => setShowTunnel((open) => !open)}
+          >
+            {showTunnel ? "Hide" : "Show"} Cloudflare tunnel options
+          </button>
+          {showTunnel && (
+            <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-4">
+              <p className="text-xs leading-relaxed text-zinc-500">
+                An email code is Cloudflare Access, not Jellyfin. Cinema cannot type that code. Use a Service Token from the Zero Trust dashboard (works from anywhere), or paste CF_Authorization after you approve the email once in a browser.
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="cf-id">Access Client ID</Label>
+                <Input
+                  id="cf-id"
+                  value={cfAccessClientId}
+                  onChange={(event) => setCfAccessClientId(event.target.value)}
+                  className="h-11 bg-white"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cf-secret">Access Client Secret</Label>
+                <Input
+                  id="cf-secret"
+                  type="password"
+                  value={cfAccessClientSecret}
+                  onChange={(event) => setCfAccessClientSecret(event.target.value)}
+                  className="h-11 bg-white"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cf-jwt">CF_Authorization cookie (optional)</Label>
+                <Input
+                  id="cf-jwt"
+                  value={cfAccessJwt}
+                  onChange={(event) => setCfAccessJwt(event.target.value)}
+                  className="h-11 bg-white"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+          )}
           <label className="flex items-start gap-2 text-sm text-zinc-600">
             <input
               type="checkbox"
@@ -94,11 +175,23 @@ export function LoginScreen() {
             />
             Allow self-signed HTTPS certificate
           </label>
+          {probeMessage && (
+            <p className="text-sm leading-relaxed text-zinc-700">{probeMessage}</p>
+          )}
           {(localError || error) && (
             <p className="text-sm leading-relaxed text-red-600">{localError || error}</p>
           )}
           <Button type="submit" disabled={busy} className="h-11 w-full rounded-full">
-            {busy ? "Connecting…" : "Sign in"}
+            {busy ? "Working…" : "Sign in"}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={busy}
+            className="h-11 w-full rounded-full"
+            onClick={testTunnel}
+          >
+            Test tunnel
           </Button>
           <Button
             type="button"
@@ -109,7 +202,7 @@ export function LoginScreen() {
             Preview the home screen
           </Button>
           <p className="text-xs leading-relaxed text-zinc-500">
-            Open Cinema at http://127.0.0.1:3000 — include the port. For Jellyfin, use the address from the dashboard (often http://192.168.x.x:8096). Enable Downloads for your user if you want files saved here.
+            Open Cinema at http://127.0.0.1:3000. Paste your public tunnel URL here, not a home LAN IP, while you are away.
           </p>
         </form>
       </div>

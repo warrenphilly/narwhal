@@ -6,22 +6,69 @@ const insecureAgent = new Agent({
 
 type FetchInit = RequestInit & { dispatcher?: Agent };
 
-export function jellyfinFetch(
-  url: string,
-  init: RequestInit,
-  options?: { allowInsecure?: boolean; timeoutMs?: number }
-) {
+export type TunnelAuth = {
+  allowInsecure?: boolean;
+  timeoutMs?: number;
+  cfAccessClientId?: string;
+  cfAccessClientSecret?: string;
+  cfAccessJwt?: string;
+};
+
+export function applyTunnelHeaders(headers: Headers, auth?: TunnelAuth) {
+  if (auth?.cfAccessClientId && auth?.cfAccessClientSecret) {
+    headers.set("CF-Access-Client-Id", auth.cfAccessClientId);
+    headers.set("CF-Access-Client-Secret", auth.cfAccessClientSecret);
+  }
+  if (auth?.cfAccessJwt) {
+    const token = auth.cfAccessJwt.trim();
+    headers.set("CF-Access-Jwt-Assertion", token);
+    const existing = headers.get("Cookie");
+    const pair = `CF_Authorization=${token}`;
+    headers.set("Cookie", existing ? `${existing}; ${pair}` : pair);
+  }
+}
+
+export function jellyfinFetch(url: string, init: RequestInit, options?: TunnelAuth) {
   const timeoutMs = options?.timeoutMs;
   let signal = init.signal;
   if (timeoutMs && timeoutMs > 0) {
     const timeout = AbortSignal.timeout(timeoutMs);
     signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
   }
-  const next: FetchInit = { ...init, signal };
+  const headers = new Headers(init.headers);
+  applyTunnelHeaders(headers, options);
+  const next: FetchInit = { ...init, headers, signal };
   if (options?.allowInsecure) {
     next.dispatcher = insecureAgent;
   }
   return fetch(url, next);
+}
+
+export function looksLikeCloudflareAccess(response: Response, body: string) {
+  const location = response.headers.get("location") ?? "";
+  const type = response.headers.get("content-type") ?? "";
+  const text = body.slice(0, 4000).toLowerCase();
+  return (
+    location.includes("cloudflareaccess.com") ||
+    type.includes("text/html") ||
+    text.includes("cloudflare access") ||
+    text.includes("cloudflareaccess.com") ||
+    text.includes("cf-access")
+  );
+}
+
+export function tunnelFromSession(session: {
+  allowInsecure?: boolean;
+  cfAccessClientId?: string;
+  cfAccessClientSecret?: string;
+  cfAccessJwt?: string;
+}): TunnelAuth {
+  return {
+    allowInsecure: session.allowInsecure,
+    cfAccessClientId: session.cfAccessClientId,
+    cfAccessClientSecret: session.cfAccessClientSecret,
+    cfAccessJwt: session.cfAccessJwt,
+  };
 }
 
 export function describeConnectError(error: unknown, serverUrl: string) {

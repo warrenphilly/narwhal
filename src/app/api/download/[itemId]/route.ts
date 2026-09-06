@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authHeader, getSession } from "@/lib/session";
 import { isDemoId } from "@/lib/demo-library";
-import { jellyfinFetch } from "@/lib/jellyfin-request";
+import { jellyfinFetch, tunnelFromSession } from "@/lib/jellyfin-request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +28,7 @@ export async function GET(
   const upstream = await jellyfinFetch(
     url,
     { headers: { Authorization: authHeader(session) } },
-    { allowInsecure: session.allowInsecure }
+    tunnelFromSession(session)
   );
 
   if (!upstream.ok || !upstream.body) {

@@ -27,6 +27,9 @@ type SessionContextValue = {
     username: string;
     password: string;
     allowInsecure?: boolean;
+    cfAccessClientId?: string;
+    cfAccessClientSecret?: string;
+    cfAccessJwt?: string;
   }) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -75,6 +78,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       username: string;
       password: string;
       allowInsecure?: boolean;
+      cfAccessClientId?: string;
+      cfAccessClientSecret?: string;
+      cfAccessJwt?: string;
     }) => {
       setError(null);
       const response = await fetch("/api/auth/login", {

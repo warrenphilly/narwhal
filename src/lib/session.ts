@@ -9,6 +9,9 @@ export type JellyfinSession = {
   userName: string;
   deviceId: string;
   allowInsecure?: boolean;
+  cfAccessClientId?: string;
+  cfAccessClientSecret?: string;
+  cfAccessJwt?: string;
 };
 
 export function normalizeServerUrl(input: string) {
