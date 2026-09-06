@@ -125,6 +125,11 @@ export function TitleMeta({
             {fact}
           </span>
         ))}
+        {item.Status && (
+          <span className="ml-0.5 rounded-full border border-zinc-900/25 px-2.5 py-0.5 text-xs font-semibold tracking-wide text-zinc-900 dark:border-white/30 dark:text-zinc-50">
+            {item.Status}
+          </span>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">
         {audio.length > 0 && <span>{audio.join(", ")}</span>}
@@ -134,10 +139,6 @@ export function TitleMeta({
             <span>{studios.join(", ")}</span>
           </>
         )}
-        {item.Status && <Pill>{item.Status}</Pill>}
-        {(item.Genres ?? []).map((genre) => (
-          <Pill key={genre}>{genre}</Pill>
-        ))}
         {local.map((trailer) => (
           <button
             key={trailer.Id}
@@ -161,6 +162,13 @@ export function TitleMeta({
           </a>
         ))}
       </div>
+      {(item.Genres ?? []).length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {(item.Genres ?? []).map((genre) => (
+            <Pill key={genre}>{genre}</Pill>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
