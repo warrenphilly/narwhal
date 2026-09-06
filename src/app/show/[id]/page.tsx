@@ -7,7 +7,7 @@ import { AppShell } from "@/components/app-shell";
 import { LoginScreen } from "@/components/login-screen";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/components/session-provider";
-import { TitleFacts, TitlePoster } from "@/components/title-facts";
+import { TitleCast, TitleMeta, TitlePoster } from "@/components/title-facts";
 import {
   continueImageUrl,
   fetchEpisodes,
@@ -207,26 +207,22 @@ export default function ShowPage() {
             <h1 className="mt-3 max-w-3xl text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
               {resolved.Name}
             </h1>
-            <div className="mt-4 flex flex-wrap gap-3 text-sm font-medium text-zinc-800 dark:text-zinc-100">
-              {resolved.ProductionYear && <span>{resolved.ProductionYear}</span>}
-              {resolved.OfficialRating && (
-                <span className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs dark:border-zinc-600">
-                  {resolved.OfficialRating}
-                </span>
-              )}
-              {resolved.CommunityRating && <span>{resolved.CommunityRating.toFixed(1)} ★</span>}
-              {seasonList.length > 0 && (
-                <span>
-                  {seasonList.length} season{seasonList.length === 1 ? "" : "s"}
-                </span>
-              )}
-            </div>
+            <TitleMeta
+              item={resolved}
+              streams={streams}
+              trailers={trailers}
+              extras={
+                seasonList.length
+                  ? [`${seasonList.length} season${seasonList.length === 1 ? "" : "s"}`]
+                  : []
+              }
+            />
             {resolved.Overview && (
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-800 dark:text-zinc-100">
+              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-zinc-800 dark:text-zinc-100">
                 {resolved.Overview}
               </p>
             )}
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Button size="lg" className="h-12 rounded-full px-6 text-base" onClick={() => startWatching()}>
                 <Play data-icon="inline-start" className="fill-current" />
                 Start watching
@@ -242,10 +238,7 @@ export default function ShowPage() {
                 </Button>
               )}
             </div>
-            {resolved.Genres && resolved.Genres.length > 0 && (
-              <p className="mt-6 text-sm text-zinc-500">{resolved.Genres.join(" · ")}</p>
-            )}
-            <TitleFacts item={resolved} streams={streams} trailers={trailers} />
+            <TitleCast item={resolved} />
           </div>
         </div>
       </div>

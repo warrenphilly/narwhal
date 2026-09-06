@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Download, Play } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { LoginScreen } from "@/components/login-screen";
-import { TitleFacts, TitlePoster } from "@/components/title-facts";
+import { TitleCast, TitleMeta, TitlePoster } from "@/components/title-facts";
 import { Button } from "@/components/ui/button";
 import { useDownloads } from "@/components/downloads-provider";
 import { useSession } from "@/components/session-provider";
@@ -113,25 +113,21 @@ export default function MoviePage() {
             <h1 className="mt-3 max-w-3xl text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
               {resolved.Name}
             </h1>
-            <div className="mt-4 flex flex-wrap gap-3 text-sm font-medium text-zinc-800 dark:text-zinc-100">
-              {resolved.ProductionYear && <span>{resolved.ProductionYear}</span>}
-              {resolved.OfficialRating && (
-                <span className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs dark:border-zinc-600">
-                  {resolved.OfficialRating}
-                </span>
-              )}
-              {resolved.CommunityRating && <span>{resolved.CommunityRating.toFixed(1)} ★</span>}
-              {size ? <span>{formatBytes(size)}</span> : null}
-            </div>
+            <TitleMeta
+              item={resolved}
+              streams={streams}
+              trailers={trailers}
+              extras={size ? [formatBytes(size)] : []}
+            />
             {resolved.Taglines?.[0] && (
               <p className="mt-3 text-base italic text-zinc-700 dark:text-zinc-200">{resolved.Taglines[0]}</p>
             )}
             {resolved.Overview && (
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-800 dark:text-zinc-100">
+              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-zinc-800 dark:text-zinc-100">
                 {resolved.Overview}
               </p>
             )}
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Button
                 size="lg"
                 className="h-12 rounded-full px-6 text-base"
@@ -151,10 +147,7 @@ export default function MoviePage() {
                 {demo ? "Connect to download" : saving ? "Saving…" : "Download to laptop"}
               </Button>
             </div>
-            {resolved.Genres && resolved.Genres.length > 0 && (
-              <p className="mt-6 text-sm text-zinc-500">{resolved.Genres.join(" · ")}</p>
-            )}
-            <TitleFacts item={resolved} streams={streams} trailers={trailers} />
+            <TitleCast item={resolved} />
             {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
           </div>
         </div>
