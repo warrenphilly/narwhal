@@ -65,13 +65,13 @@ export function HeroBanner({ items }: { items: JellyfinItem[] }) {
       />
       <div className="hero-wash absolute inset-0" />
       <div className="relative mx-auto flex min-h-[72vh] max-w-[1600px] flex-col justify-end px-4 pb-10 pt-28 sm:px-8 sm:pb-16">
-        <p className="mb-3 text-xs font-semibold tracking-[0.22em] text-zinc-500 uppercase dark:text-zinc-400">
+        <p className="mb-3 text-xs font-semibold tracking-[0.22em] text-zinc-700 uppercase dark:text-zinc-200">
           {item.Type === "Series" ? "Featured series" : "New addition"}
         </p>
-        <h1 className="max-w-3xl text-5xl font-semibold tracking-tight text-zinc-900 sm:text-7xl dark:text-zinc-50">
+        <h1 className="max-w-3xl text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-7xl dark:text-white">
           {item.Name}
         </h1>
-        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-600 dark:text-zinc-300">
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-medium text-zinc-800 dark:text-zinc-100">
           {item.ProductionYear && <span>{item.ProductionYear}</span>}
           {item.OfficialRating && (
             <span className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs dark:border-zinc-600">
@@ -85,7 +85,7 @@ export function HeroBanner({ items }: { items: JellyfinItem[] }) {
           ))}
         </div>
         {item.Overview && (
-          <p className="mt-5 max-w-xl text-base leading-relaxed text-zinc-600 sm:text-lg dark:text-zinc-300">
+          <p className="mt-5 max-w-xl text-base leading-relaxed text-zinc-800 sm:text-lg dark:text-zinc-100">
             {item.Overview}
           </p>
         )}

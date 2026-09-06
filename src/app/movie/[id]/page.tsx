@@ -113,11 +113,11 @@ export default function MoviePage() {
             )}
           </div>
           <div className="flex flex-col justify-end">
-            <p className="text-xs tracking-[0.24em] text-zinc-500 uppercase dark:text-zinc-400">Movie</p>
-            <h1 className="mt-3 max-w-3xl text-5xl font-semibold tracking-tight text-zinc-900 sm:text-6xl dark:text-zinc-50">
+            <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
+            <h1 className="mt-3 max-w-3xl text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
               {resolved.Name}
             </h1>
-            <div className="mt-4 flex flex-wrap gap-3 text-sm text-zinc-600 dark:text-zinc-300">
+            <div className="mt-4 flex flex-wrap gap-3 text-sm font-medium text-zinc-800 dark:text-zinc-100">
               {resolved.ProductionYear && <span>{resolved.ProductionYear}</span>}
               {resolved.OfficialRating && (
                 <span className="rounded border border-zinc-300 px-1.5 py-0.5 text-xs">
@@ -129,7 +129,7 @@ export default function MoviePage() {
               {size ? <span>{formatBytes(size)}</span> : null}
             </div>
             {resolved.Overview && (
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
+              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-800 dark:text-zinc-100">
                 {resolved.Overview}
               </p>
             )}
