@@ -5,42 +5,42 @@ import { AppShell } from "@/components/app-shell";
 import { LoginScreen } from "@/components/login-screen";
 import { PosterCard } from "@/components/poster-card";
 import { useSession } from "@/components/session-provider";
-import { fetchMovies } from "@/lib/client-api";
-import { DEMO_MOVIES } from "@/lib/demo-library";
+import { fetchShows } from "@/lib/client-api";
+import { DEMO_SHOWS } from "@/lib/demo-library";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 
-export default function MoviesPage() {
+export default function ShowsPage() {
   const { session, loading, preview } = useSession();
-  const [remoteMovies, setRemoteMovies] = useState<JellyfinItem[]>([]);
+  const [remoteShows, setRemoteShows] = useState<JellyfinItem[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session?.signedIn || !session.userId) return;
-    fetchMovies(session.userId)
-      .then(setRemoteMovies)
+    fetchShows(session.userId)
+      .then(setRemoteShows)
       .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : "Could not load movies.")
+        setError(err instanceof Error ? err.message : "Could not load TV shows.")
       );
   }, [session?.signedIn, session?.userId]);
 
   if (loading) return <div className="tv-root min-h-full" />;
   if (!session?.signedIn && !preview) return <LoginScreen />;
 
-  const movies = session?.signedIn ? remoteMovies : DEMO_MOVIES;
+  const shows = session?.signedIn ? remoteShows : DEMO_SHOWS;
 
   return (
     <AppShell>
       <div className="page-gutter py-10 pt-24">
-        <h1 className="text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Movies</h1>
-        <p className="mt-2 text-zinc-500">Every title in your movie libraries.</p>
+        <h1 className="text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">TV Shows</h1>
+        <p className="mt-2 text-zinc-500">Every series in your TV libraries.</p>
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
         <div className="mt-8 grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
-          {movies.map((item) => (
+          {shows.map((item) => (
             <PosterCard key={item.Id} item={item} size="lg" />
           ))}
         </div>
-        {movies.length === 0 && !error && (
-          <p className="mt-16 text-center text-zinc-500">No movies found on this server.</p>
+        {shows.length === 0 && !error && (
+          <p className="mt-16 text-center text-zinc-500">No TV shows found on this server.</p>
         )}
       </div>
     </AppShell>

@@ -48,7 +48,7 @@ export default function SearchPage() {
 
   return (
     <AppShell>
-      <div className="page-gutter py-10">
+      <div className="page-gutter py-10 pt-24">
         <h1 className="text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Search</h1>
         <Input
           value={query}

@@ -246,97 +246,89 @@ export default function ShowPage() {
         </div>
       </div>
 
-      <div className="page-gutter mx-auto max-w-[1600px] pb-20">
-        <div className="grid gap-6 md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[260px_minmax(0,1fr)]">
-          <aside className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/10 dark:bg-zinc-900">
-            <p className="border-b border-zinc-200 px-4 py-3 text-xs font-semibold tracking-[0.18em] text-zinc-500 uppercase dark:border-white/10">
-              Seasons
-            </p>
-            <div className="divide-y divide-zinc-100 dark:divide-white/8">
-              {seasonList.length === 0 && (
-                <p className="px-4 py-6 text-sm text-zinc-500">No seasons yet.</p>
-              )}
-              {seasonList.map((season) => (
-                <button
-                  key={season.Id}
-                  type="button"
-                  onClick={() => setSeasonId(season.Id)}
-                  className={cn(
-                    "flex w-full items-center justify-between px-4 py-3 text-left text-sm transition",
-                    season.Id === activeSeasonId
-                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                      : "text-zinc-800 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-white/6"
-                  )}
-                >
-                  <span className="font-medium">{season.Name}</span>
-                  {typeof season.IndexNumber === "number" && (
-                    <span
-                      className={cn(
-                        "text-xs",
-                        season.Id === activeSeasonId ? "opacity-70" : "text-zinc-400"
-                      )}
-                    >
-                      {season.IndexNumber}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </aside>
+      <div className="page-gutter relative z-10 mx-auto max-w-[1600px] -mt-10 pb-20">
+        <div className="overflow-hidden rounded-[28px] border border-zinc-200/80 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:border-white/10 dark:bg-zinc-900">
+          <div className="grid md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[260px_minmax(0,1fr)]">
+            <aside className="bg-zinc-50/90 md:border-r md:border-zinc-200/70 dark:bg-white/[0.04] dark:md:border-white/10">
+              <p className="px-4 pt-4 pb-2 text-xs font-semibold tracking-[0.18em] text-zinc-500 uppercase">
+                Seasons
+              </p>
+              <div className="flex flex-col gap-1 p-2 pt-0">
+                {seasonList.length === 0 && (
+                  <p className="px-3 py-6 text-sm text-zinc-500">No seasons yet.</p>
+                )}
+                {seasonList.map((season) => (
+                  <button
+                    key={season.Id}
+                    type="button"
+                    onClick={() => setSeasonId(season.Id)}
+                    className={cn(
+                      "flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm transition",
+                      season.Id === activeSeasonId
+                        ? "bg-white text-zinc-950 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-800 dark:text-zinc-50 dark:ring-white/10"
+                        : "text-zinc-600 hover:bg-white/70 dark:text-zinc-300 dark:hover:bg-white/6"
+                    )}
+                  >
+                    <span className="font-medium">{season.Name}</span>
+                  </button>
+                ))}
+              </div>
+            </aside>
 
-          <div className="min-w-0 space-y-2">
-            {listed.length === 0 && (
-              <p className="py-10 text-zinc-500">No episodes in this season yet.</p>
-            )}
-            {listed.map((episode) => {
-              const progress = episode.UserData?.PlayedPercentage;
-              return (
-                <button
-                  key={episode.Id}
-                  type="button"
-                  onClick={() => router.push(`/watch/${episode.Id}`)}
-                  className="flex w-full gap-4 rounded-2xl p-3 text-left transition hover:bg-zinc-900/5 dark:hover:bg-white/6"
-                >
-                  <div className="relative aspect-video w-[168px] shrink-0 overflow-hidden rounded-xl bg-zinc-200 sm:w-[220px] dark:bg-zinc-800">
-                    {demo ? (
-                      <div
-                        className="absolute inset-0"
-                        style={{ background: `linear-gradient(160deg, ${from}, ${to})` }}
-                      />
-                    ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={continueImageUrl(episode)}
-                        alt=""
-                        className="absolute inset-0 size-full object-cover"
-                      />
-                    )}
-                    {typeof progress === "number" && progress > 0 && progress < 100 && (
-                      <div className="absolute inset-x-0 bottom-0 h-1 bg-black/30">
-                        <div className="h-full bg-white" style={{ width: `${progress}%` }} />
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1 py-1">
-                    <p className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
-                      {episodeLabel(episode)}
-                    </p>
-                    <p className="mt-1 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-                      {episode.Name}
-                    </p>
-                    <p className="mt-1 text-sm text-zinc-500">
-                      {formatRuntime(episode.RunTimeTicks)}
-                      {episode.UserData?.Played ? " · Watched" : ""}
-                    </p>
-                    {episode.Overview && (
-                      <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                        {episode.Overview}
+            <div className="min-w-0 p-2 sm:p-3">
+              {listed.length === 0 && (
+                <p className="px-3 py-10 text-zinc-500">No episodes in this season yet.</p>
+              )}
+              {listed.map((episode) => {
+                const progress = episode.UserData?.PlayedPercentage;
+                return (
+                  <button
+                    key={episode.Id}
+                    type="button"
+                    onClick={() => router.push(`/watch/${episode.Id}`)}
+                    className="flex w-full gap-4 rounded-2xl p-3 text-left transition hover:bg-zinc-50 dark:hover:bg-white/6"
+                  >
+                    <div className="relative aspect-video w-[168px] shrink-0 overflow-hidden rounded-xl bg-zinc-200 sm:w-[220px] dark:bg-zinc-800">
+                      {demo ? (
+                        <div
+                          className="absolute inset-0"
+                          style={{ background: `linear-gradient(160deg, ${from}, ${to})` }}
+                        />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={continueImageUrl(episode)}
+                          alt=""
+                          className="absolute inset-0 size-full object-cover"
+                        />
+                      )}
+                      {typeof progress === "number" && progress > 0 && progress < 100 && (
+                        <div className="absolute inset-x-0 bottom-0 h-1 bg-black/30">
+                          <div className="h-full bg-white" style={{ width: `${progress}%` }} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1 py-1">
+                      <p className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
+                        {episodeLabel(episode)}
                       </p>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+                      <p className="mt-1 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+                        {episode.Name}
+                      </p>
+                      <p className="mt-1 text-sm text-zinc-500">
+                        {formatRuntime(episode.RunTimeTicks)}
+                        {episode.UserData?.Played ? " · Watched" : ""}
+                      </p>
+                      {episode.Overview && (
+                        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                          {episode.Overview}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

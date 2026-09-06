@@ -1,19 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { Download, LogOut, Moon, Search, Sun, Tv } from "lucide-react";
 import { useSession } from "@/components/session-provider";
 import { useDownloads } from "@/components/downloads-provider";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
+import { homeHref, tabFromSearch } from "@/lib/media-tab";
 import { cn } from "@/lib/utils";
 
-const links = [
-  { href: "/", label: "Watch Now" },
-  { href: "/movies", label: "Movies" },
-  { href: "/downloads", label: "Downloads" },
-];
+function navLinks(tab: ReturnType<typeof tabFromSearch>) {
+  return [
+    { href: homeHref("movies"), label: "Watch Now", active: (path: string) => path === "/" && tab === "movies" },
+    { href: "/movies", label: "Movies", active: (path: string) => path === "/movies" },
+    { href: "/shows", label: "TV Shows", active: (path: string) => path === "/shows" || (path === "/" && tab === "shows") },
+    { href: "/downloads", label: "Downloads", active: (path: string) => path === "/downloads" },
+  ];
+}
+
+function NavItems({ className, itemClass }: { className?: string; itemClass: (active: boolean) => string }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab = tabFromSearch(searchParams.get("tab"));
+  return (
+    <nav className={className}>
+      {navLinks(tab).map((link) => (
+        <Link key={link.label} href={link.href} className={itemClass(link.active(pathname))}>
+          {link.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -22,31 +42,43 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { theme, toggle } = useTheme();
   const { downloads } = useDownloads();
   const active = downloads.filter((item) => item.status === "saving").length;
+  const overlay =
+    pathname === "/" || pathname.startsWith("/show/") || pathname.startsWith("/movie/");
 
   return (
     <div className="tv-root flex min-h-full flex-col">
-      <header className="sticky top-0 z-40 border-b border-black/5 bg-white/80 backdrop-blur-xl dark:border-white/8 dark:bg-zinc-950/75">
+      <header
+        className={cn(
+          "sticky top-0 z-40",
+          overlay
+            ? "-mb-16 border-transparent bg-gradient-to-b from-[var(--page-bg)] via-[var(--page-bg)]/75 to-transparent"
+            : "border-b border-black/5 bg-gradient-to-b from-[var(--page-bg)] to-[var(--page-bg)]/80 dark:border-white/8"
+        )}
+      >
         <div className="page-gutter mx-auto flex h-16 items-center gap-6">
-          <Link href="/" className="flex items-center gap-2 text-zinc-900 dark:text-zinc-50">
+          <Link href={homeHref("movies")} className="flex items-center gap-2 text-zinc-900 dark:text-zinc-50">
             <span className="flex size-8 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
               <Tv className="size-4" />
             </span>
             <span className="text-[15px] font-semibold tracking-tight">Cinema</span>
           </Link>
-          <nav className="hidden items-center gap-1 md:flex">
-            {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "rounded-full px-3 py-1.5 text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100",
-                  pathname === link.href && "bg-zinc-900/5 text-zinc-900 dark:bg-white/10 dark:text-zinc-50"
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+          <Suspense
+            fallback={
+              <nav className="hidden items-center gap-1 md:flex">
+                <span className="rounded-full px-3 py-1.5 text-sm text-zinc-500">Watch Now</span>
+              </nav>
+            }
+          >
+            <NavItems
+              className="hidden items-center gap-1 md:flex"
+              itemClass={(isActive) =>
+                cn(
+                  "rounded-full px-3 py-1.5 text-sm text-zinc-600 transition hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50",
+                  isActive && "bg-black/6 text-zinc-950 dark:bg-white/12 dark:text-zinc-50"
+                )
+              }
+            />
+          </Suspense>
           <div className="ml-auto flex items-center gap-2">
             <Button
               variant="ghost"
@@ -93,20 +125,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="flex-1 pb-16 md:pb-0">{children}</main>
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-black/10 bg-white/90 backdrop-blur-xl md:hidden dark:border-white/10 dark:bg-zinc-950/90">
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={cn(
+      <Suspense fallback={<nav className="fixed inset-x-0 bottom-0 z-40 md:hidden" />}>
+        <NavItems
+          className="fixed inset-x-0 bottom-0 z-40 flex border-t border-black/10 bg-[var(--page-bg)]/90 backdrop-blur-xl md:hidden dark:border-white/10"
+          itemClass={(isActive) =>
+            cn(
               "flex-1 py-3 text-center text-xs text-zinc-500",
-              pathname === link.href && "text-zinc-900 dark:text-zinc-50"
-            )}
-          >
-            {link.label}
-          </Link>
-        ))}
-      </nav>
+              isActive && "text-zinc-900 dark:text-zinc-50"
+            )
+          }
+        />
+      </Suspense>
     </div>
   );
 }

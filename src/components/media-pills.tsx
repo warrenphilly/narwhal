@@ -1,16 +1,10 @@
 "use client";
 
+import Link from "next/link";
+import { homeHref, type MediaTab } from "@/lib/media-tab";
 import { cn } from "@/lib/utils";
 
-export type MediaTab = "movies" | "shows";
-
-export function MediaPills({
-  value,
-  onChange,
-}: {
-  value: MediaTab;
-  onChange: (tab: MediaTab) => void;
-}) {
+export function MediaPills({ value }: { value: MediaTab }) {
   return (
     <div className="inline-flex rounded-full bg-black/8 p-1 backdrop-blur-md dark:bg-white/12">
       {(
@@ -19,10 +13,9 @@ export function MediaPills({
           ["shows", "TV Shows"],
         ] as const
       ).map(([id, label]) => (
-        <button
+        <Link
           key={id}
-          type="button"
-          onClick={() => onChange(id)}
+          href={homeHref(id)}
           className={cn(
             "rounded-full px-4 py-1.5 text-sm font-medium transition",
             value === id
@@ -31,7 +24,7 @@ export function MediaPills({
           )}
         >
           {label}
-        </button>
+        </Link>
       ))}
     </div>
   );

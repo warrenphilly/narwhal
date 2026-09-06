@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { HeroBanner } from "@/components/hero-banner";
-import { MediaPills, type MediaTab } from "@/components/media-pills";
+import { MediaPills } from "@/components/media-pills";
 import { Shelf } from "@/components/shelf";
 import { useSession } from "@/components/session-provider";
 import { fetchLatest, fetchMovies, fetchResume, fetchShows } from "@/lib/client-api";
 import { DEMO_MOVIES, DEMO_SHOWS } from "@/lib/demo-library";
+import { tabFromSearch } from "@/lib/media-tab";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 
 function groupByGenre(items: JellyfinItem[]) {
@@ -25,7 +27,8 @@ function groupByGenre(items: JellyfinItem[]) {
 
 export function HomeScreen() {
   const { session } = useSession();
-  const [tab, setTab] = useState<MediaTab>("movies");
+  const searchParams = useSearchParams();
+  const tab = tabFromSearch(searchParams.get("tab"));
   const [resume, setResume] = useState<JellyfinItem[]>([]);
   const [latestMovies, setLatestMovies] = useState<JellyfinItem[]>([]);
   const [latestShows, setLatestShows] = useState<JellyfinItem[]>([]);
@@ -95,9 +98,9 @@ export function HomeScreen() {
   return (
     <div className="pb-16">
       <div className="relative">
-        <div className="pointer-events-none absolute inset-x-0 top-6 z-20 flex justify-center">
+        <div className="pointer-events-none absolute inset-x-0 top-20 z-20 flex justify-center">
           <div className="pointer-events-auto">
-            <MediaPills value={tab} onChange={setTab} />
+            <MediaPills value={tab} />
           </div>
         </div>
         <HeroBanner items={featured} />
