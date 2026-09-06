@@ -120,13 +120,13 @@ export default function MoviePage() {
             <TitlePoster item={resolved} />
             <div className="flex min-w-0 flex-1 flex-col lg:max-h-[315px] xl:max-h-[360px]">
               <div className="min-h-0 overflow-hidden">
-                <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <h1 className="text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
-                    {resolved.Name}
-                  </h1>
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
                   <TitleGenres item={resolved} />
                 </div>
+                <h1 className="mt-3 text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
+                  {resolved.Name}
+                </h1>
                 <TitleMeta item={resolved} streams={streams} trailers={trailers} />
                 {resolved.Taglines?.[0] && (
                   <p className="mt-3 text-base italic text-zinc-700 dark:text-zinc-200">{resolved.Taglines[0]}</p>

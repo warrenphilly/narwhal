@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Download, LogOut, Moon, Search, Sun, Tv } from "lucide-react";
 import { useSession } from "@/components/session-provider";
@@ -9,25 +9,23 @@ import { useDownloads } from "@/components/downloads-provider";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/back-button";
-import { homeHref, lastTab, tabFromSearch } from "@/lib/media-tab";
+import { homeHref, lastTab } from "@/lib/media-tab";
 import { cn } from "@/lib/utils";
 
-function navLinks(tab: ReturnType<typeof tabFromSearch>) {
+function navLinks() {
   return [
-    { href: homeHref("movies"), label: "Watch Now", active: (path: string) => path === "/" && tab === "movies" },
+    { href: homeHref(lastTab()), label: "Watch Now", active: (path: string) => path === "/" },
     { href: "/movies", label: "Movies", active: (path: string) => path === "/movies" },
-    { href: "/shows", label: "TV Shows", active: (path: string) => path === "/shows" || (path === "/" && tab === "shows") },
+    { href: "/shows", label: "TV Shows", active: (path: string) => path === "/shows" },
     { href: "/downloads", label: "Downloads", active: (path: string) => path === "/downloads" },
   ];
 }
 
 function NavItems({ className, itemClass }: { className?: string; itemClass: (active: boolean) => string }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const tab = tabFromSearch(searchParams.get("tab"));
   return (
     <nav className={className}>
-      {navLinks(tab).map((link) => (
+      {navLinks().map((link) => (
         <Link key={link.label} href={link.href} className={itemClass(link.active(pathname))}>
           {link.label}
         </Link>
