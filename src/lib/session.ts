@@ -29,6 +29,10 @@ export function normalizeServerUrl(input: string) {
   if (url.hostname === "localhost") {
     url.hostname = "127.0.0.1";
   }
+  // Jellyfin's default 8096 is HTTP. HTTPS on that port hangs until timeout.
+  if (url.protocol === "https:" && url.port === "8096") {
+    url.protocol = "http:";
+  }
   let path = url.pathname.replace(/\/+$/, "");
   if (path === "/web" || path.startsWith("/web/")) {
     path = "";

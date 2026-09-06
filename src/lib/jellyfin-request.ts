@@ -94,7 +94,7 @@ export function describeConnectError(error: unknown, serverUrl: string) {
   const localHint =
     "localhost only works when Cinema and Jellyfin run on the same computer. If you are using the cloud preview, that address is not your laptop — run Cinema locally, or use a public/Tailscale URL.";
   const tailscaleHint =
-    "100.x addresses only work if Tailscale is ON on the same computer that is running npm run dev. The Cursor cloud preview has no Tailscale — run Cinema on your laptop (http://127.0.0.1:3000), then try again.";
+    "Use http://100.x.x.x:8096 (not https). Tailscale must be connected on this Mac, and Cinema must be npm run dev on this Mac (http://127.0.0.1:3000). First open that same http address in Safari — if the browser cannot load Jellyfin, Cinema cannot either.";
 
   if (err.name === "TimeoutError" || code === "ABORT_ERR" || text.includes("abort") || text.includes("timeout")) {
     return `Timed out reaching ${serverUrl}. ${tailscale ? tailscaleHint : local ? localHint : "Check the address, port, and that Jellyfin is running."}`;
