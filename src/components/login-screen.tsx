@@ -96,7 +96,7 @@ export function LoginScreen() {
               id="server"
               value={serverUrl}
               onChange={(event) => setServerUrl(event.target.value)}
-              placeholder="https://jellyfin.yourdomain.com"
+              placeholder="http://homeserver.tailnet.ts.net:8096"
               className="h-11 bg-white"
               required
             />
@@ -131,7 +131,7 @@ export function LoginScreen() {
           {showTunnel && (
             <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-4">
               <p className="text-xs leading-relaxed text-zinc-500">
-                An email code is Cloudflare Access, not Jellyfin. Cinema cannot type that code. Use a Service Token from the Zero Trust dashboard (works from anywhere), or paste CF_Authorization after you approve the email once in a browser.
+                jelly.watchwithwarren.uk is the public door: Cloudflare shows an email window, then Jellyfin. Cinema cannot complete that window. Prefer Tailscale while you are away: turn the VPN on and paste the Tailscale address (100.x.x.x or *.ts.net) with Jellyfin’s port. Use a Service Token or CF_Authorization only if you must go through the public URL.
               </p>
               <div className="space-y-2">
                 <Label htmlFor="cf-id">Access Client ID</Label>
@@ -202,7 +202,7 @@ export function LoginScreen() {
             Preview the home screen
           </Button>
           <p className="text-xs leading-relaxed text-zinc-500">
-            Open Cinema at http://127.0.0.1:3000. Paste your public tunnel URL here, not a home LAN IP, while you are away.
+            Open Cinema at http://127.0.0.1:3000. Away from home: Tailscale on, then the Tailscale Jellyfin URL — not jelly.watchwithwarren.uk unless you also added a Cloudflare service token.
           </p>
         </form>
       </div>

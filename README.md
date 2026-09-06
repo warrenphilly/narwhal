@@ -28,7 +28,23 @@ Do not open `http://0.0.0.0`. From another phone/laptop on the same Wi‑Fi, use
 
 Your Jellyfin user needs the **Download** permission: Users → your user → enable downloads.
 
-## Away from home (Cloudflare tunnel)
+## Away from home
+
+You have two doors to the same server:
+
+1. **Public:** `https://jelly.watchwithwarren.uk` — Cloudflare Access (email code), then Jellyfin. A browser can do that. Cinema cannot type the email code.
+2. **Private:** Tailscale — your laptop joins the same tailnet as the Jellyfin machine. No Cloudflare page.
+
+**Use Tailscale for Cinema while you are out.**
+
+1. Turn Tailscale on on this laptop (same account as the home machine).
+2. In the Tailscale admin site, copy the Jellyfin machine’s address: `100.x.x.x` or `something.ts.net`.
+3. In Cinema, use `http://THAT-ADDRESS:8096` (use `https` and the right port if you changed Jellyfin’s).
+4. Click **Test tunnel**, then sign in with your Jellyfin username and password.
+
+Do not paste a home `192.168…` address while you are away. Do not paste `jelly.watchwithwarren.uk` unless you also set up a Cloudflare Service Token (below).
+
+## Cloudflare public URL (optional)
 
 The email verification code is **Cloudflare Access**, sitting in front of Jellyfin. Cinema cannot open that webpage or type the code.
 
