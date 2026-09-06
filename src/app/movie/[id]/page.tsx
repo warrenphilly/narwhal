@@ -95,7 +95,7 @@ export default function MoviePage() {
 
   return (
     <AppShell>
-      <div className="relative flex min-h-screen flex-col overflow-hidden">
+      <div className="relative flex h-dvh max-h-dvh flex-col overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -105,7 +105,7 @@ export default function MoviePage() {
           }}
         />
         <div className="hero-wash absolute inset-0" />
-        <div className="relative mx-auto flex w-full max-w-[1600px] flex-1 flex-col justify-end px-4 pt-28 pb-12 sm:px-8">
+        <div className="relative mx-auto flex h-full w-full max-w-[1600px] min-h-0 flex-col justify-end px-4 pt-24 pb-8 sm:px-8">
           <div className="flex items-start gap-8">
           <TitlePoster item={resolved} />
           <div className="min-w-0 flex-1">
