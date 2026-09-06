@@ -29,7 +29,11 @@ export function normalizeServerUrl(input: string) {
   if (url.hostname === "localhost") {
     url.hostname = "127.0.0.1";
   }
-  return url.origin + (url.pathname === "/" ? "" : url.pathname.replace(/\/+$/, ""));
+  let path = url.pathname.replace(/\/+$/, "");
+  if (path === "/web" || path.startsWith("/web/")) {
+    path = "";
+  }
+  return url.origin + path;
 }
 
 export function authHeader(session: Pick<JellyfinSession, "token" | "deviceId">, token?: string) {

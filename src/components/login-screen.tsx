@@ -96,7 +96,7 @@ export function LoginScreen() {
               id="server"
               value={serverUrl}
               onChange={(event) => setServerUrl(event.target.value)}
-              placeholder="http://homeserver.tailnet.ts.net:8096"
+              placeholder="http://100.121.26.58:8096"
               className="h-11 bg-white"
               required
             />
