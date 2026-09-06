@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { normalizeServerUrl } from "@/lib/session";
 import {
   describeConnectError,
+  isTailscaleHost,
   jellyfinFetch,
   looksLikeCloudflareAccess,
 } from "@/lib/jellyfin-request";
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
         cfAccessClientId: body.cfAccessClientId?.trim() || undefined,
         cfAccessClientSecret: body.cfAccessClientSecret?.trim() || undefined,
         cfAccessJwt: body.cfAccessJwt?.trim() || undefined,
-        timeoutMs: 12000,
+        timeoutMs: isTailscaleHost(new URL(serverUrl).hostname) ? 20000 : 12000,
       }
     );
     const text = await response.text();

@@ -202,7 +202,7 @@ export function LoginScreen() {
             Preview the home screen
           </Button>
           <p className="text-xs leading-relaxed text-zinc-500">
-            Open Cinema at http://127.0.0.1:3000. Away from home: Tailscale on, then the Tailscale Jellyfin URL — not jelly.watchwithwarren.uk unless you also added a Cloudflare service token.
+            Run Cinema on this laptop with npm run dev, then open http://127.0.0.1:3000. The Cursor preview cannot reach Tailscale. Turn Tailscale on here, then use http://100.121.26.58:8096.
           </p>
         </form>
       </div>

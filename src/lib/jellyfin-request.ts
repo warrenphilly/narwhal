@@ -57,6 +57,13 @@ export function looksLikeCloudflareAccess(response: Response, body: string) {
   );
 }
 
+export function isTailscaleHost(host: string) {
+  if (host.endsWith(".ts.net")) return true;
+  const parts = host.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((n) => Number.isNaN(n))) return false;
+  return parts[0] === 100 && parts[1] >= 64 && parts[1] <= 127;
+}
+
 export function tunnelFromSession(session: {
   allowInsecure?: boolean;
   cfAccessClientId?: string;
@@ -83,11 +90,14 @@ export function describeConnectError(error: unknown, serverUrl: string) {
     host = serverUrl;
   }
   const local = host === "localhost" || host === "127.0.0.1" || host === "::1";
+  const tailscale = isTailscaleHost(host);
   const localHint =
     "localhost only works when Cinema and Jellyfin run on the same computer. If you are using the cloud preview, that address is not your laptop — run Cinema locally, or use a public/Tailscale URL.";
+  const tailscaleHint =
+    "100.x addresses only work if Tailscale is ON on the same computer that is running npm run dev. The Cursor cloud preview has no Tailscale — run Cinema on your laptop (http://127.0.0.1:3000), then try again.";
 
   if (err.name === "TimeoutError" || code === "ABORT_ERR" || text.includes("abort") || text.includes("timeout")) {
-    return `Timed out reaching ${serverUrl}. ${local ? localHint : "Check the address, port, and that Jellyfin is running."}`;
+    return `Timed out reaching ${serverUrl}. ${tailscale ? tailscaleHint : local ? localHint : "Check the address, port, and that Jellyfin is running."}`;
   }
   if (
     text.includes("certificate") ||
@@ -109,7 +119,7 @@ export function describeConnectError(error: unknown, serverUrl: string) {
     return `Could not find host “${host}”. Use the server IP or a hostname this computer can resolve.`;
   }
   if (text.includes("fetch failed")) {
-    return `Could not reach ${serverUrl}. ${local ? localHint : "Use http:// or https:// plus the host and port Jellyfin shows in its dashboard."}`;
+    return `Could not reach ${serverUrl}. ${tailscale ? tailscaleHint : local ? localHint : "Use http:// or https:// plus the host and port Jellyfin shows in its dashboard."}`;
   }
   return err.message || "Could not reach Jellyfin.";
 }

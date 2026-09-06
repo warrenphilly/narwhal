@@ -8,6 +8,7 @@ import {
 } from "@/lib/session";
 import {
   describeConnectError,
+  isTailscaleHost,
   jellyfinFetch,
   looksLikeCloudflareAccess,
   type TunnelAuth,
@@ -45,10 +46,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Username is required." }, { status: 400 });
     }
 
+    const timeoutMs = isTailscaleHost(new URL(serverUrl).hostname) ? 20000 : 12000;
     const probe = await jellyfinFetch(
       `${serverUrl}/System/Info/Public`,
       { method: "GET" },
-      { ...tunnel, timeoutMs: 12000 }
+      { ...tunnel, timeoutMs }
     );
     const probeText = await probe.text();
     if (looksLikeCloudflareAccess(probe, probeText)) {
