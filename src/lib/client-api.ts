@@ -1,11 +1,21 @@
 import type { JellyfinItem, JellyfinItemsResult } from "@/lib/jellyfin-types";
+import { authHeader, getConnection } from "@/lib/jellyfin-connection";
 
 const ITEM_FIELDS =
   "Overview,Genres,PrimaryImageAspectRatio,MediaSources,CanDownload,ProductionYear,CommunityRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData";
 
 async function jf<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`/api/jf/${path}`, {
+  const direct = getConnection();
+  const url = direct
+    ? `${direct.serverUrl}/${path}`
+    : `/api/jf/${path}`;
+  const headers = new Headers(init?.headers);
+  if (direct) {
+    headers.set("Authorization", authHeader(direct.deviceId, direct.token));
+  }
+  const response = await fetch(url, {
     ...init,
+    headers,
     cache: "no-store",
   });
   if (!response.ok) {
@@ -22,11 +32,28 @@ export function imageUrl(itemId: string, options?: { type?: string; maxWidth?: n
   if (options?.maxHeight) params.set("maxHeight", String(options.maxHeight));
   if (options?.tag) params.set("tag", options.tag);
   params.set("quality", "90");
+  const direct = getConnection();
+  if (direct) {
+    params.set("api_key", direct.token);
+    return `${direct.serverUrl}/Items/${encodeURIComponent(itemId)}/Images/${type}?${params.toString()}`;
+  }
   return `/api/jf/Items/${encodeURIComponent(itemId)}/Images/${type}?${params.toString()}`;
 }
 
 export function streamUrl(itemId: string) {
+  const direct = getConnection();
+  if (direct) {
+    return `${direct.serverUrl}/Videos/${encodeURIComponent(itemId)}/stream?static=true&api_key=${encodeURIComponent(direct.token)}`;
+  }
   return `/api/jf/Videos/${encodeURIComponent(itemId)}/stream?static=true`;
+}
+
+export function downloadUrl(itemId: string, filename: string) {
+  const direct = getConnection();
+  if (direct) {
+    return `${direct.serverUrl}/Items/${encodeURIComponent(itemId)}/Download?api_key=${encodeURIComponent(direct.token)}`;
+  }
+  return `/api/download/${encodeURIComponent(itemId)}?filename=${encodeURIComponent(filename)}`;
 }
 
 export async function fetchMovies(userId: string) {
@@ -64,9 +91,15 @@ export async function searchMovies(userId: string, query: string) {
 }
 
 export async function reportPlaybackStart(itemId: string) {
-  await fetch("/api/jf/Sessions/Playing", {
+  const direct = getConnection();
+  const url = direct ? `${direct.serverUrl}/Sessions/Playing` : "/api/jf/Sessions/Playing";
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (direct) {
+    headers.Authorization = authHeader(direct.deviceId, direct.token);
+  }
+  await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ ItemId: itemId, PlayMethod: "DirectPlay" }),
   }).catch(() => undefined);
 }

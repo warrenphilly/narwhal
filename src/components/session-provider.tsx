@@ -8,6 +8,8 @@ import {
   useMemo,
   useState,
 } from "react";
+import { getConnection, setConnection } from "@/lib/jellyfin-connection";
+import { browserSignIn } from "@/lib/jellyfin-browser";
 
 export type SessionInfo = {
   signedIn: boolean;
@@ -56,7 +58,18 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     fetch("/api/auth/session", { cache: "no-store", signal: controller.signal })
       .then((response) => response.json() as Promise<SessionInfo>)
       .then((data) => {
-        if (!cancelled) setSession(data);
+        if (cancelled) return;
+        const stored = getConnection();
+        if (stored) {
+          setSession({
+            signedIn: true,
+            userName: stored.userName,
+            userId: stored.userId,
+            serverUrl: stored.serverUrl,
+          });
+          return;
+        }
+        setSession(data);
       })
       .catch(() => {
         if (!cancelled) setSession({ signedIn: false });
@@ -89,12 +102,31 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify(input),
       });
       const data = (await response.json()) as SessionInfo & { error?: string };
-      if (!response.ok) {
+      if (response.ok) {
+        setConnection(null);
+        setPreview(false);
+        setSession({ ...data, signedIn: true });
+        return;
+      }
+      try {
+        const direct = await browserSignIn({
+          serverUrl: input.serverUrl,
+          username: input.username,
+          password: input.password,
+        });
+        setConnection(direct);
+        setPreview(false);
+        setSession({
+          signedIn: true,
+          userName: direct.userName,
+          userId: direct.userId,
+          serverUrl: direct.serverUrl,
+        });
+        return;
+      } catch {
         setError(data.error || "Could not sign in.");
         throw new Error(data.error || "Could not sign in.");
       }
-      setPreview(false);
-      setSession({ ...data, signedIn: true });
     },
     []
   );
@@ -103,6 +135,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST" });
+    setConnection(null);
     setSession({ signedIn: false });
     setPreview(false);
   }, []);

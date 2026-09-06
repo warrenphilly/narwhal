@@ -10,6 +10,7 @@ import {
 import { fileNameForItem, formatBytes } from "@/lib/jellyfin-types";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 import { isDemoId } from "@/lib/demo-library";
+import { downloadUrl } from "@/lib/client-api";
 
 export type DownloadRecord = {
   id: string;
@@ -98,7 +99,7 @@ export function DownloadsProvider({ children }: { children: React.ReactNode }) {
       };
       setDownloads((current) => [record, ...current]);
 
-      const downloadPath = `/api/download/${encodeURIComponent(item.Id)}?filename=${encodeURIComponent(filename)}`;
+      const downloadPath = downloadUrl(item.Id, filename);
       const canPickFile = "showSaveFilePicker" in window;
 
       if (!canPickFile) {
