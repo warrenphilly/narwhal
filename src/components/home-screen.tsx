@@ -13,6 +13,8 @@ import {
   fetchResume,
   fetchShows,
   fetchUnplayedRecent,
+  isNewRelease,
+  seriesForNewEpisodes,
 } from "@/lib/client-api";
 import { DEMO_MOVIES, DEMO_SHOWS } from "@/lib/demo-library";
 import { rememberTab, tabFromSearch } from "@/lib/media-tab";
@@ -116,12 +118,16 @@ export function HomeScreen() {
   const allMovies = signedIn ? movies : DEMO_MOVIES;
   const allShows = signedIn ? shows : DEMO_SHOWS;
 
-  const featuredMovies = featuredWithNewReleases(movieLatest, [...unplayedMovies, ...movieLatest]);
+  const featuredMovies = featuredWithNewReleases(
+    movieLatest,
+    [...unplayedMovies, ...movieLatest].filter(isNewRelease)
+  );
   const featuredShows = featuredWithNewReleases(showLatest, [
-    ...latestEpisodes,
-    ...unplayedEpisodes,
-    ...unplayedSeries,
-    ...showLatest,
+    ...seriesForNewEpisodes(
+      [...latestEpisodes, ...unplayedEpisodes].filter(isNewRelease),
+      allShows
+    ),
+    ...unplayedSeries.filter(isNewRelease),
   ]);
   const featured = tab === "movies" ? featuredMovies : featuredShows;
   const watching = tab === "movies" ? movieResume : showResume;

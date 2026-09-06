@@ -310,8 +310,8 @@ export default function ShowPage() {
         </div>
       </div>
 
-      <div className="page-gutter relative z-10 mx-auto max-w-[1600px] pb-20">
-        <div className="grid md:grid-cols-[200px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)]">
+      <div className="relative z-10 mx-auto max-w-[1600px] px-4 pb-20 sm:px-8">
+        <div className="grid gap-8 lg:grid-cols-[210px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]">
           <aside>
             <p className="pb-3 text-xs font-semibold tracking-[0.18em] text-zinc-500 uppercase">
               Seasons

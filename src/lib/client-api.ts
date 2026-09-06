@@ -129,9 +129,30 @@ export function uniqueItems(items: JellyfinItem[]) {
 }
 
 export function featuredWithNewReleases(current: JellyfinItem[], incoming: JellyfinItem[]) {
-  const fresh = uniqueItems(incoming.filter(isNewRelease));
+  const fresh = uniqueItems(incoming);
   if (!fresh.length) return current;
   return uniqueItems([...fresh, ...current]);
+}
+
+export function seriesForNewEpisodes(episodes: JellyfinItem[], catalog: JellyfinItem[]) {
+  const byId = new Map(catalog.map((show) => [show.Id, show]));
+  const seen = new Set<string>();
+  const next: JellyfinItem[] = [];
+  for (const episode of episodes) {
+    const seriesId = episode.SeriesId;
+    if (!seriesId || seen.has(seriesId)) continue;
+    seen.add(seriesId);
+    next.push(
+      byId.get(seriesId) ?? {
+        Id: seriesId,
+        Name: episode.SeriesName || "Series",
+        Type: "Series",
+        DateCreated: episode.DateCreated,
+        PremiereDate: episode.PremiereDate,
+      }
+    );
+  }
+  return next;
 }
 
 export async function fetchPlayableId(userId: string, item: JellyfinItem) {
