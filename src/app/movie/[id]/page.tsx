@@ -107,43 +107,43 @@ export default function MoviePage() {
         <div className="hero-wash absolute inset-0" />
         <div className="relative mx-auto flex h-full w-full max-w-[1600px] min-h-0 flex-col justify-end px-4 pt-24 pb-8 sm:px-8">
           <div className="flex items-start gap-8">
-          <TitlePoster item={resolved} />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
-            <h1 className="mt-3 max-w-3xl text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
-              {resolved.Name}
-            </h1>
-            <TitleMeta item={resolved} streams={streams} trailers={trailers} />
-            {resolved.Taglines?.[0] && (
-              <p className="mt-3 text-base italic text-zinc-700 dark:text-zinc-200">{resolved.Taglines[0]}</p>
-            )}
-            {resolved.Overview && (
-              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-zinc-800 dark:text-zinc-100">
-                {resolved.Overview}
-              </p>
-            )}
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button
-                size="lg"
-                className="h-12 rounded-full px-6 text-base"
-                onClick={() => router.push(`/watch/${resolved.Id}`)}
-              >
-                <Play data-icon="inline-start" className="fill-current" />
-                Play
-              </Button>
-              <Button
-                size="lg"
-                variant="secondary"
-                className="h-12 rounded-full px-6 text-base"
-                disabled={demo || saving}
-                onClick={onDownload}
-              >
-                <Download data-icon="inline-start" />
-                {demo ? "Connect to download" : saving ? "Saving…" : "Download to laptop"}
-              </Button>
+            <TitlePoster item={resolved} />
+            <div className="min-w-0 flex-1 overflow-hidden lg:max-h-[315px] xl:max-h-[360px]">
+              <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
+              <h1 className="mt-3 text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
+                {resolved.Name}
+              </h1>
+              <TitleMeta item={resolved} streams={streams} trailers={trailers} />
+              {resolved.Taglines?.[0] && (
+                <p className="mt-3 text-base italic text-zinc-700 dark:text-zinc-200">{resolved.Taglines[0]}</p>
+              )}
+              {resolved.Overview && (
+                <p className="mt-5 text-lg leading-relaxed text-zinc-800 dark:text-zinc-100">
+                  {resolved.Overview}
+                </p>
+              )}
+              {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
             </div>
-            {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
           </div>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button
+              size="lg"
+              className="h-12 rounded-full px-6 text-base"
+              onClick={() => router.push(`/watch/${resolved.Id}`)}
+            >
+              <Play data-icon="inline-start" className="fill-current" />
+              Play
+            </Button>
+            <Button
+              size="lg"
+              variant="secondary"
+              className="h-12 rounded-full px-6 text-base"
+              disabled={demo || saving}
+              onClick={onDownload}
+            >
+              <Download data-icon="inline-start" />
+              {demo ? "Connect to download" : saving ? "Saving…" : "Download to laptop"}
+            </Button>
           </div>
           <TitleCast item={resolved} />
         </div>
