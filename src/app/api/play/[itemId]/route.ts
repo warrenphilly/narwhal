@@ -26,10 +26,7 @@ async function play(request: NextRequest, itemId: string) {
   }
 
   const target = new URL(`${session.serverUrl}/Videos/${encodeURIComponent(itemId)}/stream`);
-  target.searchParams.set("static", "true");
-  target.searchParams.set("Static", "true");
   request.nextUrl.searchParams.forEach((value, key) => {
-    if (key.toLowerCase() === "static") return;
     target.searchParams.set(key, value);
   });
 
@@ -50,7 +47,9 @@ async function play(request: NextRequest, itemId: string) {
       out.set(key, value);
     }
   });
-  if (!out.has("Accept-Ranges")) out.set("Accept-Ranges", "bytes");
+  if (!out.has("Accept-Ranges") && target.searchParams.get("static") === "true") {
+    out.set("Accept-Ranges", "bytes");
+  }
   out.set("Cache-Control", "no-store");
 
   return new NextResponse(upstream.body, {

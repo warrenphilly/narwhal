@@ -36,10 +36,6 @@ function NavItems({ className, itemClass }: { className?: string; itemClass: (ac
   );
 }
 
-function DesktopBrand() {
-  return <span className="text-[15px] font-semibold tracking-tight">Narwhal</span>;
-}
-
 function ScrollHeader({ children }: { children: React.ReactNode }) {
   const [hidden, setHidden] = useState(false);
   useEffect(() => {
@@ -86,10 +82,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="tv-root flex min-h-full flex-col">
       <ScrollHeader key={pathname}>
-        <div className="page-gutter mx-auto flex min-h-14 flex-wrap items-center gap-x-3 gap-y-2 py-2 sm:min-h-16 sm:flex-nowrap">
-          <Link href={homeHref(lastTab())} className="flex items-center gap-2 text-zinc-900 dark:text-zinc-50">
-            <NarwhalMark className="size-8" />
-            <DesktopBrand />
+        <div className="page-gutter mx-auto flex h-14 items-center gap-2 sm:h-16 sm:gap-4">
+          <Link href={homeHref(lastTab())} className="flex shrink-0 items-center gap-2 text-zinc-900 dark:text-zinc-50">
+            <NarwhalMark className="size-7 sm:size-8" />
+            <span className="hidden text-[15px] font-semibold tracking-tight sm:inline">Narwhal</span>
           </Link>
           <Suspense
             fallback={
@@ -167,7 +163,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </ScrollHeader>
-      <main className="min-w-0 flex-1 pb-24 md:pb-0">{children}</main>
+      <main className="min-w-0 flex-1 pt-14 pb-24 sm:pt-16 md:pb-8">{children}</main>
       <Suspense fallback={<nav className="fixed inset-x-0 bottom-0 z-40 md:hidden" />}>
         <NavItems
           className="fixed inset-x-0 bottom-0 z-40 flex border-t border-black/10 bg-[var(--page-bg)]/90 backdrop-blur-xl md:hidden dark:border-white/10"

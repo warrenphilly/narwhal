@@ -52,7 +52,7 @@ export function LoginScreen() {
   }
 
   return (
-    <div className="relative min-h-full overflow-hidden">
+    <div className="relative min-h-full overflow-x-clip overflow-y-auto">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/login-cinema.jpg" alt="" className="absolute inset-0 size-full object-cover" />
       <div className="absolute inset-0 bg-black/55" />

@@ -17,7 +17,7 @@ export default function DownloadsPage() {
 
   return (
     <AppShell>
-      <div className="page-gutter mx-auto max-w-3xl py-10 pt-28">
+      <div className="page-gutter mx-auto max-w-3xl py-6">
         <PageBack />
         <h1 className="text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Downloads</h1>
         <p className="mt-2 text-zinc-500">

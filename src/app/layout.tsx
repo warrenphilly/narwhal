@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
@@ -12,6 +12,12 @@ export const metadata: Metadata = {
   title: "Narwhal — Jellyfin for your laptop",
   description:
     "An Apple TV-style Jellyfin client that streams your library and downloads titles to this computer.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -26,11 +26,15 @@ export type MediaSource = {
   Container?: string;
   Name?: string;
   Path?: string;
+  SupportsDirectPlay?: boolean;
+  SupportsDirectStream?: boolean;
+  SupportsTranscoding?: boolean;
   DefaultSubtitleStreamIndex?: number;
   MediaStreams?: MediaStream[];
 };
 
 export type PlaybackInfo = {
+  PlaySessionId?: string;
   MediaSources?: MediaSource[];
 };
 

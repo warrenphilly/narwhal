@@ -51,12 +51,12 @@ export function HeroBanner({ items }: { items: JellyfinItem[] }) {
 
   return (
     <section
-      className="relative min-h-[56vh] overflow-hidden sm:min-h-[64vh] lg:min-h-[72vh]"
+      className="relative overflow-hidden"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
       <div
-        className="pointer-events-none absolute inset-0 scale-105 bg-cover bg-center transition-all duration-700"
+        className="pointer-events-none absolute inset-0 bg-cover bg-center"
         style={{
           backgroundImage: backdrop
             ? `url(${backdrop})`
@@ -64,11 +64,11 @@ export function HeroBanner({ items }: { items: JellyfinItem[] }) {
         }}
       />
       <div className="hero-wash absolute inset-0" />
-      <div className="relative z-10 mx-auto flex min-h-[56vh] max-w-[1600px] flex-col justify-end px-4 pb-8 pt-24 sm:min-h-[64vh] sm:px-8 sm:pb-16 lg:min-h-[72vh]">
-        <p className="mb-3 text-xs font-semibold tracking-[0.22em] text-zinc-700 uppercase dark:text-zinc-200">
+      <div className="relative z-10 mx-auto flex max-w-[1600px] flex-col px-4 py-6 sm:px-8 sm:py-10">
+        <p className="mb-2 text-[11px] font-semibold tracking-[0.22em] text-zinc-700 uppercase dark:text-zinc-200">
           {item.Type === "Series" ? "Featured series" : "New addition"}
         </p>
-        <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-5xl lg:text-7xl dark:text-white">
+        <h1 className="max-w-3xl text-2xl font-semibold tracking-tight break-words text-zinc-950 drop-shadow-sm sm:text-4xl lg:text-5xl dark:text-white">
           {item.Name}
         </h1>
         <div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-medium text-zinc-800 dark:text-zinc-100">
@@ -85,19 +85,19 @@ export function HeroBanner({ items }: { items: JellyfinItem[] }) {
           ))}
         </div>
         {item.Overview && (
-          <p className="mt-4 line-clamp-3 max-w-xl text-sm leading-relaxed text-zinc-800 sm:mt-5 sm:line-clamp-4 sm:text-lg dark:text-zinc-100">
+          <p className="mt-3 line-clamp-3 max-w-xl text-sm leading-relaxed text-zinc-800 sm:text-base dark:text-zinc-100">
             {item.Overview}
           </p>
         )}
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Button size="lg" className="h-12 rounded-full px-6 text-base" onClick={() => play()}>
+        <div className="mt-5 flex flex-wrap gap-2 sm:gap-3">
+          <Button size="lg" className="h-10 rounded-full px-5 text-sm sm:h-11 sm:text-base" onClick={() => play()}>
             <Play data-icon="inline-start" className="fill-current" />
             {item.Type === "Series" ? "Open series" : "Play"}
           </Button>
           <Button
             size="lg"
             variant="secondary"
-            className="h-12 rounded-full px-6 text-base"
+            className="h-10 rounded-full px-5 text-sm sm:h-11 sm:text-base"
             onClick={() => {
               if (item.Type === "Series") {
                 router.push(titlePageHref(item));
@@ -112,13 +112,13 @@ export function HeroBanner({ items }: { items: JellyfinItem[] }) {
           </Button>
           <Link
             href={titlePageHref(item)}
-            className="inline-flex h-12 items-center rounded-full px-6 text-base text-zinc-700 hover:bg-black/5 dark:text-zinc-200 dark:hover:bg-white/8"
+            className="inline-flex h-10 items-center rounded-full px-5 text-sm text-zinc-700 hover:bg-black/5 sm:h-11 sm:text-base dark:text-zinc-200 dark:hover:bg-white/8"
           >
             Details
           </Link>
         </div>
         {lineup.length > 1 && (
-          <div className="mt-8 flex items-center gap-3">
+          <div className="mt-5 flex items-center gap-3">
             <button
               type="button"
               aria-label="Previous featured title"

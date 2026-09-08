@@ -127,18 +127,15 @@
   }
   html {
     @apply font-sans;
-    overflow-x: hidden;
   }
   body {
     background: var(--page-bg);
     color: var(--page-fg);
-    overflow-x: hidden;
   }
 }
 
 .tv-root {
   min-height: 100%;
-  overflow-x: hidden;
   background: var(--page-bg);
   color: var(--page-fg);
 }

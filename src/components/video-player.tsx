@@ -37,6 +37,9 @@ export function VideoPlayer({
   const [paused, setPaused] = useState(false);
   const [logoOk, setLogoOk] = useState(true);
   const [playError, setPlayError] = useState<string | null>(null);
+  const [infoReady, setInfoReady] = useState(!userId);
+  const [forceTranscode, setForceTranscode] = useState(false);
+  const src = streamUrl(item.Id, info, forceTranscode);
   const tracks = useMemo(() => subtitleTracks(item.Id, info), [item.Id, info]);
   const headline = item.SeriesName || item.Name;
   const detail =
@@ -49,7 +52,13 @@ export function VideoPlayer({
         : "";
 
   useEffect(() => {
-    if (!userId) return;
+    setForceTranscode(false);
+    setPlayError(null);
+    if (!userId) {
+      setInfoReady(true);
+      return;
+    }
+    setInfoReady(false);
     fetchPlaybackInfo(item.Id, userId)
       .then((data) => {
         setInfo(data);
@@ -67,7 +76,8 @@ export function VideoPlayer({
           setTrack(String(pick.Index));
         }
       })
-      .catch(() => setInfo(null));
+      .catch(() => setInfo(null))
+      .finally(() => setInfoReady(true));
   }, [item.Id, userId]);
 
   useEffect(() => {
@@ -138,15 +148,25 @@ export function VideoPlayer({
 
   return (
     <div className="relative size-full">
+      {!infoReady ? (
+        <div className="flex size-full items-center justify-center text-white/70">Preparing stream…</div>
+      ) : (
       <video
         ref={videoRef}
-        key={item.Id}
+        key={`${item.Id}-${src}`}
         className="size-full bg-black object-contain"
-        src={streamUrl(item.Id)}
+        src={src}
         controls
         autoPlay
         playsInline
-        onError={() => setPlayError("This file could not start. Try another title, or play it in the Jellyfin web app to confirm the file is healthy.")}
+        onError={() => {
+          if (!forceTranscode) {
+            setForceTranscode(true);
+            setPlayError("Original file is not browser-friendly. Asking Jellyfin to convert it…");
+            return;
+          }
+          setPlayError("This file could not start. Confirm it plays in the Jellyfin web app.");
+        }}
       >
         {tracks.map((entry) => (
           <track
@@ -159,6 +179,7 @@ export function VideoPlayer({
           />
         ))}
       </video>
+      )}
       {playError && (
         <div className="pointer-events-none absolute inset-x-0 bottom-24 z-10 flex justify-center px-4">
           <p className="max-w-lg rounded-2xl bg-black/70 px-4 py-3 text-center text-sm text-white/85">

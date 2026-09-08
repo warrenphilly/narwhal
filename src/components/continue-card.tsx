@@ -20,9 +20,9 @@ export function ContinueCard({ item }: { item: JellyfinItem }) {
   return (
     <Link
       href={`/watch/${item.Id}`}
-      className="group relative w-[280px] shrink-0 snap-start outline-none sm:w-[340px]"
+      className="group relative w-[220px] shrink-0 snap-start outline-none sm:w-[300px]"
     >
-      <div className="relative aspect-video overflow-hidden rounded-xl bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] ring-2 ring-transparent transition duration-300 group-hover:scale-[1.03] group-hover:ring-zinc-900 group-focus-visible:scale-[1.03] group-focus-visible:ring-zinc-900 dark:bg-zinc-800 dark:group-hover:ring-zinc-100 dark:group-focus-visible:ring-zinc-100">
+      <div className="relative aspect-video overflow-hidden rounded-xl bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] ring-2 ring-transparent transition group-hover:ring-zinc-900 group-focus-visible:ring-zinc-900 dark:bg-zinc-800 dark:group-hover:ring-zinc-100 dark:group-focus-visible:ring-zinc-100">
         {demo ? (
           <div
             className="absolute inset-0"

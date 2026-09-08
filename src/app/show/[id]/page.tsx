@@ -154,7 +154,7 @@ export default function ShowPage() {
   if (!resolved && !error) {
     return (
       <AppShell>
-        <div className="page-gutter py-20 pt-28">
+        <div className="page-gutter py-6">
           <PageBack />
           <p className="text-zinc-500">Loading show…</p>
         </div>
@@ -165,7 +165,7 @@ export default function ShowPage() {
   if (error || !resolved) {
     return (
       <AppShell>
-        <div className="page-gutter py-20 pt-28">
+        <div className="page-gutter py-6">
           <PageBack />
           <p className="text-zinc-500">{error || "Show not found."}</p>
         </div>
@@ -248,7 +248,7 @@ export default function ShowPage() {
           }}
         />
         <div className="hero-wash absolute inset-0" />
-        <div className="relative z-10 mx-auto flex max-w-[1600px] flex-col px-4 pt-24 pb-8 sm:px-8 sm:pt-28">
+        <div className="relative z-10 mx-auto flex max-w-[1600px] flex-col px-4 py-6 sm:px-8">
           <PageBack className="text-zinc-800 hover:bg-black/6 dark:text-zinc-100 dark:hover:bg-white/10" />
           <div className="flex items-start gap-5 sm:gap-8">
             <TitlePoster item={resolved} />
@@ -260,7 +260,7 @@ export default function ShowPage() {
                   </p>
                   <TitleGenres item={resolved} />
                 </div>
-                <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-5xl xl:text-6xl dark:text-white">
+                <h1 className="mt-2 text-2xl font-semibold tracking-tight break-words text-zinc-950 drop-shadow-sm sm:text-4xl dark:text-white">
                   {resolved.Name}
                 </h1>
                 <TitleMeta
@@ -274,13 +274,13 @@ export default function ShowPage() {
                   }
                 />
                 {resolved.Overview && (
-                  <p className="mt-4 line-clamp-6 text-base leading-relaxed text-zinc-800 sm:text-lg dark:text-zinc-100">
+                  <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-zinc-800 sm:text-base dark:text-zinc-100">
                     {resolved.Overview}
                   </p>
                 )}
               </div>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <Button size="lg" className="h-12 rounded-full px-6 text-base" onClick={() => startWatching()}>
+              <div className="mt-4 flex flex-wrap gap-2 sm:gap-3">
+                <Button size="lg" className="h-10 rounded-full px-5 text-sm sm:h-11 sm:text-base" onClick={() => startWatching()}>
                   <Play data-icon="inline-start" className="fill-current" />
                   Start watching
                 </Button>
@@ -288,7 +288,7 @@ export default function ShowPage() {
                   <Button
                     size="lg"
                     variant="secondary"
-                    className="h-12 rounded-full px-6 text-base"
+                    className="h-10 rounded-full px-5 text-sm sm:h-11 sm:text-base"
                     onClick={resumeWatching}
                   >
                     Resume from {episodeLabel(nextUp!)}
@@ -297,7 +297,7 @@ export default function ShowPage() {
                 <Button
                   size="lg"
                   variant="secondary"
-                  className="h-12 rounded-full px-6 text-base"
+                  className="h-10 rounded-full px-5 text-sm sm:h-11 sm:text-base"
                   onClick={() => shufflePlay()}
                 >
                   <Shuffle data-icon="inline-start" />

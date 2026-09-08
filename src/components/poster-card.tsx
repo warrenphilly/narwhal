@@ -31,7 +31,7 @@ export function PosterCard({
         layout === "grid" ? "min-w-0 w-full" : cn("shrink-0", widths[size])
       )}
     >
-      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] ring-2 ring-transparent transition duration-300 group-hover:scale-[1.03] group-hover:ring-zinc-900 group-focus-visible:scale-[1.03] group-focus-visible:ring-zinc-900 dark:bg-zinc-800 dark:group-hover:ring-zinc-100 dark:group-focus-visible:ring-zinc-100">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] ring-2 ring-transparent transition group-hover:ring-zinc-900 group-focus-visible:ring-zinc-900 dark:bg-zinc-800 dark:group-hover:ring-zinc-100 dark:group-focus-visible:ring-zinc-100">
         {demo ? (
           <div
             className="absolute inset-0"

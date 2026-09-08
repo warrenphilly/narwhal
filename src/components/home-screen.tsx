@@ -154,16 +154,12 @@ export function HomeScreen() {
   }
 
   return (
-    <div className="pb-16">
-      <div className="relative">
-        <div className="pointer-events-none absolute inset-x-0 top-24 z-20 flex justify-center">
-          <div className="pointer-events-auto">
-            <MediaPills value={tab} />
-          </div>
-        </div>
-        <HeroBanner items={featured} />
+    <div className="pb-8">
+      <div className="flex justify-center px-4 py-3">
+        <MediaPills value={tab} />
       </div>
-      <div className="page-gutter -mt-6 space-y-10">
+      <HeroBanner items={featured} />
+      <div className="page-gutter mt-6 space-y-8">
         {error && <p className="text-sm text-red-600">{error}</p>}
         {signedIn && loaded && catalog.length === 0 && !error && (
           <p className="text-sm text-zinc-500">

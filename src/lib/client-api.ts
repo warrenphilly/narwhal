@@ -72,8 +72,30 @@ export function imageUrl(itemId: string, options?: { type?: string; maxWidth?: n
   return `/api/jf/Items/${encodeURIComponent(itemId)}/Images/${type}?${params.toString()}`;
 }
 
-export function streamUrl(itemId: string) {
-  return `/api/play/${encodeURIComponent(itemId)}`;
+export function streamUrl(itemId: string, info?: PlaybackInfo | null, forceTranscode = false) {
+  const source = info?.MediaSources?.[0];
+  const params = new URLSearchParams();
+  if (source?.Id) params.set("MediaSourceId", source.Id);
+  if (info?.PlaySessionId) params.set("PlaySessionId", info.PlaySessionId);
+  const video = source?.MediaStreams?.find((stream) => stream.Type === "Video");
+  const codec = (video?.Codec || "").toLowerCase();
+  const container = (source?.Container || "").toLowerCase();
+  const browserSafe =
+    ["h264", "avc", "avc1"].includes(codec) && ["mp4", "m4v", "mov"].includes(container);
+  const direct = !forceTranscode && source?.SupportsDirectPlay !== false && browserSafe;
+  if (direct) {
+    params.set("static", "true");
+  } else {
+    params.set("Container", "mp4");
+    params.set("VideoCodec", "h264");
+    params.set("AudioCodec", "aac,mp3");
+    params.set("TranscodingContainer", "mp4");
+    params.set("TranscodingProtocol", "http");
+    params.set("MaxStreamingBitrate", "12000000");
+    params.set("VideoBitrate", "8000000");
+    params.set("AudioBitrate", "192000");
+  }
+  return `/api/play/${encodeURIComponent(itemId)}?${params.toString()}`;
 }
 
 export function downloadUrl(itemId: string, filename: string) {
@@ -299,7 +321,26 @@ export async function fetchPlaybackInfo(itemId: string, userId: string) {
   return jf<PlaybackInfo>(`Items/${encodeURIComponent(itemId)}/PlaybackInfo?UserId=${encodeURIComponent(userId)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ UserId: userId }),
+    body: JSON.stringify({
+      UserId: userId,
+      MaxStreamingBitrate: 12_000_000,
+      DeviceProfile: {
+        MaxStreamingBitrate: 12_000_000,
+        DirectPlayProfiles: [
+          { Container: "mp4,m4v,mov", Type: "Video", VideoCodec: "h264", AudioCodec: "aac,mp3" },
+        ],
+        TranscodingProfiles: [
+          {
+            Container: "mp4",
+            Type: "Video",
+            VideoCodec: "h264",
+            AudioCodec: "aac",
+            Protocol: "http",
+            EstimateContentLength: true,
+          },
+        ],
+      },
+    }),
   });
 }
 

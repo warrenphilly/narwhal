@@ -62,7 +62,7 @@ export default function MoviePage() {
   if (!resolved && !error) {
     return (
       <AppShell>
-        <div className="page-gutter pt-28">
+        <div className="page-gutter py-6">
           <PageBack />
           <p className="text-zinc-500">Loading title…</p>
         </div>
@@ -73,7 +73,7 @@ export default function MoviePage() {
   if (error || !resolved) {
     return (
       <AppShell>
-        <div className="page-gutter pt-28">
+        <div className="page-gutter py-6">
           <PageBack />
           <p className="text-zinc-500">{error || "Title not found."}</p>
         </div>
@@ -123,7 +123,7 @@ export default function MoviePage() {
           }}
         />
         <div className="hero-wash absolute inset-0" />
-        <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-col px-4 pt-24 pb-8 sm:px-8">
+        <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-col px-4 py-6 sm:px-8">
           <PageBack className="text-zinc-800 hover:bg-black/6 dark:text-zinc-100 dark:hover:bg-white/10" />
           <div className="flex items-start gap-4 sm:gap-6">
             <TitlePoster item={resolved} compact />
@@ -132,7 +132,7 @@ export default function MoviePage() {
                 <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
                 <TitleGenres item={resolved} />
               </div>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-5xl dark:text-white">
+              <h1 className="mt-2 text-2xl font-semibold tracking-tight break-words text-zinc-950 drop-shadow-sm sm:text-4xl dark:text-white">
                 {resolved.Name}
               </h1>
               <TitleMeta item={resolved} streams={streams} trailers={trailers} />
