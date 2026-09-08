@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { ConnectionForm } from "@/components/connection-form";
 import { NarwhalMark } from "@/components/narwhal-mark";
@@ -22,7 +23,9 @@ export function ProfilePicker() {
 
   return (
     <div className="tv-root flex min-h-full flex-col items-center px-6 py-16">
-      <NarwhalMark className="size-16" />
+      <Link href="/" aria-label="Home">
+        <NarwhalMark className="size-16" />
+      </Link>
       <h1 className="mt-6 text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
         Who&apos;s watching?
       </h1>

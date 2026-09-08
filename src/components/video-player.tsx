@@ -884,7 +884,9 @@ export function VideoPlayer({
         >
           <div className="max-w-2xl pb-28 pt-24">
             <div className="flex items-center gap-3">
-              <NarwhalMark className="size-10" />
+              <Link href="/" aria-label="Home" onClick={(event) => event.stopPropagation()}>
+                <NarwhalMark className="size-10" />
+              </Link>
               {logoOk && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
