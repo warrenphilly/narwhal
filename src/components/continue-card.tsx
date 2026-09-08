@@ -22,7 +22,7 @@ export function ContinueCard({ item }: { item: JellyfinItem }) {
   return (
     <Link
       href={item.Type === "Series" && item.Id ? `/show/${item.Id}` : `/watch/${item.Id}`}
-      className="continue-card group relative w-[min(78vw,280px)] shrink-0 snap-start outline-none sm:w-[380px]"
+      className="continue-card group relative w-[min(48vw,190px)] shrink-0 snap-start outline-none sm:w-[380px]"
     >
       <div className="continue-case relative aspect-video overflow-hidden bg-zinc-900">
         {demo ? (
@@ -39,8 +39,8 @@ export function ContinueCard({ item }: { item: JellyfinItem }) {
           />
         )}
         <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/25">
-          <span className="flex size-12 items-center justify-center rounded-full bg-white text-zinc-900 opacity-0 shadow-lg transition group-hover:opacity-100">
-            <Play className="size-5 fill-current" />
+          <span className="flex size-9 items-center justify-center rounded-full bg-white text-zinc-900 opacity-0 shadow-lg transition group-hover:opacity-100 sm:size-12">
+            <Play className="size-4 fill-current sm:size-5" />
           </span>
         </div>
         {typeof progress === "number" && progress > 0 && progress < 100 && (
@@ -49,8 +49,8 @@ export function ContinueCard({ item }: { item: JellyfinItem }) {
           </div>
         )}
       </div>
-      <p className="mt-2.5 line-clamp-1 text-sm font-medium text-[var(--page-fg)]">{title}</p>
-      {detail && <p className="line-clamp-1 text-xs text-muted">{detail}</p>}
+      <p className="mt-1.5 line-clamp-1 text-xs font-medium text-[var(--page-fg)] sm:mt-2.5 sm:text-sm">{title}</p>
+      {detail && <p className="line-clamp-1 text-[10px] text-muted sm:text-xs">{detail}</p>}
     </Link>
   );
 }

@@ -216,6 +216,11 @@
   min-width: 0;
 }
 
+.shell-frame {
+  --content-max: 1920px;
+  --shell-outer: max(0px, calc((100vw - var(--content-max)) / 2));
+}
+
 /* Phones + narrow tablets/windows: compact hamburger (shared by web + desktop) */
 @media (max-width: 1023px) {
   .shell-frame {
@@ -227,15 +232,16 @@
   }
 
   .shell-main {
-    padding-top: 0;
+    padding-top: calc(0.5rem + 2.75rem + env(safe-area-inset-top, 0px));
     padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
   }
 
   .hero-banner {
     height: min(52vh, 26rem);
     min-height: 16rem;
-    margin: 0.75rem max(var(--page-pad), env(safe-area-inset-right, 0px)) 0
-      max(var(--page-pad), env(safe-area-inset-left, 0px));
+    margin: 0.75rem
+      calc(var(--shell-outer) + max(var(--page-pad), env(safe-area-inset-right, 0px))) 0
+      calc(var(--shell-outer) + max(var(--page-pad), env(safe-area-inset-left, 0px)));
     border-radius: 1.25rem;
   }
 
@@ -245,17 +251,28 @@
   }
 
   .page-gutter {
-    padding-left: max(var(--page-pad), env(safe-area-inset-left, 0px));
-    padding-right: max(var(--page-pad), env(safe-area-inset-right, 0px));
+    padding-left: calc(var(--shell-outer) + max(var(--page-pad), env(safe-area-inset-left, 0px)));
+    padding-right: calc(var(--shell-outer) + max(var(--page-pad), env(safe-area-inset-right, 0px)));
   }
 
   .mobile-dock {
     padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
   }
 
+  .mobile-topbar-wrap,
   .mobile-drawer {
-    left: max(var(--page-pad), env(safe-area-inset-left, 0px));
-    right: max(var(--page-pad), env(safe-area-inset-right, 0px));
+    left: calc(var(--shell-outer) + max(var(--page-pad), env(safe-area-inset-left, 0px)));
+    right: calc(var(--shell-outer) + max(var(--page-pad), env(safe-area-inset-right, 0px)));
+  }
+
+  .mobile-topbar-wrap {
+    top: max(0.5rem, env(safe-area-inset-top, 0px));
+    transition: transform 0.22s ease;
+  }
+
+  .mobile-topbar-wrap.is-hidden {
+    transform: translateY(calc(-100% - 1rem));
+    pointer-events: none;
   }
 
   .home-brand h1 {
@@ -271,6 +288,19 @@
   .home-brand .glass-edge img {
     width: 1.75rem;
     height: 1.75rem;
+  }
+
+  .shelf-section + .shelf-section {
+    margin-top: 0.5rem;
+    padding-top: 1.25rem;
+  }
+
+  .poster-case {
+    border-radius: 0.3rem;
+  }
+
+  .continue-case {
+    border-radius: 0.4rem;
   }
 
   /* Touch devices: no hover-shrink/expand that fights tap */
@@ -331,7 +361,7 @@
     position: fixed !important;
     top: 1.35rem;
     bottom: 1.35rem;
-    left: var(--shell-gutter);
+    left: calc(var(--shell-outer) + var(--shell-gutter));
     z-index: 30;
     display: flex !important;
     width: var(--shell-nav-collapsed);
@@ -340,7 +370,7 @@
     overflow: hidden;
     margin: 0;
     border-radius: 1.75rem;
-    transition: width 0.28s ease-out, padding 0.28s ease-out;
+    transition: width 0.28s ease-out, padding 0.28s ease-out, left 0.28s ease-out;
   }
 
   .shell-nav:hover {
@@ -349,14 +379,15 @@
   }
 
   .shell-main {
-    margin-left: calc(var(--shell-gutter) + var(--shell-nav-collapsed) + var(--shell-gutter));
-    padding-right: var(--shell-gutter);
+    margin-left: calc(var(--shell-outer) + var(--shell-gutter) + var(--shell-nav-collapsed) + var(--shell-gutter));
+    margin-right: calc(var(--shell-outer) + var(--shell-gutter));
+    padding-right: 0;
     padding-left: 0 !important;
-    transition: margin-left 0.28s ease-out;
+    transition: margin-left 0.28s ease-out, margin-right 0.28s ease-out;
   }
 
   .shell-frame:has(.shell-nav:hover) .shell-main {
-    margin-left: calc(var(--shell-gutter) + var(--shell-nav-expanded) + var(--shell-gutter));
+    margin-left: calc(var(--shell-outer) + var(--shell-gutter) + var(--shell-nav-expanded) + var(--shell-gutter));
   }
 
   .shell-main > :first-child {

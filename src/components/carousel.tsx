@@ -54,25 +54,25 @@ export function Carousel({
             aria-label="Previous"
             disabled={!canPrev}
             onClick={() => move(-1)}
-            className="glass-chip pointer-events-auto flex size-9 items-center justify-center rounded-full text-zinc-900 disabled:pointer-events-none disabled:opacity-0 sm:size-10 dark:text-zinc-50"
+            className="glass-chip pointer-events-auto flex size-8 items-center justify-center rounded-full text-zinc-900 disabled:pointer-events-none disabled:opacity-0 sm:size-10 dark:text-zinc-50"
           >
-            <ChevronLeft className="size-5" />
+            <ChevronLeft className="size-4 sm:size-5" />
           </button>
           <button
             type="button"
             aria-label="Next"
             disabled={!canNext}
             onClick={() => move(1)}
-            className="glass-chip pointer-events-auto flex size-9 items-center justify-center rounded-full text-zinc-900 disabled:pointer-events-none disabled:opacity-0 sm:size-10 dark:text-zinc-50"
+            className="glass-chip pointer-events-auto flex size-8 items-center justify-center rounded-full text-zinc-900 disabled:pointer-events-none disabled:opacity-0 sm:size-10 dark:text-zinc-50"
           >
-            <ChevronRight className="size-5" />
+            <ChevronRight className="size-4 sm:size-5" />
           </button>
         </div>
       )}
       <div
         ref={scroller}
         className={cn(
-          "shelf-scroll flex snap-x snap-mandatory touch-pan-x overflow-x-auto overflow-y-visible py-5 pt-6",
+          "shelf-scroll flex snap-x snap-mandatory touch-pan-x overflow-x-auto overflow-y-visible py-3 pt-4 sm:py-5 sm:pt-6",
           "[-webkit-overflow-scrolling:touch] overscroll-x-contain",
           itemGap
         )}

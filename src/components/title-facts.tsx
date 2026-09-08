@@ -70,8 +70,8 @@ export function TitlePoster({ item, compact }: { item: JellyfinItem; compact?: b
   const demo = isDemoId(item.Id);
   const [from, to] = demoPosterGradient(item.Id);
   return (
-    <div className={cn("shrink-0", compact ? "w-24 sm:w-36 lg:w-[168px]" : "w-28 sm:w-40 lg:w-[210px]")}>
-      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] dark:bg-zinc-800">
+    <div className={cn("shrink-0", compact ? "w-20 sm:w-36 lg:w-[168px]" : "w-24 sm:w-40 lg:w-[210px]")}>
+      <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] sm:rounded-xl dark:bg-zinc-800">
         {demo ? (
           <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, ${from}, ${to})` }} />
         ) : (

@@ -23,7 +23,11 @@ export function PosterCard({
   const imageId = item.Type === "Episode" && item.SeriesId ? item.SeriesId : item.Id;
   const [from, to] = demoPosterGradient(item.Id);
   const progress = item.UserData?.PlayedPercentage;
-  const widths = { sm: "w-[132px] sm:w-[148px]", md: "w-[158px] sm:w-[210px]", lg: "w-[180px] sm:w-[248px]" };
+  const widths = {
+    sm: "w-[74px] sm:w-[148px]",
+    md: "w-[105px] sm:w-[210px]",
+    lg: "w-[124px] sm:w-[248px]",
+  };
   const facts = formatCardFacts(item);
 
   return (
@@ -75,10 +79,10 @@ export function PosterCard({
           </div>
         )}
       </div>
-      <p className="mt-2.5 line-clamp-1 text-sm text-[var(--page-fg)]">
+      <p className="mt-1.5 line-clamp-1 text-xs text-[var(--page-fg)] sm:mt-2.5 sm:text-sm">
         {item.SeriesName || item.Name}
       </p>
-      {facts && <p className="mt-0.5 line-clamp-1 text-xs text-muted">{facts}</p>}
+      {facts && <p className="mt-0.5 line-clamp-1 text-[10px] text-muted sm:text-xs">{facts}</p>}
     </Link>
   );
 }

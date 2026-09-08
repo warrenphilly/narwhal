@@ -281,9 +281,12 @@ function ShellActions({
 function MobileMenu() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const lastY = useRef(0);
 
   useEffect(() => {
     setOpen(false);
+    setHidden(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -299,9 +302,33 @@ function MobileMenu() {
     };
   }, [open]);
 
+  useEffect(() => {
+    lastY.current = window.scrollY;
+    function onScroll() {
+      if (open) {
+        setHidden(false);
+        return;
+      }
+      const y = Math.max(0, window.scrollY);
+      const delta = y - lastY.current;
+      if (y < 16) {
+        setHidden(false);
+      } else if (delta > 8) {
+        setHidden(true);
+      } else if (delta < -8) {
+        setHidden(false);
+      }
+      lastY.current = y;
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [open]);
+
   return (
     <>
-      <div className="page-gutter sticky top-0 z-40 pt-[max(0.5rem,env(safe-area-inset-top,0px))] pb-2 lg:hidden">
+      <div
+        className={cn("mobile-topbar-wrap fixed z-40 lg:hidden", (hidden && !open) && "is-hidden")}
+      >
         <header className="mobile-topbar glass-panel flex h-11 w-full items-center gap-1.5 rounded-2xl px-1.5">
           <Button
             variant="ghost"

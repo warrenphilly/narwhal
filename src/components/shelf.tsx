@@ -29,12 +29,12 @@ export function Shelf({
   return (
     <section
       className={cn(
-        "shelf-section space-y-3",
-        variant === "continue" && "glass-panel glass-edge rounded-[1.75rem] p-4 sm:p-6"
+        "shelf-section space-y-2 sm:space-y-3",
+        variant === "continue" && "glass-panel glass-edge rounded-2xl p-2.5 sm:rounded-[1.75rem] sm:p-6"
       )}
     >
       <div className="flex items-center gap-2">
-        <h2 className="text-xl font-semibold tracking-tight text-[var(--page-fg)]">{title}</h2>
+        <h2 className="text-base font-semibold tracking-tight text-[var(--page-fg)] sm:text-xl">{title}</h2>
         {onMoveUp && (
           <div className="ml-auto flex items-center gap-1">
             <Button type="button" variant="ghost" size="icon-sm" aria-label={`Move ${title} up`} onClick={onMoveUp}>
@@ -52,7 +52,7 @@ export function Shelf({
         )}
       </div>
       {items.length > 0 ? (
-        <Carousel itemGap={variant === "continue" ? "gap-6" : "gap-5"}>
+        <Carousel itemGap={variant === "continue" ? "gap-3 sm:gap-6" : "gap-3 sm:gap-5"}>
           {items.slice(0, 24).map((item) =>
             variant === "continue" ? (
               <ContinueCard key={item.Id} item={item} />

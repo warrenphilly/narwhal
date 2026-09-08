@@ -243,7 +243,7 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
   return (
     <div className="pb-8">
       <HeroBanner items={featured.length ? featured : latestSigned} />
-      <div className="page-gutter mt-10 space-y-10 pb-10">
+      <div className="page-gutter mt-6 space-y-6 pb-8 sm:mt-10 sm:space-y-10 sm:pb-10">
         {error && <p className="text-sm text-red-600">{error}</p>}
         {signedIn && loaded && catalog.length === 0 && !error && (
           <p className="text-sm text-muted">
