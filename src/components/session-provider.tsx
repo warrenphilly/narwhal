@@ -60,7 +60,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const timer = setTimeout(() => controller.abort(), 4000);
     fetch("/api/auth/session", { cache: "no-store", signal: controller.signal })
       .then((response) => response.json() as Promise<SessionInfo>)
-      .then((data) => {
+      .then(async (data) => {
         if (cancelled) return;
         const stored = getConnection();
         if (stored) {
@@ -69,6 +69,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(stored),
           }).catch(() => undefined);
+          if (cancelled) return;
           setSession({
             signedIn: true,
             userName: stored.userName,
