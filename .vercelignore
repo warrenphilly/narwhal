@@ -1,0 +1,8 @@
+# Keep desktop packaging artifacts off Vercel deploys
+desktop
+dist
+*.dmg
+*.exe
+*.AppImage
+.build-test
+.build-test-log.txt

@@ -13,6 +13,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  DEFAULT_PLAYBACK_PREFS,
+  loadPlaybackPrefs,
+  savePlaybackPrefs,
+  type PlaybackPrefs,
+} from "@/lib/playback-prefs";
+import {
   SERVICE_LABELS,
   launchHref,
   loadServiceLinks,
@@ -56,11 +62,13 @@ function AppSettingsDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [links, setLinks] = useState(loadServiceLinks);
+  const [playback, setPlayback] = useState<PlaybackPrefs>(DEFAULT_PLAYBACK_PREFS);
 
   useEffect(() => {
     if (!open) return;
     setError(null);
     setLinks(loadServiceLinks());
+    setPlayback(loadPlaybackPrefs());
     fetch("/api/seerr/session", { cache: "no-store" })
       .then((response) => response.json())
       .then(async (data: SessionInfo) => {
@@ -98,6 +106,10 @@ function AppSettingsDialog({
     const href = launchHref(links[id]);
     if (!href) return;
     openInBrowser(href);
+  }
+
+  function updatePlayback(patch: Partial<PlaybackPrefs>) {
+    setPlayback((current) => savePlaybackPrefs({ ...current, ...patch }));
   }
 
   async function connect(event: React.FormEvent) {
@@ -171,6 +183,52 @@ function AppSettingsDialog({
           </Button>
           {info.connected && <p className="text-xs text-zinc-500">Connected to {info.serverUrl}</p>}
         </form>
+
+        <div className="space-y-3 border-t border-zinc-200 pt-4 dark:border-white/10">
+          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Shows & subtitles</p>
+          <label className="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={playback.showsStartFullscreen}
+              onChange={(event) => updatePlayback({ showsStartFullscreen: event.target.checked })}
+            />
+            Start TV episodes in fullscreen
+          </label>
+          <div className="space-y-1.5">
+            <Label htmlFor="sub-pad-top">
+              Subtitle top padding ({playback.subtitlePadTop}vh)
+            </Label>
+            <input
+              id="sub-pad-top"
+              type="range"
+              min={0}
+              max={24}
+              step={0.5}
+              value={playback.subtitlePadTop}
+              onChange={(event) => updatePlayback({ subtitlePadTop: Number(event.target.value) })}
+              className="h-2 w-full accent-[#AA5CC3]"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="sub-pad-bottom">
+              Subtitle bottom padding ({playback.subtitlePadBottom}vh)
+            </Label>
+            <input
+              id="sub-pad-bottom"
+              type="range"
+              min={0}
+              max={24}
+              step={0.5}
+              value={playback.subtitlePadBottom}
+              onChange={(event) => updatePlayback({ subtitlePadBottom: Number(event.target.value) })}
+              className="h-2 w-full accent-[#00A4DC]"
+            />
+          </div>
+          <p className="text-xs text-zinc-500">
+            Extra black space above and below TV episodes so captions stay readable.
+          </p>
+        </div>
 
         <div className="space-y-2 border-t border-zinc-200 pt-4 dark:border-white/10">
           <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Apps in your browser</p>

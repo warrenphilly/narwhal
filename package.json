@@ -4,6 +4,9 @@
   "version": "0.2.0",
   "private": true,
   "main": "desktop/main.cjs",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "desktop": "node scripts/desktop.mjs",

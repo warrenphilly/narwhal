@@ -22,6 +22,7 @@ import {
 import { formatClock, formatFinishTime, ticksToSeconds } from "@/lib/clock";
 import { formatRuntime } from "@/lib/jellyfin-types";
 import { playerTitleHref } from "@/lib/item-href";
+import { loadPlaybackPrefs, savePlaybackPrefs, type PlaybackPrefs } from "@/lib/playback-prefs";
 import type { JellyfinItem, PlaybackInfo } from "@/lib/jellyfin-types";
 
 function TrackPickers({
@@ -150,7 +151,10 @@ export function VideoPlayer({
   mutedRef.current = muted;
   const [view, setView] = useState<ViewMode>("fit");
   const [fullscreen, setFullscreen] = useState(false);
+  const [playbackPrefs, setPlaybackPrefs] = useState<PlaybackPrefs>(() => loadPlaybackPrefs());
   const rootRef = useRef<HTMLDivElement>(null);
+  const didAutoFullscreen = useRef(false);
+  const isShow = item.Type === "Episode";
   const resume = startFresh ? 0 : applyProfile(item).UserData?.PlaybackPositionTicks ?? 0;
   const resumeSeconds =
     startAtSeconds ?? ticksToSeconds(startFresh ? 0 : resume > MIN_RESUME ? resume : 0);
@@ -561,6 +565,38 @@ export function VideoPlayer({
     return () => document.removeEventListener("fullscreenchange", onFull);
   }, []);
 
+  useEffect(() => {
+    function syncPrefs() {
+      setPlaybackPrefs(loadPlaybackPrefs());
+    }
+    syncPrefs();
+    window.addEventListener("narwhal-playback-prefs", syncPrefs);
+    window.addEventListener("storage", syncPrefs);
+    return () => {
+      window.removeEventListener("narwhal-playback-prefs", syncPrefs);
+      window.removeEventListener("storage", syncPrefs);
+    };
+  }, []);
+
+  useEffect(() => {
+    didAutoFullscreen.current = false;
+  }, [item.Id]);
+
+  useEffect(() => {
+    if (!isShow || !playbackPrefs.showsStartFullscreen || didAutoFullscreen.current) return;
+    const node = rootRef.current;
+    if (!node || document.fullscreenElement) return;
+    didAutoFullscreen.current = true;
+    const timer = window.setTimeout(() => {
+      void node.requestFullscreen().catch(() => undefined);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [isShow, playbackPrefs.showsStartFullscreen, item.Id, synced]);
+
+  function updatePlaybackPrefs(patch: Partial<PlaybackPrefs>) {
+    setPlaybackPrefs((current) => savePlaybackPrefs({ ...current, ...patch }));
+  }
+
   function togglePlay() {
     const video = videoRef.current;
     if (!video) return;
@@ -609,6 +645,15 @@ export function VideoPlayer({
         ref={videoRef}
         key={`${item.Id}-${src}`}
         className={`absolute inset-0 m-auto bg-black ${synced ? "" : "opacity-0"} ${viewClass(view)}`}
+        style={
+          isShow
+            ? {
+                paddingTop: `${playbackPrefs.subtitlePadTop}vh`,
+                paddingBottom: `${playbackPrefs.subtitlePadBottom}vh`,
+                boxSizing: "border-box",
+              }
+            : undefined
+        }
         playsInline
         preload="auto"
         onWaiting={() => {
@@ -783,6 +828,52 @@ export function VideoPlayer({
                       {fullscreen ? "Exit fullscreen" : "Fullscreen"}
                     </button>
                   </div>
+                  {isShow && (
+                    <div className="space-y-3 border-t border-white/10 pt-3">
+                      <p className="text-xs font-semibold tracking-wide text-[#00A4DC] uppercase">
+                        Subtitle padding
+                      </p>
+                      <label className="block text-sm text-white/80">
+                        Top ({playbackPrefs.subtitlePadTop}vh)
+                        <input
+                          type="range"
+                          min={0}
+                          max={24}
+                          step={0.5}
+                          value={playbackPrefs.subtitlePadTop}
+                          onChange={(event) =>
+                            updatePlaybackPrefs({ subtitlePadTop: Number(event.target.value) })
+                          }
+                          className="mt-2 h-2 w-full accent-[#AA5CC3]"
+                        />
+                      </label>
+                      <label className="block text-sm text-white/80">
+                        Bottom ({playbackPrefs.subtitlePadBottom}vh)
+                        <input
+                          type="range"
+                          min={0}
+                          max={24}
+                          step={0.5}
+                          value={playbackPrefs.subtitlePadBottom}
+                          onChange={(event) =>
+                            updatePlaybackPrefs({ subtitlePadBottom: Number(event.target.value) })
+                          }
+                          className="mt-2 h-2 w-full accent-[#00A4DC]"
+                        />
+                      </label>
+                      <label className="flex items-start gap-2 text-sm text-white/75">
+                        <input
+                          type="checkbox"
+                          className="mt-1"
+                          checked={playbackPrefs.showsStartFullscreen}
+                          onChange={(event) =>
+                            updatePlaybackPrefs({ showsStartFullscreen: event.target.checked })
+                          }
+                        />
+                        Start episodes in fullscreen
+                      </label>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
