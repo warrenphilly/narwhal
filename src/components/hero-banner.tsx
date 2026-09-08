@@ -158,7 +158,10 @@ export function HeroBanner({ items }: { items: (JellyfinItem | FeaturedItem)[] }
       onMouseLeave={() => setPaused(false)}
     >
       <div
-        className={cn("flex h-full w-full will-change-transform", animate && "transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]")}
+        className={cn(
+          "flex h-full w-full will-change-transform [backface-visibility:hidden]",
+          animate && "transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        )}
         style={{ transform: `translate3d(-${safeIndex * 100}%, 0, 0)` }}
       >
         {lineup.map((entry) => {

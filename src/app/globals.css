@@ -86,12 +86,12 @@
   --page-muted: #3d2f5c;
   --page-pad: clamp(1rem, 5vw, 6rem);
 
-  /* Glass tokens (light) — white frost with neon purple / neon blue */
-  --glass-blur: 20px;
-  --glass-blur-strong: 28px;
-  --glass-chip-blur: 16px;
-  --glass-saturate: 190%;
-  --glass-brightness: 1.1;
+  /* Glass tokens (light) — keep blur modest so motion stays smooth */
+  --glass-blur: 10px;
+  --glass-blur-strong: 14px;
+  --glass-chip-blur: 8px;
+  --glass-saturate: 160%;
+  --glass-brightness: 1.08;
   --glass-blend: screen;
   --glass-bg: rgba(255, 255, 255, 0.48);
   --glass-bg-strong: rgba(255, 255, 255, 0.62);
@@ -156,11 +156,11 @@
   --page-muted: #ddd0f7;
 
   /* Glass tokens (dark) — reverse: deep frost with neon purple / neon blue */
-  --glass-blur: 24px;
-  --glass-blur-strong: 28px;
-  --glass-chip-blur: 16px;
-  --glass-saturate: 150%;
-  --glass-brightness: 0.92;
+  --glass-blur: 12px;
+  --glass-blur-strong: 16px;
+  --glass-chip-blur: 8px;
+  --glass-saturate: 140%;
+  --glass-brightness: 0.94;
   --glass-blend: screen;
   --glass-bg: rgba(18, 8, 40, 0.55);
   --glass-bg-strong: rgba(24, 10, 52, 0.7);
@@ -491,21 +491,23 @@
   overflow: hidden;
   pointer-events: none;
   background: var(--page-bg);
+  contain: paint;
+  transform: translateZ(0);
 }
 
 .liquid-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(110px);
-  opacity: 0.5;
-  will-change: transform;
-  animation: liquid-drift 28s ease-in-out infinite;
+  filter: blur(64px);
+  opacity: 0.42;
+  transform: translateZ(0);
+  animation: liquid-drift 36s ease-in-out infinite;
 }
 
 .dark .liquid-orb {
   mix-blend-mode: normal;
-  filter: blur(88px);
-  opacity: 0.62;
+  filter: blur(56px);
+  opacity: 0.5;
 }
 
 .liquid-orb-1 {
@@ -593,7 +595,7 @@
     radial-gradient(circle at 80% 15%, rgba(255, 255, 255, 0.35), transparent 28%),
     radial-gradient(circle at 70% 75%, rgba(255, 255, 255, 0.22), transparent 34%);
   mix-blend-mode: soft-light;
-  animation: liquid-drift 40s ease-in-out infinite reverse;
+  opacity: 0.7;
 }
 
 .liquid-grain {
@@ -696,18 +698,6 @@
   backdrop-filter: blur(var(--glass-chip-blur)) saturate(var(--glass-saturate));
 }
 
-@supports (backdrop-filter: url(#liquid-glass)) {
-  .glass-panel,
-  .glass-chip {
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) url(#liquid-glass);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) url(#liquid-glass);
-  }
-  .glass-card {
-    backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) url(#liquid-glass);
-    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) url(#liquid-glass);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .liquid-orb,
   .liquid-caustic {
@@ -785,28 +775,13 @@
 
   a,
   button,
-  [role="button"],
-  input,
-  .glass-panel,
-  .glass-card,
-  .glass-chip,
-  .glass-primary,
-  .hero-banner,
-  .poster-case,
-  .continue-case,
-  .shell-nav,
-  .shell-main {
+  [role="button"] {
     transition:
-      transform 0.28s ease,
-      box-shadow 0.28s ease,
-      background-color 0.28s ease,
-      color 0.28s ease,
-      border-color 0.28s ease,
-      width 0.28s ease,
-      padding 0.28s ease,
-      margin-left 0.28s ease,
-      opacity 0.28s ease,
-      filter 0.28s ease;
+      transform 0.2s ease,
+      background-color 0.2s ease,
+      color 0.2s ease,
+      border-color 0.2s ease,
+      opacity 0.2s ease;
   }
 }
 

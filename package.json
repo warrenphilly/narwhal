@@ -5,7 +5,7 @@
   "private": true,
   "main": "desktop/main.cjs",
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "node scripts/dev.mjs",
@@ -41,62 +41,5 @@
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
     "typescript": "^5"
-  },
-  "build": {
-    "appId": "app.narwhal.desktop",
-    "productName": "Narwhal",
-    "asar": true,
-    "files": [
-      "desktop/**/*",
-      "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": "public/icon.png",
-        "to": "icon.png"
-      },
-      {
-        "from": ".next/standalone",
-        "to": "server"
-      },
-      {
-        "from": ".next/static",
-        "to": "server/.next/static"
-      },
-      {
-        "from": "public",
-        "to": "server/public"
-      }
-    ],
-    "mac": {
-      "icon": "public/icon.png",
-      "category": "public.app-category.entertainment",
-      "target": [
-        { "target": "dmg", "arch": ["arm64"] }
-      ],
-      "identity": null
-    },
-    "win": {
-      "icon": "public/icon.png",
-      "target": [
-        { "target": "nsis", "arch": ["x64"] }
-      ]
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "shortcutName": "Narwhal"
-    },
-    "dmg": {
-      "title": "Narwhal",
-      "contents": [
-        { "x": 130, "y": 220 },
-        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
-      ]
-    },
-    "directories": {
-      "output": "dist"
-    }
   }
 }
