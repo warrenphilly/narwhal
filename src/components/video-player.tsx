@@ -346,7 +346,11 @@ export function VideoPlayer({
       window.removeEventListener("narwhal-quit", onHide);
       window.removeEventListener("pagehide", onHide);
     };
-  }, [item.Id, item.RunTimeTicks, startTicks, userId, length]);
+    // `src` is included because the <video> element remounts (its `key`
+    // includes `src`) whenever playback mode changes — e.g. once we learn a
+    // title needs HLS. Without it, these listeners stay attached to the old,
+    // now-detached element and the clock/progress bar stop updating.
+  }, [item.Id, item.RunTimeTicks, startTicks, userId, length, src]);
 
   const percent = length ? Math.min(100, (now / length) * 100) : 0;
 
@@ -524,7 +528,13 @@ export function VideoPlayer({
         onWaiting={() => {
           if (synced) setWaiting(true);
         }}
-        onPlaying={() => setPlayError(null)}
+        onPlaying={() => {
+          setPlayError(null);
+          if (synced) setWaiting(false);
+        }}
+        onCanPlay={() => {
+          if (synced) setWaiting(false);
+        }}
         onError={() => {
           if (errorStep.current === 0) {
             errorStep.current = 1;
