@@ -27,13 +27,17 @@ lsof -ti :43147 | xargs kill
 
 Do **not** run `npm run dev` and `npm run desktop` at the same time unless you want two copies. Desktop starts its own web server.
 
-Wait until the terminal says **Ready**. Then open this **exact** address:
+Wait until the terminal says **Ready**. The desktop window opens on its own.
 
-**http://127.0.0.1:3000**
-
-That `ERR_CONNECTION_REFUSED` / “localhost refused to connect” page means the browser opened `http://localhost` with no port (port 80). Cinema is on **3000**, so include the port.
+Browser-only: **http://127.0.0.1:3000** after `npm run dev`. That `ERR_CONNECTION_REFUSED` page means the browser opened `http://localhost` with no port.
 
 Do not open `http://0.0.0.0`. From another phone/laptop on the same Wi‑Fi, use `http://YOUR-LAPTOP-IP:3000`.
+
+To get this app on another computer: clone the GitHub repo, run `npm install`, then `npm run desktop`.
+
+## Seerr
+
+Open **Seerr** in the top bar. Paste your Seerr (or Jellyseerr) URL and an API key from Seerr → Settings → General. Search, request, and watch Radarr/Sonarr transfers in the left accordion. They refresh every few seconds.
 
 ## Connect Jellyfin on your LAN
 

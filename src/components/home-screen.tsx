@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { HeroBanner } from "@/components/hero-banner";
-import { MediaPills } from "@/components/media-pills";
 import { Shelf } from "@/components/shelf";
 import { useSession } from "@/components/session-provider";
 import { useProfiles } from "@/components/profile-provider";
@@ -19,7 +17,7 @@ import {
   seriesForNewEpisodes,
 } from "@/lib/client-api";
 import { DEMO_MOVIES, DEMO_SHOWS } from "@/lib/demo-library";
-import { rememberTab, tabFromSearch } from "@/lib/media-tab";
+import { rememberTab, type MediaTab } from "@/lib/media-tab";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 
 function groupByGenre(items: JellyfinItem[]) {
@@ -36,10 +34,9 @@ function groupByGenre(items: JellyfinItem[]) {
     .slice(0, 5);
 }
 
-export function HomeScreen() {
+export function LibraryHome({ kind }: { kind: MediaTab }) {
   const { session } = useSession();
-  const searchParams = useSearchParams();
-  const tab = tabFromSearch(searchParams.get("tab"));
+  const tab = kind;
   useEffect(() => {
     rememberTab(tab);
   }, [tab]);
@@ -155,9 +152,6 @@ export function HomeScreen() {
 
   return (
     <div className="pb-8">
-      <div className="flex justify-center px-4 py-3">
-        <MediaPills value={tab} />
-      </div>
       <HeroBanner items={featured} />
       <div className="page-gutter mt-6 space-y-8">
         {error && <p className="text-sm text-red-600">{error}</p>}

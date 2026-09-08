@@ -16,10 +16,9 @@ import { cn } from "@/lib/utils";
 
 function navLinks() {
   return [
-    { href: homeHref(lastTab()), label: "Watch Now", active: (path: string) => path === "/" },
     { href: "/movies", label: "Movies", active: (path: string) => path === "/movies" },
     { href: "/shows", label: "TV Shows", active: (path: string) => path === "/shows" },
-    { href: "/downloads", label: "Downloads", active: (path: string) => path === "/downloads" },
+    { href: "/seerr", label: "Seerr", active: (path: string) => path.startsWith("/seerr") },
   ];
 }
 
@@ -90,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Suspense
             fallback={
               <nav className="hidden items-center gap-1 md:flex">
-                <span className="rounded-full px-3 py-1.5 text-sm text-zinc-500">Watch Now</span>
+                <span className="rounded-full px-3 py-1.5 text-sm text-zinc-500">Movies</span>
               </nav>
             }
           >

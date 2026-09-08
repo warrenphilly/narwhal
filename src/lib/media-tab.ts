@@ -7,7 +7,7 @@ export function tabFromSearch(tab: string | null | undefined): MediaTab {
 }
 
 export function homeHref(tab: MediaTab) {
-  return tab === "shows" ? "/?tab=shows" : "/?tab=movies";
+  return tab === "shows" ? "/shows" : "/movies";
 }
 
 export function rememberTab(tab: MediaTab) {
