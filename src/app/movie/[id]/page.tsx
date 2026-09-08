@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Download, Play } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -15,6 +14,7 @@ import { LibraryButtons } from "@/components/library-buttons";
 import { WatchedButton } from "@/components/watched-button";
 import { useDownloads } from "@/components/downloads-provider";
 import { useSession } from "@/components/session-provider";
+import { VideoPlayer } from "@/components/video-player";
 import { fetchLocalTrailers, fetchMovie, fetchPlaybackInfo, imageUrl, setPlayed } from "@/lib/client-api";
 import { DEMO_MOVIES, demoPosterGradient, isDemoId } from "@/lib/demo-library";
 import type { JellyfinItem, MediaStream } from "@/lib/jellyfin-types";
@@ -30,6 +30,7 @@ export default function MoviePage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [played, setPlayedState] = useState(false);
+  const [playing, setPlaying] = useState(false);
   const demoItem = DEMO_MOVIES.find((movie) => movie.Id === params.id) ?? null;
 
   useEffect(() => {
@@ -93,6 +94,11 @@ export default function MoviePage() {
       });
   const movie = resolved;
 
+  function startPlayback() {
+    if (demo) return;
+    setPlaying(true);
+  }
+
   async function togglePlayed() {
     const next = !played;
     setPlayedState(next);
@@ -113,6 +119,14 @@ export default function MoviePage() {
     }
   }
 
+  if (playing && !demo) {
+    return (
+      <div className="fixed inset-0 z-[80] bg-black">
+        <VideoPlayer item={movie} userId={session?.userId} />
+      </div>
+    );
+  }
+
   return (
     <AppShell>
       <div className="relative">
@@ -128,7 +142,9 @@ export default function MoviePage() {
         <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-col px-4 py-6 sm:px-8">
           <PageBack className="text-zinc-800 hover:bg-black/6 dark:text-zinc-100 dark:hover:bg-white/10" />
           <div className="flex items-start gap-4 sm:gap-6">
-            <TitlePoster item={resolved} compact />
+            <button type="button" className="text-left" onClick={startPlayback}>
+              <TitlePoster item={resolved} compact />
+            </button>
             <div className="flex min-w-0 flex-1 flex-col">
               <div className="flex flex-wrap items-center gap-3">
                 <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
@@ -148,13 +164,18 @@ export default function MoviePage() {
               )}
               {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
               <div className="mt-4 flex flex-wrap gap-3">
-                <Link
+                <a
                   href={`/watch/${resolved.Id}`}
-                  className={cn(buttonVariants({ size: "lg" }), "h-11 rounded-full px-6 text-base")}
+                  className={cn(buttonVariants({ size: "lg" }), "relative z-20 h-11 rounded-full px-6 text-base")}
+                  onClick={(event) => {
+                    if (demo) return;
+                    event.preventDefault();
+                    startPlayback();
+                  }}
                 >
                   <Play data-icon="inline-start" className="fill-current" />
                   Play
-                </Link>
+                </a>
                 <Button
                   size="lg"
                   variant="secondary"

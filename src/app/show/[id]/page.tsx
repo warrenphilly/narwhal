@@ -11,6 +11,7 @@ import { LibraryButtons } from "@/components/library-buttons";
 import { WatchedButton } from "@/components/watched-button";
 import { useDownloads } from "@/components/downloads-provider";
 import { useSession } from "@/components/session-provider";
+import { VideoPlayer } from "@/components/video-player";
 import { EpisodeRow } from "@/components/episode-row";
 import { TitleCast, TitleGenres, TitleMeta, TitlePoster } from "@/components/title-facts";
 import {
@@ -67,6 +68,7 @@ export default function ShowPage() {
   const [error, setError] = useState<string | null>(null);
   const [played, setPlayedState] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [playItem, setPlayItem] = useState<JellyfinItem | null>(null);
   const demoShow = DEMO_SHOWS.find((item) => item.Id === params.id) ?? null;
 
   useEffect(() => {
@@ -185,7 +187,7 @@ export default function ShowPage() {
 
   async function startWatching() {
     if (!session?.userId || demo) {
-      router.push(`/watch/${series.Id}`);
+      window.location.assign(`/watch/${series.Id}`);
       return;
     }
     const firstSeasonId = seasonList[0]?.Id;
@@ -193,11 +195,12 @@ export default function ShowPage() {
       (firstSeasonId
         ? (await fetchEpisodes(session.userId, series.Id, firstSeasonId))[0]
         : listed[0]) ?? null;
-    router.push(`/watch/${first?.Id ?? series.Id}`);
+    if (first) setPlayItem(first);
+    else window.location.assign(`/watch/${series.Id}`);
   }
 
   function resumeWatching() {
-    if (nextUp) router.push(`/watch/${nextUp.Id}`);
+    if (nextUp) setPlayItem(nextUp);
   }
 
   async function togglePlayed() {
@@ -226,14 +229,22 @@ export default function ShowPage() {
   async function shufflePlay() {
     if (demo) {
       const pick = listed[Math.floor(Math.random() * listed.length)];
-      if (pick) router.push(`/watch/${pick.Id}`);
+      if (pick) setPlayItem(pick);
       return;
     }
     if (!session?.userId) return;
     const all = await fetchEpisodes(session.userId, series.Id).catch(() => listed);
     const pool = all.length ? all : listed;
     const pick = pool[Math.floor(Math.random() * pool.length)];
-    if (pick) router.push(`/watch/${pick.Id}`);
+    if (pick) setPlayItem(pick);
+  }
+
+  if (playItem && !demo) {
+    return (
+      <div className="fixed inset-0 z-[80] bg-black">
+        <VideoPlayer item={playItem} userId={session?.userId} />
+      </div>
+    );
   }
 
   return (
