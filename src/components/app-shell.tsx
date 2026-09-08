@@ -33,6 +33,14 @@ function NavItems({ className, itemClass }: { className?: string; itemClass: (ac
   );
 }
 
+function DesktopBrand() {
+  const [name, setName] = useState("Cinema");
+  useEffect(() => {
+    if (window.narwhal?.isDesktop) setName("Narwhal");
+  }, []);
+  return <span className="text-[15px] font-semibold tracking-tight">{name}</span>;
+}
+
 function ScrollHeader({ children }: { children: React.ReactNode }) {
   const [hidden, setHidden] = useState(false);
   useEffect(() => {
@@ -79,7 +87,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="flex size-8 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
               <Tv className="size-4" />
             </span>
-            <span className="text-[15px] font-semibold tracking-tight">Cinema</span>
+            <DesktopBrand />
           </Link>
           <Suspense
             fallback={

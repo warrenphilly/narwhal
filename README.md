@@ -1,6 +1,8 @@
-# Cinema
+# Cinema / Narwhal
 
-A laptop Jellyfin client with an Apple TV-style home screen. Browse your movie library, play titles in the browser, and download the original files to this computer.
+A laptop Jellyfin client with an Apple TV-style home screen. Browse your library, play titles, and download the original files to this computer.
+
+**Cinema** is the web app. **Narwhal** is the same app in an Electron desktop window (native save dialogs for downloads). They share this repo — that is why a separate local Narwhal clone was missing later features. Use this folder for both.
 
 ## Run it on your laptop
 
@@ -9,6 +11,12 @@ From the project folder:
 ```bash
 npm install
 npm run dev
+```
+
+Desktop window (Narwhal):
+
+```bash
+npm run desktop
 ```
 
 Wait until the terminal says **Ready**. Then open this **exact** address:

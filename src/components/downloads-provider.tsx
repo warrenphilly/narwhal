@@ -100,6 +100,36 @@ export function DownloadsProvider({ children }: { children: React.ReactNode }) {
       setDownloads((current) => [record, ...current]);
 
       const downloadPath = downloadUrl(item.Id, filename);
+      const desktop = window.narwhal;
+
+      if (desktop) {
+        const filePath = await desktop.pickSavePath(filename);
+        if (!filePath) {
+          patch(id, { status: "error", error: "Save canceled." });
+          return;
+        }
+        const stop = desktop.onDownloadProgress((payload) => {
+          if (payload.filePath !== filePath) return;
+          patch(id, {
+            received: payload.received,
+            total: payload.total || undefined,
+          });
+        });
+        try {
+          await desktop.startDownload(downloadPath, filePath);
+          patch(id, { status: "done", savedPath: filePath });
+        } catch (error) {
+          patch(id, {
+            status: "error",
+            error: error instanceof Error ? error.message : "Download failed.",
+          });
+          throw error;
+        } finally {
+          stop();
+        }
+        return;
+      }
+
       const canPickFile = "showSaveFilePicker" in window;
 
       if (!canPickFile) {
