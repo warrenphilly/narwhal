@@ -238,9 +238,9 @@ export default function ShowPage() {
 
   return (
     <AppShell>
-      <div className="relative overflow-hidden">
+      <div className="relative">
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className="pointer-events-none absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage: backdrop
               ? `url(${backdrop})`
@@ -248,19 +248,19 @@ export default function ShowPage() {
           }}
         />
         <div className="hero-wash absolute inset-0" />
-        <div className="relative mx-auto flex max-w-[1600px] flex-col px-4 pt-28 pb-10 sm:px-8">
+        <div className="relative z-10 mx-auto flex max-w-[1600px] flex-col px-4 pt-24 pb-8 sm:px-8 sm:pt-28">
           <PageBack className="text-zinc-800 hover:bg-black/6 dark:text-zinc-100 dark:hover:bg-white/10" />
-          <div className="flex items-start gap-8">
+          <div className="flex items-start gap-5 sm:gap-8">
             <TitlePoster item={resolved} />
-            <div className="flex min-w-0 flex-1 flex-col lg:max-h-[315px] xl:max-h-[360px]">
-              <div className="min-h-0 overflow-hidden">
+            <div className="flex min-w-0 flex-1 flex-col">
+              <div>
                 <div className="flex flex-wrap items-center gap-3">
                   <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">
                     Series
                   </p>
                   <TitleGenres item={resolved} />
                 </div>
-                <h1 className="mt-3 text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-6xl dark:text-white">
+                <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-5xl xl:text-6xl dark:text-white">
                   {resolved.Name}
                 </h1>
                 <TitleMeta
@@ -274,12 +274,12 @@ export default function ShowPage() {
                   }
                 />
                 {resolved.Overview && (
-                  <p className="mt-5 text-lg leading-relaxed text-zinc-800 dark:text-zinc-100">
+                  <p className="mt-4 line-clamp-6 text-base leading-relaxed text-zinc-800 sm:text-lg dark:text-zinc-100">
                     {resolved.Overview}
                   </p>
                 )}
               </div>
-              <div className="mt-auto flex flex-wrap gap-3 pt-4">
+              <div className="mt-4 flex flex-wrap gap-3">
                 <Button size="lg" className="h-12 rounded-full px-6 text-base" onClick={() => startWatching()}>
                   <Play data-icon="inline-start" className="fill-current" />
                   Start watching

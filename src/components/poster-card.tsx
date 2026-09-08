@@ -11,9 +11,11 @@ import { cn } from "@/lib/utils";
 export function PosterCard({
   item,
   size = "md",
+  layout = "shelf",
 }: {
   item: JellyfinItem;
   size?: "sm" | "md" | "lg";
+  layout?: "shelf" | "grid";
 }) {
   const demo = isDemoId(item.Id);
   const imageId = item.Type === "Episode" && item.SeriesId ? item.SeriesId : item.Id;
@@ -25,11 +27,11 @@ export function PosterCard({
     <Link
       href={titlePageHref(item)}
       className={cn(
-        "poster-card group relative shrink-0 snap-start outline-none",
-        widths[size]
+        "poster-card group relative snap-start outline-none",
+        layout === "grid" ? "min-w-0 w-full" : cn("shrink-0", widths[size])
       )}
     >
-      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] ring-2 ring-transparent transition duration-300 group-hover:scale-[1.06] group-hover:ring-zinc-900 group-focus-visible:scale-[1.06] group-focus-visible:ring-zinc-900 dark:bg-zinc-800 dark:group-hover:ring-zinc-100 dark:group-focus-visible:ring-zinc-100">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] ring-2 ring-transparent transition duration-300 group-hover:scale-[1.03] group-hover:ring-zinc-900 group-focus-visible:scale-[1.03] group-focus-visible:ring-zinc-900 dark:bg-zinc-800 dark:group-hover:ring-zinc-100 dark:group-focus-visible:ring-zinc-100">
         {demo ? (
           <div
             className="absolute inset-0"

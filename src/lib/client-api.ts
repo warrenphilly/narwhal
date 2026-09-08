@@ -73,11 +73,7 @@ export function imageUrl(itemId: string, options?: { type?: string; maxWidth?: n
 }
 
 export function streamUrl(itemId: string) {
-  const direct = getConnection();
-  if (direct) {
-    return `${direct.serverUrl}/Videos/${encodeURIComponent(itemId)}/stream?static=true&api_key=${encodeURIComponent(direct.token)}`;
-  }
-  return `/api/jf/Videos/${encodeURIComponent(itemId)}/stream?static=true`;
+  return `/api/play/${encodeURIComponent(itemId)}`;
 }
 
 export function downloadUrl(itemId: string, filename: string) {

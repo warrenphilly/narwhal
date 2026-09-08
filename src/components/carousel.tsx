@@ -47,13 +47,13 @@ export function Carousel({
   return (
     <div className={cn("relative", className)}>
       {(canPrev || canNext) && (
-        <>
+        <div className="pointer-events-none absolute inset-y-0 z-10 flex w-full items-center justify-between">
           <button
             type="button"
             aria-label="Previous"
             disabled={!canPrev}
             onClick={() => move(-1)}
-            className="absolute top-1/2 left-0 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-md ring-1 ring-black/8 disabled:opacity-30 dark:bg-zinc-800 dark:text-zinc-50 dark:ring-white/10"
+            className="pointer-events-auto ml-1 flex size-9 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-md ring-1 ring-black/8 disabled:pointer-events-none disabled:opacity-0 dark:bg-zinc-800 dark:text-zinc-50 dark:ring-white/10"
           >
             <ChevronLeft className="size-5" />
           </button>
@@ -62,17 +62,17 @@ export function Carousel({
             aria-label="Next"
             disabled={!canNext}
             onClick={() => move(1)}
-            className="absolute top-1/2 right-0 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-md ring-1 ring-black/8 disabled:opacity-30 dark:bg-zinc-800 dark:text-zinc-50 dark:ring-white/10"
+            className="pointer-events-auto mr-1 flex size-9 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-md ring-1 ring-black/8 disabled:pointer-events-none disabled:opacity-0 dark:bg-zinc-800 dark:text-zinc-50 dark:ring-white/10"
           >
             <ChevronRight className="size-5" />
           </button>
-        </>
+        </div>
       )}
       <div
         ref={scroller}
         className={cn(
           "shelf-scroll flex overflow-x-auto pb-2 pt-1",
-          !alignStart && (canPrev || canNext) && "px-12",
+          !alignStart && (canPrev || canNext) && "px-1 sm:px-2",
           itemGap
         )}
       >

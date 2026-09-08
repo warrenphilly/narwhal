@@ -36,6 +36,7 @@ export function VideoPlayer({
   const [finishAt, setFinishAt] = useState("");
   const [paused, setPaused] = useState(false);
   const [logoOk, setLogoOk] = useState(true);
+  const [playError, setPlayError] = useState<string | null>(null);
   const tracks = useMemo(() => subtitleTracks(item.Id, info), [item.Id, info]);
   const headline = item.SeriesName || item.Name;
   const detail =
@@ -144,7 +145,8 @@ export function VideoPlayer({
         src={streamUrl(item.Id)}
         controls
         autoPlay
-        crossOrigin="anonymous"
+        playsInline
+        onError={() => setPlayError("This file could not start. Try another title, or play it in the Jellyfin web app to confirm the file is healthy.")}
       >
         {tracks.map((entry) => (
           <track
@@ -157,6 +159,13 @@ export function VideoPlayer({
           />
         ))}
       </video>
+      {playError && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-10 flex justify-center px-4">
+          <p className="max-w-lg rounded-2xl bg-black/70 px-4 py-3 text-center text-sm text-white/85">
+            {playError}
+          </p>
+        </div>
+      )}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/80 via-black/35 to-transparent px-4 pt-4 pb-16">
         <div className="pointer-events-auto flex items-start gap-3">
           <Button

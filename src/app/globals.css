@@ -125,22 +125,26 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply font-sans;
+    overflow-x: hidden;
+  }
   body {
     background: var(--page-bg);
     color: var(--page-fg);
-  }
-  html {
-    @apply font-sans;
+    overflow-x: hidden;
   }
 }
 
 .tv-root {
   min-height: 100%;
+  overflow-x: hidden;
   background: var(--page-bg);
   color: var(--page-fg);
 }
 
 .hero-wash {
+  pointer-events: none;
   background:
     linear-gradient(
       to right,
@@ -158,8 +162,8 @@
 }
 
 .page-gutter {
-  padding-left: clamp(1.5rem, 6vw, 5.5rem);
-  padding-right: clamp(1.5rem, 6vw, 5.5rem);
+  padding-left: clamp(1rem, 3.5vw, 3rem);
+  padding-right: clamp(1rem, 3.5vw, 3rem);
 }
 
 .shelf-scroll {

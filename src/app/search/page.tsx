@@ -60,9 +60,9 @@ export default function SearchPage() {
           autoFocus
         />
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
-        <div className="mt-8 grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 md:grid-cols-4 lg:grid-cols-6">
           {results.map((item) => (
-            <PosterCard key={item.Id} item={item} />
+            <PosterCard key={item.Id} item={item} layout="grid" />
           ))}
         </div>
         {trimmed && results.length === 0 && !error && (

@@ -51,12 +51,12 @@ export function HeroBanner({ items }: { items: JellyfinItem[] }) {
 
   return (
     <section
-      className="relative min-h-[72vh] overflow-hidden"
+      className="relative min-h-[56vh] overflow-hidden sm:min-h-[64vh] lg:min-h-[72vh]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
       <div
-        className="absolute inset-0 scale-105 bg-cover bg-center transition-all duration-700"
+        className="pointer-events-none absolute inset-0 scale-105 bg-cover bg-center transition-all duration-700"
         style={{
           backgroundImage: backdrop
             ? `url(${backdrop})`
@@ -64,11 +64,11 @@ export function HeroBanner({ items }: { items: JellyfinItem[] }) {
         }}
       />
       <div className="hero-wash absolute inset-0" />
-      <div className="relative mx-auto flex min-h-[72vh] max-w-[1600px] flex-col justify-end px-4 pb-10 pt-28 sm:px-8 sm:pb-16">
+      <div className="relative z-10 mx-auto flex min-h-[56vh] max-w-[1600px] flex-col justify-end px-4 pb-8 pt-24 sm:min-h-[64vh] sm:px-8 sm:pb-16 lg:min-h-[72vh]">
         <p className="mb-3 text-xs font-semibold tracking-[0.22em] text-zinc-700 uppercase dark:text-zinc-200">
           {item.Type === "Series" ? "Featured series" : "New addition"}
         </p>
-        <h1 className="max-w-3xl text-5xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-7xl dark:text-white">
+        <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-5xl lg:text-7xl dark:text-white">
           {item.Name}
         </h1>
         <div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-medium text-zinc-800 dark:text-zinc-100">
@@ -85,7 +85,7 @@ export function HeroBanner({ items }: { items: JellyfinItem[] }) {
           ))}
         </div>
         {item.Overview && (
-          <p className="mt-5 max-w-xl text-base leading-relaxed text-zinc-800 sm:text-lg dark:text-zinc-100">
+          <p className="mt-4 line-clamp-3 max-w-xl text-sm leading-relaxed text-zinc-800 sm:mt-5 sm:line-clamp-4 sm:text-lg dark:text-zinc-100">
             {item.Overview}
           </p>
         )}

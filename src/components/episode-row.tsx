@@ -26,7 +26,7 @@ export function EpisodeRow({
   const progress = item.UserData?.PlayedPercentage;
 
   return (
-    <div className="flex gap-4 py-4">
+    <div className="flex min-w-0 gap-3 py-4 sm:gap-4">
       <button
         type="button"
         onClick={() => router.push(`/watch/${item.Id}`)}

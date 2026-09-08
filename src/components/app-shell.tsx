@@ -86,7 +86,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="tv-root flex min-h-full flex-col">
       <ScrollHeader key={pathname}>
-        <div className="page-gutter mx-auto flex h-20 items-center gap-6">
+        <div className="page-gutter mx-auto flex min-h-14 flex-wrap items-center gap-x-3 gap-y-2 py-2 sm:min-h-16 sm:flex-nowrap">
           <Link href={homeHref(lastTab())} className="flex items-center gap-2 text-zinc-900 dark:text-zinc-50">
             <NarwhalMark className="size-8" />
             <DesktopBrand />
@@ -167,7 +167,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </ScrollHeader>
-      <main className="flex-1 pb-16 md:pb-0">{children}</main>
+      <main className="min-w-0 flex-1 pb-24 md:pb-0">{children}</main>
       <Suspense fallback={<nav className="fixed inset-x-0 bottom-0 z-40 md:hidden" />}>
         <NavItems
           className="fixed inset-x-0 bottom-0 z-40 flex border-t border-black/10 bg-[var(--page-bg)]/90 backdrop-blur-xl md:hidden dark:border-white/10"

@@ -115,7 +115,7 @@ export default function MoviePage() {
     <AppShell>
       <div className="relative">
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className="pointer-events-none absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage: backdrop
               ? `url(${backdrop})`
@@ -123,16 +123,16 @@ export default function MoviePage() {
           }}
         />
         <div className="hero-wash absolute inset-0" />
-        <div className="relative mx-auto flex w-full max-w-[1600px] flex-col px-4 pt-24 pb-8 sm:px-8">
+        <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-col px-4 pt-24 pb-8 sm:px-8">
           <PageBack className="text-zinc-800 hover:bg-black/6 dark:text-zinc-100 dark:hover:bg-white/10" />
-          <div className="flex items-start gap-6">
+          <div className="flex items-start gap-4 sm:gap-6">
             <TitlePoster item={resolved} compact />
             <div className="flex min-w-0 flex-1 flex-col">
               <div className="flex flex-wrap items-center gap-3">
                 <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
                 <TitleGenres item={resolved} />
               </div>
-              <h1 className="mt-2 text-4xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-5xl dark:text-white">
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950 drop-shadow-sm sm:text-5xl dark:text-white">
                 {resolved.Name}
               </h1>
               <TitleMeta item={resolved} streams={streams} trailers={trailers} />
