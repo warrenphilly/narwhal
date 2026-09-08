@@ -51,6 +51,7 @@ export type JellyfinItem = {
   Id: string;
   Name: string;
   Type?: string;
+  CollectionType?: string;
   Overview?: string;
   ProductionYear?: number;
   DateCreated?: string;

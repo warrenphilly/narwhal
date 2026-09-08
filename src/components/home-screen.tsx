@@ -14,6 +14,7 @@ import {
   fetchResume,
   fetchShows,
   fetchUnplayedRecent,
+  fetchViews,
   isNewRelease,
   seriesForNewEpisodes,
 } from "@/lib/client-api";
@@ -53,6 +54,7 @@ export function HomeScreen() {
   const [shows, setShows] = useState<JellyfinItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [viewNames, setViewNames] = useState<string[]>([]);
 
   const signedIn = Boolean(session?.signedIn && session.userId);
 
@@ -69,6 +71,7 @@ export function HomeScreen() {
       fetchUnplayedRecent(session.userId, "Series").catch(() => [] as JellyfinItem[]),
       fetchMovies(session.userId),
       fetchShows(session.userId),
+      fetchViews(session.userId).catch(() => [] as JellyfinItem[]),
     ])
       .then(
         ([
@@ -81,6 +84,7 @@ export function HomeScreen() {
           nextUnplayedSeries,
           nextMovies,
           nextShows,
+          nextViews,
         ]) => {
           if (cancelled) return;
           setResume(nextResume);
@@ -92,6 +96,7 @@ export function HomeScreen() {
           setUnplayedSeries(nextUnplayedSeries);
           setMovies(nextMovies);
           setShows(nextShows);
+          setViewNames(nextViews.map((view) => view.Name).filter(Boolean));
           setError(null);
         }
       )
@@ -162,8 +167,12 @@ export function HomeScreen() {
         {error && <p className="text-sm text-red-600">{error}</p>}
         {signedIn && loaded && catalog.length === 0 && !error && (
           <p className="text-sm text-zinc-500">
-            Jellyfin answered, but this profile has no {tab === "movies" ? "movies" : "TV shows"} yet. Check that
-            those libraries are enabled for your Jellyfin user.
+            Connected to {session?.serverUrl || "Jellyfin"}, but no {tab === "movies" ? "movies" : "TV shows"} came
+            back.
+            {viewNames.length
+              ? ` Libraries on this user: ${viewNames.join(", ")}.`
+              : " This user has no libraries enabled."}{" "}
+            Switch to Home network under Who&apos;s watching if the address is still a Tailscale 100.x URL.
           </p>
         )}
         {!signedIn && (

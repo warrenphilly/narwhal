@@ -88,8 +88,9 @@ export function downloadUrl(itemId: string, filename: string) {
   return `/api/download/${encodeURIComponent(itemId)}?filename=${encodeURIComponent(filename)}`;
 }
 
-async function fetchLibrary(userId: string, itemType: "Movie" | "Series") {
+function libraryParams(userId: string, itemType: "Movie" | "Series", parentId?: string) {
   const params = new URLSearchParams({
+    UserId: userId,
     IncludeItemTypes: itemType,
     Recursive: "true",
     SortBy: "SortName",
@@ -98,21 +99,39 @@ async function fetchLibrary(userId: string, itemType: "Movie" | "Series") {
     Limit: "500",
     EnableImageTypes: "Primary,Backdrop,Thumb,Logo",
   });
-  const first = asItemList(
-    await jf<JellyfinItemsResult | JellyfinItem[]>(
-      `Users/${encodeURIComponent(userId)}/Items?${params.toString()}`
-    )
-  );
-  if (first.length) return first;
+  if (parentId) params.set("ParentId", parentId);
+  return params;
+}
 
-  const views = asItemList(
+export async function fetchViews(userId: string) {
+  return asItemList(
     await jf<JellyfinItemsResult | JellyfinItem[]>(`Users/${encodeURIComponent(userId)}/Views`).catch(() => [])
   );
+}
+
+function viewMatches(view: JellyfinItem, itemType: "Movie" | "Series") {
+  const kind = (view.CollectionType || "").toLowerCase();
+  if (!kind || kind === "mixed" || kind === "folder" || kind === "boxsets") return true;
+  if (itemType === "Movie") return kind === "movies" || kind === "homevideos" || kind === "musicvideos";
+  return kind === "tvshows";
+}
+
+async function fetchLibrary(userId: string, itemType: "Movie" | "Series") {
+  const paths = [
+    `Users/${encodeURIComponent(userId)}/Items?${libraryParams(userId, itemType).toString()}`,
+    `Items?${libraryParams(userId, itemType).toString()}`,
+  ];
+  for (const path of paths) {
+    const items = asItemList(await jf<JellyfinItemsResult | JellyfinItem[]>(path).catch(() => []));
+    if (items.length) return items;
+  }
+
+  const views = await fetchViews(userId);
   const collected: JellyfinItem[] = [];
-  for (const view of views) {
+  for (const view of views.filter((row) => viewMatches(row, itemType))) {
     const page = asItemList(
       await jf<JellyfinItemsResult | JellyfinItem[]>(
-        `Users/${encodeURIComponent(userId)}/Items?ParentId=${encodeURIComponent(view.Id)}&Recursive=true&IncludeItemTypes=${itemType}&SortBy=SortName&Fields=${LIST_FIELDS}&Limit=500`
+        `Users/${encodeURIComponent(userId)}/Items?${libraryParams(userId, itemType, view.Id).toString()}`
       ).catch(() => [])
     );
     collected.push(...page);

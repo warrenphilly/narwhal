@@ -15,6 +15,7 @@ export type ViewingProfile = {
   id: string;
   name: string;
   color: string;
+  emoji: string;
   favorites: string[];
   watchlist: string[];
   progress: Record<string, { positionTicks: number; played: boolean; updatedAt: number }>;
@@ -34,6 +35,8 @@ type ProfileContextValue = {
   setPicking: (open: boolean) => void;
   selectProfile: (id: string) => void;
   addProfile: (name: string) => void;
+  updateProfile: (id: string, patch: Partial<Pick<ViewingProfile, "name" | "color" | "emoji">>) => void;
+  removeProfile: (id: string) => void;
   toggleFavorite: (itemId: string) => void;
   toggleWatchlist: (itemId: string) => void;
   isFavorite: (itemId: string) => boolean;
@@ -45,23 +48,27 @@ type ProfileContextValue = {
 
 const ProfileContext = createContext<ProfileContextValue | null>(null);
 
-function storageKey(serverUrl?: string) {
-  return `narwhal-profiles:${serverUrl || "local"}`;
+function storageKey(userId?: string) {
+  return `narwhal-profiles:${userId || "local"}`;
 }
 
-function readStore(serverUrl?: string): Store {
+function readStore(userId?: string): Store {
   if (typeof window === "undefined") return { profiles: [], activeId: null };
   try {
-    const raw = window.localStorage.getItem(storageKey(serverUrl));
+    const raw = window.localStorage.getItem(storageKey(userId));
     if (!raw) return { profiles: [], activeId: null };
-    return JSON.parse(raw) as Store;
+    const parsed = JSON.parse(raw) as Store;
+    return {
+      ...parsed,
+      profiles: (parsed.profiles ?? []).map((row) => ({ ...row, emoji: row.emoji || "🐋" })),
+    };
   } catch {
     return { profiles: [], activeId: null };
   }
 }
 
-function writeStore(serverUrl: string | undefined, store: Store) {
-  window.localStorage.setItem(storageKey(serverUrl), JSON.stringify(store));
+function writeStore(userId: string | undefined, store: Store) {
+  window.localStorage.setItem(storageKey(userId), JSON.stringify(store));
 }
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
@@ -77,18 +84,19 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       setReady(true);
       return;
     }
-    const next = readStore(session.serverUrl);
+    const next = readStore(session.userId);
     if (!next.profiles.length) {
       const first: ViewingProfile = {
         id: crypto.randomUUID(),
         name: session.userName || "Me",
         color: COLORS[0],
+        emoji: "🐋",
         favorites: [],
         watchlist: [],
         progress: {},
       };
       const created = { profiles: [first], activeId: first.id };
-      writeStore(session.serverUrl, created);
+      writeStore(session.userId, created);
       setStore(created);
       setPicking(true);
     } else {
@@ -96,14 +104,14 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       setPicking(!next.activeId);
     }
     setReady(true);
-  }, [session?.signedIn, session?.serverUrl, session?.userName]);
+  }, [session?.signedIn, session?.userId, session?.userName]);
 
   const persist = useCallback(
     (next: Store) => {
       setStore(next);
-      writeStore(session?.serverUrl, next);
+      writeStore(session?.userId, next);
     },
-    [session?.serverUrl]
+    [session?.userId]
   );
 
   const updateActive = useCallback(
@@ -134,12 +142,26 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
           id: crypto.randomUUID(),
           name: name.trim() || `Profile ${store.profiles.length + 1}`,
           color: COLORS[store.profiles.length % COLORS.length],
+          emoji: "🎬",
           favorites: [],
           watchlist: [],
           progress: {},
         };
         persist({ profiles: [...store.profiles, next], activeId: next.id });
         setPicking(false);
+      },
+      updateProfile: (id, patch) =>
+        persist({
+          ...store,
+          profiles: store.profiles.map((row) => (row.id === id ? { ...row, ...patch } : row)),
+        }),
+      removeProfile: (id) => {
+        const profiles = store.profiles.filter((row) => row.id !== id);
+        if (!profiles.length) return;
+        persist({
+          profiles,
+          activeId: store.activeId === id ? profiles[0].id : store.activeId,
+        });
       },
       toggleFavorite: (itemId) =>
         updateActive((row) => ({
