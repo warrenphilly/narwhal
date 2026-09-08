@@ -151,34 +151,34 @@ export function VideoPlayer({
       {!infoReady ? (
         <div className="flex size-full items-center justify-center text-white/70">Preparing stream…</div>
       ) : (
-      <video
-        ref={videoRef}
-        key={`${item.Id}-${src}`}
-        className="size-full bg-black object-contain"
-        src={src}
-        controls
-        autoPlay
-        playsInline
-        onError={() => {
-          if (!forceTranscode) {
-            setForceTranscode(true);
-            setPlayError("Original file is not browser-friendly. Asking Jellyfin to convert it…");
-            return;
-          }
-          setPlayError("This file could not start. Confirm it plays in the Jellyfin web app.");
-        }}
-      >
-        {tracks.map((entry) => (
-          <track
-            key={entry.index}
-            kind="subtitles"
-            src={entry.src}
-            srcLang={entry.language}
-            label={entry.label}
-            default={track === String(entry.index)}
-          />
-        ))}
-      </video>
+        <video
+          ref={videoRef}
+          key={`${item.Id}-${src}`}
+          className="size-full bg-black object-contain"
+          src={src}
+          controls
+          autoPlay
+          playsInline
+          onError={() => {
+            if (!forceTranscode) {
+              setForceTranscode(true);
+              setPlayError("Original file is not browser-friendly. Asking Jellyfin to convert it…");
+              return;
+            }
+            setPlayError("This file could not start. Confirm it plays in the Jellyfin web app.");
+          }}
+        >
+          {tracks.map((entry) => (
+            <track
+              key={entry.index}
+              kind="subtitles"
+              src={entry.src}
+              srcLang={entry.language}
+              label={entry.label}
+              default={track === String(entry.index)}
+            />
+          ))}
+        </video>
       )}
       {playError && (
         <div className="pointer-events-none absolute inset-x-0 bottom-24 z-10 flex justify-center px-4">
