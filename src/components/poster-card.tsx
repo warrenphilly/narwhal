@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { imageUrl } from "@/lib/client-api";
-import { playHref } from "@/lib/item-href";
+import { titlePageHref } from "@/lib/item-href";
 import { formatRuntime } from "@/lib/jellyfin-types";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 import { demoPosterGradient, isDemoId } from "@/lib/demo-library";
@@ -12,10 +12,12 @@ export function PosterCard({
   item,
   size = "md",
   layout = "shelf",
+  onMove,
 }: {
   item: JellyfinItem;
   size?: "sm" | "md" | "lg";
   layout?: "shelf" | "grid";
+  onMove?: (item: JellyfinItem) => void;
 }) {
   const demo = isDemoId(item.Id);
   const imageId = item.Type === "Episode" && item.SeriesId ? item.SeriesId : item.Id;
@@ -25,7 +27,7 @@ export function PosterCard({
 
   return (
     <Link
-      href={playHref(item)}
+      href={titlePageHref(item)}
       className={cn(
         "poster-card group relative snap-start outline-none",
         layout === "grid" ? "min-w-0 w-full" : cn("shrink-0", widths[size])
@@ -42,6 +44,7 @@ export function PosterCard({
           <img
             src={imageUrl(imageId, { maxHeight: 540 })}
             alt=""
+            loading="lazy"
             className="absolute inset-0 size-full object-cover"
           />
         )}
@@ -51,6 +54,19 @@ export function PosterCard({
             {[item.ProductionYear, formatRuntime(item.RunTimeTicks)].filter(Boolean).join(" · ")}
           </p>
         </div>
+        {onMove && (
+          <button
+            type="button"
+            className="absolute top-2 right-2 z-10 rounded-full bg-black/65 px-2 py-1 text-[11px] font-medium text-white ring-1 ring-white/20"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onMove(item);
+            }}
+          >
+            Move
+          </button>
+        )}
         {typeof progress === "number" && progress > 0 && progress < 100 && (
           <div className="absolute inset-x-2 bottom-2 h-1 overflow-hidden rounded-full bg-white/30">
             <div className="h-full bg-white" style={{ width: `${progress}%` }} />

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jellyfinFetch } from "@/lib/jellyfin-request";
-import { getSeerrSession } from "@/lib/seerr";
+import { getSeerrSession } from "@/lib/seerr-session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

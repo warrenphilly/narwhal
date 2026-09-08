@@ -14,6 +14,10 @@ import { useSession } from "@/components/session-provider";
 import { VideoPlayer } from "@/components/video-player";
 import { EpisodeRow } from "@/components/episode-row";
 import { TitleCast, TitleGenres, TitleMeta, TitlePoster } from "@/components/title-facts";
+import { HeroArt } from "@/components/hero-art";
+import { TitleGroupControl } from "@/components/title-group";
+import { ChannelAdd } from "@/components/channel-add";
+import { PageSpinner } from "@/components/narwhal-spinner";
 import {
   fetchEpisodes,
   fetchLocalTrailers,
@@ -21,7 +25,6 @@ import {
   fetchNextUp,
   fetchPlaybackInfo,
   fetchSeasons,
-  imageUrl,
   setPlayed,
 } from "@/lib/client-api";
 import { episodeLabel } from "@/lib/clock";
@@ -168,7 +171,7 @@ export default function ShowPage() {
     [demo, resolved, activeSeason, episodes]
   );
 
-  if (loading) return <div className="tv-root min-h-full" />;
+  if (loading) return <PageSpinner label="Opening your library…" />;
   if (!session?.signedIn && !preview) return <LoginScreen />;
 
   if (!resolved && !error) {
@@ -176,7 +179,7 @@ export default function ShowPage() {
       <AppShell>
         <div className="page-gutter py-6">
           <PageBack />
-          <p className="text-zinc-500">Loading show…</p>
+          <PageSpinner label="Finding this show…" />
         </div>
       </AppShell>
     );
@@ -195,12 +198,6 @@ export default function ShowPage() {
 
   const series = resolved;
   const [from, to] = demoPosterGradient(series.Id);
-  const backdrop = demo
-    ? undefined
-    : imageUrl(series.Id, {
-        type: series.BackdropImageTags?.length ? "Backdrop" : "Primary",
-        maxWidth: 1920,
-      });
   const canResume = Boolean(nextUp);
 
   async function startWatching() {
@@ -265,15 +262,8 @@ export default function ShowPage() {
 
   return (
     <AppShell>
-      <div className="relative">
-        <div
-          className="pointer-events-none absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: backdrop
-              ? `url(${backdrop})`
-              : `linear-gradient(135deg, ${from}, ${to})`,
-          }}
-        />
+      <div className="relative min-h-[28rem] overflow-visible sm:min-h-[34rem]">
+        <HeroArt item={demo ? null : resolved} gradient={[from, to]} />
         <div className="hero-wash absolute inset-0" />
         <div className="relative z-10 mx-auto flex max-w-[1600px] flex-col px-4 py-6 sm:px-8">
           <PageBack className="text-zinc-800 hover:bg-black/6 dark:text-zinc-100 dark:hover:bg-white/10" />
@@ -334,6 +324,10 @@ export default function ShowPage() {
                 <LibraryButtons itemId={resolved.Id} disabled={demo} />
               </div>
             </div>
+          </div>
+          <div className="mt-4 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+            <TitleGroupControl item={resolved} userId={session?.userId} tab="shows" />
+            <ChannelAdd itemId={resolved.Id} userId={session?.userId} name={resolved.Name} type="series" />
           </div>
           <TitleCast item={resolved} />
         </div>

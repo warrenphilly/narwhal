@@ -26,29 +26,44 @@ async function play(request: NextRequest, itemId: string) {
   if (!session) {
     return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   }
+  const auth = session;
 
   const preferTranscode = request.nextUrl.searchParams.get("transcode") === "1";
-  let target: string;
-  try {
-    target = await resolveJellyfinPlayUrl(session, itemId, preferTranscode);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not prepare playback.";
-    return NextResponse.json({ error: message }, { status: 502 });
+  const hardTranscode = request.nextUrl.searchParams.get("hard") === "1";
+  const audioRaw = request.nextUrl.searchParams.get("audio");
+  const audioIndex = audioRaw && audioRaw !== "off" ? Number(audioRaw) : undefined;
+  const startRaw = Number(request.nextUrl.searchParams.get("startTicks") ?? 0);
+  const startTicks = Number.isFinite(startRaw) && startRaw > 0 ? startRaw : 0;
+  const audio = Number.isFinite(audioIndex) ? audioIndex : undefined;
+
+  async function openStream(transcode: boolean, hard: boolean, start: number) {
+    const target = await resolveJellyfinPlayUrl(auth, itemId, transcode, audio, start, hard);
+    const direct = /[?&]static=true/i.test(target);
+    const headers = new Headers();
+    const range = request.headers.get("range");
+    if (range && direct && start === 0) headers.set("Range", range);
+    headers.set("Authorization", authHeader(auth));
+    headers.set("Accept-Encoding", "identity");
+    const response = await jellyfinFetch(target, { method: "GET", headers, redirect: "follow" }, { ...tunnelFromSession(auth) });
+    return { response, direct };
   }
 
-  const headers = new Headers();
-  const range = request.headers.get("range");
-  if (range) headers.set("Range", range);
-  headers.set("Authorization", authHeader(session));
-  headers.set("Accept-Encoding", "identity");
-
   let upstream: Response;
+  let direct = false;
   try {
-    upstream = await jellyfinFetch(
-      target,
-      { method: "GET", headers, redirect: "follow" },
-      { ...tunnelFromSession(session) }
-    );
+    const first = await openStream(preferTranscode, hardTranscode, startTicks);
+    upstream = first.response;
+    direct = first.direct;
+    if (!upstream.ok && upstream.status !== 206 && startTicks > 0) {
+      const retry = await openStream(preferTranscode, hardTranscode, 0);
+      upstream = retry.response;
+      direct = retry.direct;
+    }
+    if (!upstream.ok && upstream.status !== 206 && !hardTranscode) {
+      const retry = await openStream(true, true, 0);
+      upstream = retry.response;
+      direct = retry.direct;
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not reach the video stream.";
     return NextResponse.json({ error: message }, { status: 502 });
@@ -70,7 +85,11 @@ async function play(request: NextRequest, itemId: string) {
   });
   if (!out.has("Content-Type")) out.set("Content-Type", "video/mp4");
   out.set("Cache-Control", "no-store");
-  out.set("Accept-Ranges", "bytes");
+  if (direct) out.set("Accept-Ranges", "bytes");
+  else {
+    out.delete("Accept-Ranges");
+    out.set("Accept-Ranges", "none");
+  }
 
   return new NextResponse(upstream.body, {
     status: upstream.status,

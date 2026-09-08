@@ -3,12 +3,16 @@ import type { NextConfig } from "next";
 
 function localDevOrigins() {
   const origins = new Set(["localhost", "127.0.0.1", "[::1]", "0.0.0.0"]);
-  for (const list of Object.values(os.networkInterfaces())) {
-    for (const net of list ?? []) {
-      if (net.family === "IPv4") {
-        origins.add(net.address);
+  try {
+    for (const list of Object.values(os.networkInterfaces())) {
+      for (const net of list ?? []) {
+        if (net.family === "IPv4") {
+          origins.add(net.address);
+        }
       }
     }
+  } catch {
+    /* network interface listing is blocked in some sandboxes */
   }
   return [
     ...origins,
@@ -34,6 +38,7 @@ function localDevOrigins() {
 }
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   allowedDevOrigins: localDevOrigins(),
   async headers() {
     return [

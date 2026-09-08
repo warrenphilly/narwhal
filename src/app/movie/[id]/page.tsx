@@ -15,7 +15,11 @@ import { WatchedButton } from "@/components/watched-button";
 import { useDownloads } from "@/components/downloads-provider";
 import { useSession } from "@/components/session-provider";
 import { VideoPlayer } from "@/components/video-player";
-import { fetchLocalTrailers, fetchMovie, fetchPlaybackInfo, imageUrl, setPlayed } from "@/lib/client-api";
+import { HeroArt } from "@/components/hero-art";
+import { TitleGroupControl } from "@/components/title-group";
+import { ChannelAdd } from "@/components/channel-add";
+import { PageSpinner } from "@/components/narwhal-spinner";
+import { fetchLocalTrailers, fetchMovie, fetchPlaybackInfo, setPlayed } from "@/lib/client-api";
 import { DEMO_MOVIES, demoPosterGradient, isDemoId } from "@/lib/demo-library";
 import type { JellyfinItem, MediaStream } from "@/lib/jellyfin-types";
 
@@ -57,11 +61,7 @@ export default function MoviePage() {
       .catch(() => undefined);
   }, [params.id, session?.userId, router]);
 
-  useEffect(() => {
-    if (item && !isDemoId(item.Id)) setPlaying(true);
-  }, [item]);
-
-  if (loading) return <div className="tv-root min-h-full" />;
+  if (loading) return <PageSpinner label="Opening your library…" />;
   if (!session?.signedIn && !preview) return <LoginScreen />;
 
   const resolved = demoItem ?? item;
@@ -71,7 +71,7 @@ export default function MoviePage() {
       <AppShell>
         <div className="page-gutter py-6">
           <PageBack />
-          <p className="text-zinc-500">Loading title…</p>
+          <PageSpinner label="Finding this title…" />
         </div>
       </AppShell>
     );
@@ -90,12 +90,6 @@ export default function MoviePage() {
 
   const demo = isDemoId(resolved.Id);
   const [from, to] = demoPosterGradient(resolved.Id);
-  const backdrop = demo
-    ? undefined
-    : imageUrl(resolved.Id, {
-        type: resolved.BackdropImageTags?.length ? "Backdrop" : "Primary",
-        maxWidth: 1920,
-      });
   const movie = resolved;
 
   function startPlayback() {
@@ -133,15 +127,8 @@ export default function MoviePage() {
 
   return (
     <AppShell>
-      <div className="relative">
-        <div
-          className="pointer-events-none absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: backdrop
-              ? `url(${backdrop})`
-              : `linear-gradient(135deg, ${from}, ${to})`,
-          }}
-        />
+      <div className="relative min-h-[28rem] overflow-visible sm:min-h-[34rem]">
+        <HeroArt item={demo ? null : resolved} gradient={[from, to]} />
         <div className="hero-wash absolute inset-0" />
         <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-col px-4 py-6 sm:px-8">
           <PageBack className="text-zinc-800 hover:bg-black/6 dark:text-zinc-100 dark:hover:bg-white/10" />
@@ -194,6 +181,10 @@ export default function MoviePage() {
                 <LibraryButtons itemId={resolved.Id} disabled={demo} />
               </div>
             </div>
+          </div>
+          <div className="mt-4 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+            <TitleGroupControl item={resolved} userId={session?.userId} tab="movies" />
+            <ChannelAdd itemId={resolved.Id} userId={session?.userId} name={resolved.Name} type="movie" />
           </div>
           <TitleCast item={resolved} />
           <div className="mt-2">

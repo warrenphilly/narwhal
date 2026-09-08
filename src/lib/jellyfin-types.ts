@@ -18,6 +18,8 @@ export type MediaStream = {
   IsDefault?: boolean;
   IsForced?: boolean;
   Codec?: string;
+  BitDepth?: number;
+  Profile?: string;
 };
 
 export type MediaSource = {

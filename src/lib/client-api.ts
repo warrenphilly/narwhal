@@ -56,21 +56,70 @@ export function continueImageUrl(item: JellyfinItem) {
   return imageUrl(item.Id, { maxWidth: 720 });
 }
 
-export function imageUrl(itemId: string, options?: { type?: string; maxWidth?: number; maxHeight?: number; tag?: string }) {
+export function imageUrl(
+  itemId: string,
+  options?: {
+    type?: string;
+    maxWidth?: number;
+    maxHeight?: number;
+    fillWidth?: number;
+    fillHeight?: number;
+    tag?: string;
+  }
+) {
   const type = options?.type ?? "Primary";
   const params = new URLSearchParams();
   if (options?.maxWidth) params.set("maxWidth", String(options.maxWidth));
   if (options?.maxHeight) params.set("maxHeight", String(options.maxHeight));
+  if (options?.fillWidth) params.set("fillWidth", String(options.fillWidth));
+  if (options?.fillHeight) params.set("fillHeight", String(options.fillHeight));
   if (options?.tag) params.set("tag", options.tag);
   params.set("quality", "90");
   return `/api/jf/Items/${encodeURIComponent(itemId)}/Images/${type}?${params.toString()}`;
 }
 
-export function streamUrl(itemId: string, _info?: PlaybackInfo | null, forceTranscode = false) {
+export function heroImage(item: JellyfinItem) {
+  if (item.BackdropImageTags?.length) {
+    return {
+      url: imageUrl(item.Id, { type: "Backdrop", fillWidth: 1920, fillHeight: 1080 }),
+      fit: "cover" as const,
+    };
+  }
+  if (item.ImageTags?.Thumb) {
+    return {
+      url: imageUrl(item.Id, { type: "Thumb", fillWidth: 1920, fillHeight: 1080 }),
+      fit: "cover" as const,
+    };
+  }
+  return {
+    url: imageUrl(item.Id, { type: "Primary", maxHeight: 1080 }),
+    fit: "contain" as const,
+  };
+}
+
+export function streamUrl(
+  itemId: string,
+  _info?: PlaybackInfo | null,
+  forceTranscode = false,
+  audioIndex?: number,
+  startTicks = 0,
+  hardTranscode = false
+) {
   const params = new URLSearchParams();
-  if (forceTranscode) params.set("transcode", "1");
+  if (forceTranscode || hardTranscode) params.set("transcode", "1");
+  if (hardTranscode) params.set("hard", "1");
+  if (typeof audioIndex === "number") params.set("audio", String(audioIndex));
+  if (startTicks > 0) params.set("startTicks", String(Math.round(startTicks)));
   const query = params.toString();
   return `/api/play/${encodeURIComponent(itemId)}${query ? `?${query}` : ""}`;
+}
+
+export function hlsUrl(itemId: string, audioIndex?: number, startTicks = 0) {
+  const params = new URLSearchParams();
+  if (typeof audioIndex === "number") params.set("audio", String(audioIndex));
+  if (startTicks > 0) params.set("startTicks", String(Math.round(startTicks)));
+  const query = params.toString();
+  return `/api/play/${encodeURIComponent(itemId)}/master.m3u8${query ? `?${query}` : ""}`;
 }
 
 export function downloadUrl(itemId: string, filename: string) {
@@ -334,6 +383,19 @@ export function subtitleUrl(itemId: string, mediaSourceId: string, index: number
   return `/api/jf/${path}`;
 }
 
+export function audioTracks(info: PlaybackInfo | null) {
+  const source = info?.MediaSources?.[0];
+  if (!source) return [];
+  return (source.MediaStreams ?? [])
+    .filter((stream): stream is MediaStream & { Index: number } => stream.Type === "Audio" && typeof stream.Index === "number")
+    .map((stream) => ({
+      index: stream.Index,
+      label: stream.DisplayTitle || stream.Language || `Audio ${stream.Index}`,
+      codec: stream.Codec || "",
+      isDefault: Boolean(stream.IsDefault),
+    }));
+}
+
 export function subtitleTracks(itemId: string, info: PlaybackInfo | null) {
   const source = info?.MediaSources?.[0];
   if (!source?.Id) return [];
@@ -355,20 +417,25 @@ export async function setPlayed(userId: string, itemId: string, played: boolean)
   );
 }
 
-export async function reportPlaybackStopped(itemId: string, positionTicks?: number) {
-  await fetch("/api/jf/Sessions/Playing/Stopped", {
-    method: "POST",
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ItemId: itemId, PositionTicks: positionTicks ?? 0 }),
-  }).catch(() => undefined);
-}
-
-export async function reportPlaybackStart(itemId: string) {
-  await fetch("/api/jf/Sessions/Playing", {
-    method: "POST",
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ItemId: itemId, PlayMethod: "DirectPlay" }),
-  }).catch(() => undefined);
+export async function savePlayPosition(userId: string, itemId: string, positionTicks: number, played = false) {
+  const body = JSON.stringify({
+    ItemId: itemId,
+    PlaybackPositionTicks: positionTicks,
+    PositionTicks: positionTicks,
+    Played: played,
+    IsPaused: !played,
+    CanSeek: true,
+  });
+  const send = (path: string) =>
+    fetch(`/api/jf/${path}`, {
+      method: "POST",
+      credentials: "same-origin",
+      keepalive: true,
+      headers: { "Content-Type": "application/json" },
+      body,
+    }).catch(() => undefined);
+  await send(`Users/${encodeURIComponent(userId)}/PlayingItems/${encodeURIComponent(itemId)}`);
+  await send(`Users/${encodeURIComponent(userId)}/Items/${encodeURIComponent(itemId)}/UserData`);
+  await send(`Sessions/Playing/${played ? "Stopped" : "Progress"}`);
+  await send(`Users/${encodeURIComponent(userId)}/PlayingItems/${encodeURIComponent(itemId)}/Progress`);
 }

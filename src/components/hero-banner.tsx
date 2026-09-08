@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { useDownloads } from "@/components/downloads-provider";
 import { formatRuntime } from "@/lib/jellyfin-types";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
-import { imageUrl } from "@/lib/client-api";
 import { titlePageHref } from "@/lib/item-href";
 import { isDemoId, demoPosterGradient } from "@/lib/demo-library";
+import { HeroArt } from "@/components/hero-art";
 import { cn } from "@/lib/utils";
 
 export function HeroBanner({ items }: { items: JellyfinItem[] }) {
@@ -34,37 +34,24 @@ export function HeroBanner({ items }: { items: JellyfinItem[] }) {
 
   const demo = isDemoId(item.Id);
   const [from, to] = demoPosterGradient(item.Id);
-  const backdrop = demo
-    ? undefined
-    : imageUrl(item.Id, {
-        type: item.BackdropImageTags?.length ? "Backdrop" : "Primary",
-        maxWidth: 1920,
-      });
 
   function play() {
     if (item.Type === "Series") {
       router.push(titlePageHref(item));
       return;
     }
-    window.location.assign(`/watch/${item.Id}`);
+    router.push(titlePageHref(item));
   }
 
   return (
     <section
-      className="relative overflow-hidden"
+      className="relative h-[min(58vh,38rem)] min-h-[22rem] overflow-hidden sm:min-h-[26rem]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div
-        className="pointer-events-none absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: backdrop
-            ? `url(${backdrop})`
-            : `linear-gradient(135deg, ${from}, ${to})`,
-        }}
-      />
+      <HeroArt item={demo ? null : item} gradient={[from, to]} />
       <div className="hero-wash absolute inset-0" />
-      <div className="relative z-10 mx-auto flex max-w-[1600px] flex-col px-4 py-6 sm:px-8 sm:py-10">
+      <div className="relative z-10 mx-auto flex h-full max-w-[1600px] flex-col justify-end px-4 py-8 sm:px-8 sm:py-12 lg:py-16">
         <p className="mb-2 text-[11px] font-semibold tracking-[0.22em] text-zinc-700 uppercase dark:text-zinc-200">
           {item.Type === "Series" ? "Featured series" : "New addition"}
         </p>

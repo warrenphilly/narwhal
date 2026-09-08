@@ -125,6 +125,34 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     [persist, store]
   );
 
+  const rememberProgress = useCallback((itemId: string, positionTicks: number, played?: boolean) => {
+    setStore((current) => {
+      if (!current.activeId) return current;
+      const active = current.profiles.find((row) => row.id === current.activeId);
+      const prev = active?.progress[itemId];
+      const nextPlayed = played ?? prev?.played ?? false;
+      if (prev && prev.played === nextPlayed && Math.abs(prev.positionTicks - positionTicks) < 20_000_000) {
+        return current;
+      }
+      const next = {
+        ...current,
+        profiles: current.profiles.map((row) =>
+          row.id === current.activeId
+            ? {
+                ...row,
+                progress: {
+                  ...row.progress,
+                  [itemId]: { positionTicks, played: nextPlayed, updatedAt: Date.now() },
+                },
+              }
+            : row
+        ),
+      };
+      writeStore(session?.userId, next);
+      return next;
+    });
+  }, [session?.userId]);
+
   const profile = store.profiles.find((row) => row.id === store.activeId) ?? null;
 
   const value = useMemo<ProfileContextValue>(
@@ -179,30 +207,21 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         })),
       isFavorite: (itemId) => Boolean(profile?.favorites.includes(itemId)),
       isWatchlisted: (itemId) => Boolean(profile?.watchlist.includes(itemId)),
-      rememberProgress: (itemId, positionTicks, played) =>
-        updateActive((row) => ({
-          ...row,
-          progress: {
-            ...row.progress,
-            [itemId]: {
-              positionTicks,
-              played: played ?? row.progress[itemId]?.played ?? false,
-              updatedAt: Date.now(),
-            },
-          },
-        })),
+      rememberProgress,
       applyProfile: (item) => {
         const saved = profile?.progress[item.Id];
-        if (!saved) return item;
+        if (!saved || saved.positionTicks < 10 * 10_000_000) return item;
         const runtime = item.RunTimeTicks || 0;
+        const finished = Boolean(saved.played && runtime > 0 && saved.positionTicks >= runtime * 0.95);
+        const ticks = Math.max(saved.positionTicks, item.UserData?.PlaybackPositionTicks ?? 0);
         return {
           ...item,
           UserData: {
             ...item.UserData,
-            PlaybackPositionTicks: saved.positionTicks,
-            Played: saved.played,
+            PlaybackPositionTicks: finished ? 0 : ticks,
+            Played: finished || Boolean(item.UserData?.Played),
             PlayedPercentage:
-              runtime > 0 ? Math.min(100, (saved.positionTicks / runtime) * 100) : item.UserData?.PlayedPercentage,
+              runtime > 0 ? Math.min(100, (ticks / runtime) * 100) : item.UserData?.PlayedPercentage,
           },
         };
       },
@@ -211,7 +230,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         return items.filter((item) => ids.has(item.Id) || (item.SeriesId ? ids.has(item.SeriesId) : false));
       },
     }),
-    [persist, picking, profile, ready, session?.signedIn, store, updateActive]
+    [persist, picking, profile, ready, rememberProgress, session?.signedIn, store, updateActive]
   );
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;

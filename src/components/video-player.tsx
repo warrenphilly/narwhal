@@ -3,44 +3,167 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Play } from "lucide-react";
+import Hls from "hls.js";
+import { ArrowLeft, Maximize, Minimize, Pause, Play, Settings, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NarwhalMark } from "@/components/narwhal-mark";
+import { NarwhalSpinner } from "@/components/narwhal-spinner";
 import { useProfiles } from "@/components/profile-provider";
 import {
+  audioTracks,
   fetchPlaybackInfo,
+  hlsUrl,
   imageUrl,
-  reportPlaybackStart,
-  reportPlaybackStopped,
+  savePlayPosition,
   setPlayed,
   streamUrl,
   subtitleTracks,
 } from "@/lib/client-api";
-import { formatFinishTime, ticksToSeconds } from "@/lib/clock";
+import { formatClock, formatFinishTime, ticksToSeconds } from "@/lib/clock";
 import { formatRuntime } from "@/lib/jellyfin-types";
 import { playerTitleHref } from "@/lib/item-href";
 import type { JellyfinItem, PlaybackInfo } from "@/lib/jellyfin-types";
 
+function TrackPickers({
+  sounds,
+  tracks,
+  audio,
+  track,
+  onAudio,
+  onTrack,
+}: {
+  sounds: { index: number; label: string }[];
+  tracks: { index: number; label: string }[];
+  audio?: number;
+  track: string;
+  onAudio: (index: number) => void;
+  onTrack: (value: string) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      {sounds.length > 0 && (
+        <label className="block text-sm text-white/80">
+          Audio
+          <select
+            className="mt-1 h-11 w-full rounded-xl border border-white/15 bg-[#0c0c0e] px-3 text-base text-white outline-none"
+            value={audio ?? ""}
+            onChange={(event) => onAudio(Number(event.target.value))}
+          >
+            {sounds.map((entry) => (
+              <option key={entry.index} value={entry.index}>
+                {entry.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {tracks.length > 0 && (
+        <label className="block text-sm text-white/80">
+          Subtitles
+          <select
+            className="mt-1 h-11 w-full rounded-xl border border-white/15 bg-[#0c0c0e] px-3 text-base text-white outline-none"
+            value={track}
+            onChange={(event) => onTrack(event.target.value)}
+          >
+            <option value="off">Off</option>
+            {tracks.map((entry) => (
+              <option key={entry.index} value={String(entry.index)}>
+                {entry.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+    </div>
+  );
+}
+
+const VIEWS = [
+  { id: "fit", label: "Fit" },
+  { id: "fill", label: "Fill" },
+  { id: "wide", label: "Widescreen" },
+  { id: "stretch", label: "Stretch" },
+] as const;
+
+type ViewMode = (typeof VIEWS)[number]["id"];
+
+const MIN_RESUME = 10 * 10_000_000;
+
+function viewClass(mode: ViewMode) {
+  if (mode === "fill") return "size-full object-cover";
+  if (mode === "wide") return "h-[42vw] max-h-full w-full object-cover";
+  if (mode === "stretch") return "size-full object-fill";
+  return "size-full object-contain";
+}
+
+function canSeekTo(video: HTMLVideoElement, local: number) {
+  if (!Number.isFinite(local) || local < 0 || !video.seekable.length) return false;
+  for (let i = 0; i < video.seekable.length; i += 1) {
+    const start = video.seekable.start(i);
+    const end = video.seekable.end(i);
+    if (local >= start && local <= Math.max(start, end - 0.2)) return true;
+  }
+  return false;
+}
+
 export function VideoPlayer({
   item,
   userId,
+  startFresh = false,
+  onEnded,
 }: {
   item: JellyfinItem;
   userId?: string;
+  startFresh?: boolean;
+  onEnded?: () => void;
 }) {
   const router = useRouter();
-  const { rememberProgress } = useProfiles();
+  const { rememberProgress, applyProfile } = useProfiles();
+  const rememberRef = useRef(rememberProgress);
+  rememberRef.current = rememberProgress;
   const videoRef = useRef<HTMLVideoElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
   const [info, setInfo] = useState<PlaybackInfo | null>(null);
   const [track, setTrack] = useState("off");
+  const [audio, setAudio] = useState<number | undefined>(undefined);
   const [finishAt, setFinishAt] = useState("");
   const [paused, setPaused] = useState(false);
   const [logoOk, setLogoOk] = useState(true);
   const [playError, setPlayError] = useState<string | null>(null);
   const [forceTranscode, setForceTranscode] = useState(false);
+  const [hardTranscode, setHardTranscode] = useState(false);
   const [waiting, setWaiting] = useState(true);
-  const src = streamUrl(item.Id, info, forceTranscode);
+  const [synced, setSynced] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
+  const [view, setView] = useState<ViewMode>("fit");
+  const [fullscreen, setFullscreen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const resume = startFresh ? 0 : applyProfile(item).UserData?.PlaybackPositionTicks ?? 0;
+  const resumeSeconds = ticksToSeconds(resume > MIN_RESUME ? resume : 0);
+  const [startTicks, setStartTicks] = useState(0);
+  const [now, setNow] = useState(resumeSeconds);
+  const resumeGoal = useRef(resumeSeconds);
+  const resumeRedirect = useRef(false);
+  const errorStep = useRef(0);
+  const endedRef = useRef(onEnded);
+  endedRef.current = onEnded;
+  const hlsRef = useRef<Hls | null>(null);
+  // Jellyfin tells us up front (via PlaybackInfo) whether this codec/container
+  // can play natively in the browser. Anything that can't goes through a
+  // segmented HLS transcode (via hls.js) instead of a raw progressive mp4 —
+  // segments re-anchor audio/video timestamps regularly, so drift can't build up.
+  const needsTranscode = info?.MediaSources?.[0]?.SupportsDirectPlay === false;
+  const usingHls = needsTranscode || forceTranscode || hardTranscode;
+  const serverStart = usingHls ? startTicks : 0;
+  const src = usingHls ? hlsUrl(item.Id, audio, serverStart) : streamUrl(item.Id, info, false, audio, 0, false);
   const tracks = useMemo(() => subtitleTracks(item.Id, info), [item.Id, info]);
+  const sounds = useMemo(() => audioTracks(info), [info]);
+  const [streamLength, setStreamLength] = useState(0);
+  const length = ticksToSeconds(item.RunTimeTicks) || streamLength;
   const headline = item.SeriesName || item.Name;
   const detail =
     item.Type === "Episode"
@@ -52,9 +175,33 @@ export function VideoPlayer({
         : "";
 
   useEffect(() => {
+    errorStep.current = 0;
+    resumeRedirect.current = false;
+    setStartTicks(0);
+    setStreamLength(0);
+    if (startFresh) {
+      resumeGoal.current = 0;
+      setNow(0);
+      return;
+    }
+    const next = applyProfile(item).UserData?.PlaybackPositionTicks ?? 0;
+    const seconds = ticksToSeconds(next > MIN_RESUME ? next : 0);
+    resumeGoal.current = seconds;
+    setNow(seconds);
+  }, [item.Id, startFresh]);
+
+  useEffect(() => {
+    if (length) setFinishAt(formatFinishTime(Math.max(0, length - now)));
+  }, [item.Id, length, now]);
+
+  useEffect(() => {
     setForceTranscode(false);
+    setHardTranscode(false);
     setPlayError(null);
     setWaiting(true);
+    setSynced(false);
+    setAudio(undefined);
+    setSettingsOpen(false);
     if (!userId) return;
     fetchPlaybackInfo(item.Id, userId)
       .then((data) => {
@@ -69,9 +216,7 @@ export function VideoPlayer({
             (stream.Language || "").toLowerCase().startsWith("en")
         );
         const pick = match ?? english;
-        if (pick && typeof pick.Index === "number") {
-          setTrack(String(pick.Index));
-        }
+        if (pick && typeof pick.Index === "number") setTrack(String(pick.Index));
       })
       .catch(() => setInfo(null));
   }, [item.Id, userId]);
@@ -88,86 +233,317 @@ export function VideoPlayer({
     if (chosen) chosen.mode = "showing";
   }, [track, tracks]);
 
+  function displaySeconds() {
+    return ticksToSeconds(startTicks) + (videoRef.current?.currentTime ?? 0);
+  }
+
+  function saveAt(seconds: number, done = false) {
+    const ticks = Math.round(seconds * 10_000_000);
+    if (!done && ticks < 5_000_000) return;
+    const position = done ? (item.RunTimeTicks ?? ticks) : ticks;
+    rememberRef.current(item.Id, position, done);
+    if (userId) {
+      savePlayPosition(userId, item.Id, position, done).catch(() => undefined);
+      if (done) setPlayed(userId, item.Id, true).catch(() => undefined);
+    }
+  }
+
+  function goBack() {
+    saveAt(displaySeconds(), false);
+    router.back();
+  }
+
+  function pickAudio(index: number) {
+    const seconds = displaySeconds();
+    saveAt(seconds, false);
+    setStartTicks(Math.round(seconds * 10_000_000));
+    setAudio(index);
+    setForceTranscode(true);
+    setWaiting(true);
+  }
+
+  function jumpTo(seconds: number) {
+    const video = videoRef.current;
+    const next = Math.max(0, Math.min(seconds, length > 1 ? length - 1 : seconds));
+    setNow(next);
+    saveAt(next, false);
+    const offset = ticksToSeconds(startTicks);
+    const local = next - offset;
+    // HLS (hls.js) fetches whichever segment covers the target time on its own,
+    // so a normal currentTime seek works for transcoded playback too — only
+    // fall back to restarting the stream when the target isn't seekable yet
+    // (e.g. before the manifest/duration is known).
+    if (video && local >= 0 && canSeekTo(video, local)) {
+      video.currentTime = local;
+      return;
+    }
+    resumeRedirect.current = true;
+    setForceTranscode(true);
+    setStartTicks(Math.round(next * 10_000_000));
+    setWaiting(true);
+  }
+
+  function onBarPointer(event: React.PointerEvent<HTMLDivElement>) {
+    event.stopPropagation();
+    const bar = barRef.current;
+    if (!bar || !length) return;
+    const rect = bar.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    jumpTo(ratio * length);
+  }
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    let marked = false;
-    const start = ticksToSeconds(item.UserData?.PlaybackPositionTicks);
-    const onLoaded = () => {
-      if (start > 5 && start < video.duration - 5) {
-        video.currentTime = start;
-      }
-    };
+    const persist = (done: boolean) => saveAt(ticksToSeconds(startTicks) + video.currentTime, done);
     const onTime = () => {
-      if (!video.duration || video.paused) return;
-      const remaining = (video.duration - video.currentTime) / (video.playbackRate || 1);
-      setFinishAt(formatFinishTime(remaining));
+      const seconds = ticksToSeconds(startTicks) + video.currentTime;
+      setNow(seconds);
+      if (length) setFinishAt(formatFinishTime(Math.max(0, (length - seconds) / (video.playbackRate || 1))));
     };
     const onPlay = () => {
       setPaused(false);
-      reportPlaybackStart(item.Id);
       onTime();
     };
     const onPause = () => {
       setPaused(true);
-      const ticks = Math.round(video.currentTime * 10_000_000);
-      rememberProgress(item.Id, ticks, false);
-      reportPlaybackStopped(item.Id, ticks);
+      persist(false);
     };
-    const markDone = () => {
-      if (marked) return;
-      marked = true;
-      rememberProgress(item.Id, item.RunTimeTicks ?? 0, true);
-      reportPlaybackStopped(item.Id, item.RunTimeTicks);
-      if (userId) setPlayed(userId, item.Id, true).catch(() => undefined);
-    };
-    const onEnded = () => markDone();
-    const onTimeWatch = () => {
-      onTime();
-      if (video.duration && video.currentTime / video.duration >= 0.9) {
-        markDone();
-      }
-    };
-    video.addEventListener("loadedmetadata", onLoaded);
-    video.addEventListener("timeupdate", onTimeWatch);
+    const pulse = window.setInterval(() => {
+      if (!video.paused && video.currentTime > 1) persist(false);
+    }, 8_000);
+    const onHide = () => persist(false);
+    video.addEventListener("timeupdate", onTime);
     video.addEventListener("play", onPlay);
     video.addEventListener("pause", onPause);
-    video.addEventListener("ended", onEnded);
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("narwhal-quit", onHide);
+    const onVideoEnded = () => {
+      if (!Number.isFinite(video.duration) || video.duration < 8 || video.currentTime < 8) {
+        if (errorStep.current < 2) {
+          errorStep.current += 1;
+          setForceTranscode(true);
+          setHardTranscode(true);
+          setStartTicks(0);
+          setWaiting(true);
+          setPlayError("This file needed a full convert. Starting again…");
+          return;
+        }
+      }
+      persist(true);
+      endedRef.current?.();
+    };
+    video.addEventListener("ended", onVideoEnded);
+    window.addEventListener("pagehide", onHide);
     return () => {
-      video.removeEventListener("loadedmetadata", onLoaded);
-      video.removeEventListener("timeupdate", onTimeWatch);
+      persist(false);
+      window.clearInterval(pulse);
+      video.removeEventListener("timeupdate", onTime);
       video.removeEventListener("play", onPlay);
       video.removeEventListener("pause", onPause);
-      video.removeEventListener("ended", onEnded);
+      video.removeEventListener("ended", onVideoEnded);
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("narwhal-quit", onHide);
+      window.removeEventListener("pagehide", onHide);
     };
-  }, [item.Id, item.RunTimeTicks, item.UserData?.PlaybackPositionTicks, rememberProgress, userId]);
+  }, [item.Id, item.RunTimeTicks, startTicks, userId, length]);
+
+  const percent = length ? Math.min(100, (now / length) * 100) : 0;
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !synced) return;
+    video.volume = volume;
+    video.muted = muted;
+  }, [volume, muted, synced]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    let started = false;
+    let seeking = false;
+    let cancelled = false;
+    setWaiting(true);
+    setSynced(false);
+    video.pause();
+    const goal = startTicks > 0 ? 0 : resumeGoal.current;
+
+    function escalate() {
+      if (cancelled) return;
+      if (errorStep.current === 0) {
+        errorStep.current = 1;
+        setForceTranscode(true);
+        setStartTicks(Math.round((now || resumeGoal.current) * 10_000_000));
+        setWaiting(true);
+        setPlayError("This file needs a browser copy. Jellyfin is converting it…");
+        return;
+      }
+      if (errorStep.current === 1) {
+        errorStep.current = 2;
+        setHardTranscode(true);
+        setStartTicks(Math.round((now || resumeGoal.current) * 10_000_000));
+        setWaiting(true);
+        setPlayError("Trying a full convert. This can take a few seconds…");
+        return;
+      }
+      setWaiting(false);
+      setPlayError("This title still will not start. If it is a disc image (ISO) or unsupported rip, play it in the Jellyfin app.");
+    }
+
+    let hls: Hls | null = null;
+    if (usingHls) {
+      if (Hls.isSupported()) {
+        hls = new Hls();
+        hlsRef.current = hls;
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (data.fatal) escalate();
+        });
+        hls.loadSource(src);
+        hls.attachMedia(video);
+      } else {
+        setWaiting(false);
+        setPlayError("This browser build can't play converted video.");
+        return () => {
+          cancelled = true;
+        };
+      }
+    } else {
+      video.src = src;
+    }
+
+    async function startSynced() {
+      if (started || cancelled || !video) return;
+      started = true;
+      video.muted = mutedRef.current;
+      video.volume = volume;
+      try {
+        await video.play();
+      } catch {
+        started = false;
+        setWaiting(false);
+        return;
+      }
+      if (cancelled) return;
+      setSynced(true);
+      setWaiting(false);
+    }
+    const restartFromResume = () => {
+      if (resumeRedirect.current || goal <= 10 || startTicks > 0) return false;
+      resumeRedirect.current = true;
+      setForceTranscode(true);
+      setStartTicks(Math.round(goal * 10_000_000));
+      return true;
+    };
+    const tryStart = (force = false) => {
+      if (started || seeking || cancelled) return;
+      if (goal > 10 && startTicks === 0) {
+        // hls.js can seek within an HLS session the same as a plain <video>
+        // once it knows the seekable range — only restart the whole stream
+        // (which doesn't reliably honor a start position for HLS) as a last
+        // resort, when the target isn't seekable yet.
+        if (canSeekTo(video, goal)) {
+          if (Math.abs(video.currentTime - goal) > 1.25) {
+            seeking = true;
+            video.currentTime = goal;
+            return;
+          }
+        } else if (video.seekable.length > 0 || force) {
+          if (restartFromResume()) return;
+        }
+      }
+      if (video.readyState < 3) return;
+      void startSynced();
+    };
+    const onSeeked = () => {
+      seeking = false;
+      tryStart(false);
+    };
+    const onReady = () => tryStart(true);
+    const onProgress = () => tryStart(false);
+    const onMeta = () => {
+      if (Number.isFinite(video.duration) && video.duration > 1) {
+        setStreamLength(video.duration + ticksToSeconds(startTicks));
+      }
+      tryStart(false);
+    };
+    video.addEventListener("canplaythrough", onReady);
+    video.addEventListener("loadedmetadata", onMeta);
+    video.addEventListener("progress", onProgress);
+    video.addEventListener("loadeddata", onProgress);
+    video.addEventListener("seeked", onSeeked);
+    const giveUp = window.setTimeout(() => {
+      if (started || seeking || cancelled) return;
+      if (restartFromResume()) return;
+      void startSynced();
+    }, 15_000);
+    return () => {
+      cancelled = true;
+      video.removeEventListener("canplaythrough", onReady);
+      video.removeEventListener("loadedmetadata", onMeta);
+      video.removeEventListener("progress", onProgress);
+      video.removeEventListener("loadeddata", onProgress);
+      video.removeEventListener("seeked", onSeeked);
+      window.clearTimeout(giveUp);
+      if (hls) {
+        hls.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [src, usingHls]);
+
+  useEffect(() => {
+    const onFull = () => setFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onFull);
+    return () => document.removeEventListener("fullscreenchange", onFull);
+  }, []);
+
+  function togglePlay() {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) void video.play();
+    else video.pause();
+  }
+
+  async function toggleFullscreen() {
+    const node = rootRef.current;
+    if (!node) return;
+    if (document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
+    else await node.requestFullscreen().catch(() => undefined);
+  }
 
   return (
-    <div className="relative size-full">
+    <div ref={rootRef} className="relative size-full overflow-hidden bg-black">
+      <div className="pointer-events-none absolute -left-16 -top-20 size-72 rounded-full bg-[#00A4DC]/25 blur-3xl" />
+      <div className="pointer-events-none absolute -right-10 top-0 size-64 rounded-full bg-[#AA5CC3]/20 blur-3xl" />
       <video
         ref={videoRef}
         key={`${item.Id}-${src}`}
-        className="size-full bg-black object-contain"
-        src={src}
-        controls
-        autoPlay
+        className={`absolute inset-0 m-auto bg-black ${synced ? "" : "opacity-0"} ${viewClass(view)}`}
         playsInline
         preload="auto"
-        onWaiting={() => setWaiting(true)}
-        onPlaying={() => {
-          setWaiting(false);
-          setPlayError(null);
+        onWaiting={() => {
+          if (synced) setWaiting(true);
         }}
-        onLoadedData={() => setWaiting(false)}
+        onPlaying={() => setPlayError(null)}
         onError={() => {
-          if (!forceTranscode) {
+          if (errorStep.current === 0) {
+            errorStep.current = 1;
             setForceTranscode(true);
+            setStartTicks(Math.round((now || resumeGoal.current) * 10_000_000));
             setWaiting(true);
-            setPlayError("This file needs converting. Jellyfin is making a browser copy…");
+            setPlayError("This file needs a browser copy. Jellyfin is converting it…");
+            return;
+          }
+          if (errorStep.current === 1) {
+            errorStep.current = 2;
+            setHardTranscode(true);
+            setStartTicks(Math.round((now || resumeGoal.current) * 10_000_000));
+            setWaiting(true);
+            setPlayError("Trying a full convert. This can take a few seconds…");
             return;
           }
           setWaiting(false);
-          setPlayError("This file could not start. Confirm it plays in the Jellyfin web app.");
+          setPlayError("This title still will not start. If it is a disc image (ISO) or unsupported rip, play it in the Jellyfin app.");
         }}
       >
         {tracks.map((entry) => (
@@ -183,69 +559,230 @@ export function VideoPlayer({
       </video>
       {waiting && !playError && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-          <p className="rounded-2xl bg-black/70 px-4 py-3 text-sm text-white/85">Loading video…</p>
+          <NarwhalSpinner label="Lining up picture and sound…" />
         </div>
       )}
       {playError && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-10 flex justify-center px-4">
-          <p className="max-w-lg rounded-2xl bg-black/70 px-4 py-3 text-center text-sm text-white/85">
+        <div className="pointer-events-none absolute inset-x-0 bottom-28 z-10 flex justify-center px-4">
+          <p className="max-w-lg rounded-2xl border border-[#00A4DC]/30 bg-black/70 px-4 py-3 text-center text-sm text-white/85">
             {playError}
           </p>
         </div>
       )}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/80 via-black/35 to-transparent px-4 pt-4 pb-16">
-        <div className="pointer-events-auto flex items-start gap-3">
+      <button
+        type="button"
+        aria-label={paused ? "Play" : "Pause"}
+        className={`absolute inset-x-0 z-[15] cursor-pointer bg-transparent ${
+          settingsOpen ? "top-72" : "top-24"
+        } bottom-40`}
+        onClick={() => togglePlay()}
+      />
+      <div
+        className="pointer-events-auto absolute inset-x-0 top-0 z-40 bg-gradient-to-b from-black/85 via-black/30 to-transparent px-4 pt-4 pb-12"
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start gap-3">
           <Button
-            variant="ghost"
-            className="mt-0.5 shrink-0 text-white hover:bg-white/10 hover:text-white"
-            onClick={() => router.back()}
+            variant="outline"
+            size="icon"
+            className="mt-0.5 size-10 shrink-0 rounded-full border-[#00A4DC]/40 bg-black/40 text-white hover:bg-[#00A4DC]/20 hover:text-white"
+            onClick={() => goBack()}
+            aria-label="Back"
           >
-            <ArrowLeft data-icon="inline-start" />
-            Back
+            <ArrowLeft />
           </Button>
           <div className="min-w-0 flex-1">
             <Link
               href={playerTitleHref(item)}
+              onClick={() => saveAt(displaySeconds(), false)}
               className="block truncate text-2xl font-semibold tracking-tight text-white hover:underline sm:text-3xl"
             >
               {headline}
             </Link>
             {detail && <p className="mt-0.5 truncate text-sm text-white/65">{detail}</p>}
           </div>
-          <div className="flex shrink-0 items-center gap-2 pt-1">
+          <div className="relative flex shrink-0 items-center gap-2 pt-1">
             {finishAt && (
-              <p className="hidden rounded-full bg-black/55 px-3 py-1 text-sm text-white sm:block">
-                Finishes at {finishAt}
+              <p className="hidden rounded-full border border-white/10 bg-black/55 px-3 py-1 text-sm text-white sm:block">
+                Ends {finishAt}
               </p>
             )}
-            {tracks.length > 0 && (
-              <label className="flex items-center gap-2 rounded-full bg-black/55 px-3 py-1 text-sm text-white">
-                Subs
-                <select
-                  className="max-w-[160px] bg-transparent text-white outline-none"
-                  value={track}
-                  onChange={(event) => setTrack(event.target.value)}
-                >
-                  <option value="off">Off</option>
-                  {tracks.map((entry) => (
-                    <option key={entry.index} value={String(entry.index)}>
-                      {entry.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-10 rounded-full border-[#AA5CC3]/40 bg-black/40 text-white hover:bg-[#AA5CC3]/20 hover:text-white"
+              onClick={() => setSettingsOpen((open) => !open)}
+              aria-label="Playback settings"
+            >
+              <Settings />
+            </Button>
+            {settingsOpen && (
+              <div
+                data-no-toggle
+                className="absolute top-12 right-0 z-50 w-[22rem] rounded-2xl border border-white/10 bg-[#0c0c0e]/95 p-4 shadow-xl shadow-[#AA5CC3]/10 sm:w-[26rem]"
+              >
+                <p className="mb-3 text-xs font-semibold tracking-wide text-[#00A4DC] uppercase">Playback</p>
+                <TrackPickers
+                  sounds={sounds}
+                  tracks={tracks}
+                  audio={audio}
+                  track={track}
+                  onAudio={pickAudio}
+                  onTrack={setTrack}
+                />
+                <div className="mt-4 space-y-3 border-t border-white/10 pt-3">
+                  <p className="text-xs font-semibold tracking-wide text-[#AA5CC3] uppercase">Sound</p>
+                  <label className="flex items-center gap-3 text-sm text-white/80">
+                    <button
+                      type="button"
+                      className="rounded-full border border-white/15 p-2 text-white"
+                      onClick={() => setMuted((value) => !value)}
+                      aria-label={muted ? "Unmute" : "Mute"}
+                    >
+                      {muted || volume === 0 ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+                    </button>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={muted ? 0 : volume}
+                      onChange={(event) => {
+                        const next = Number(event.target.value);
+                        setVolume(next);
+                        setMuted(next === 0);
+                      }}
+                      className="h-2 w-full accent-[#00A4DC]"
+                    />
+                  </label>
+                  <p className="text-xs font-semibold tracking-wide text-[#AA5CC3] uppercase">View</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {VIEWS.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setView(option.id)}
+                        className={`h-10 rounded-xl border text-sm ${
+                          view === option.id
+                            ? "border-[#00A4DC] bg-[#00A4DC]/20 text-white"
+                            : "border-white/15 text-white/70 hover:bg-white/8"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => toggleFullscreen()}
+                      className={`col-span-2 flex h-10 items-center justify-center gap-2 rounded-xl border text-sm ${
+                        fullscreen
+                          ? "border-[#AA5CC3] bg-[#AA5CC3]/20 text-white"
+                          : "border-white/15 text-white/70 hover:bg-white/8"
+                      }`}
+                    >
+                      {fullscreen ? <Minimize className="size-4" /> : <Maximize className="size-4" />}
+                      {fullscreen ? "Exit fullscreen" : "Fullscreen"}
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </div>
-        {finishAt && (
-          <p className="mt-2 rounded-full bg-black/55 px-3 py-1 text-sm text-white sm:hidden">
-            Finishes at {finishAt}
-          </p>
-        )}
       </div>
-      {paused && (
-        <div className="absolute inset-0 z-20 flex items-end bg-gradient-to-t from-black via-black/70 to-black/20 px-8 py-16 sm:px-16">
-          <div className="max-w-2xl">
+
+      <div
+        data-no-toggle
+        className="absolute inset-x-0 bottom-0 z-40 bg-gradient-to-t from-black via-black/80 to-transparent px-4 pb-5 pt-14 sm:px-6 lg:px-10"
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="w-full">
+          <div
+            ref={barRef}
+            role="slider"
+            aria-valuemin={0}
+            aria-valuemax={length || 0}
+            aria-valuenow={now}
+            aria-label="Seek"
+            tabIndex={0}
+            className="group relative h-12 cursor-pointer sm:h-14"
+            onPointerDown={(event) => {
+              event.currentTarget.setPointerCapture(event.pointerId);
+              onBarPointer(event);
+            }}
+            onPointerMove={(event) => {
+              if (event.buttons) onBarPointer(event);
+            }}
+          >
+            <div className="absolute top-1/2 h-2 w-full -translate-y-1/2 rounded-full bg-white/15">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[#00A4DC] to-[#AA5CC3]"
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+            <div
+              className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_12px_rgba(0,164,220,0.65)]"
+              style={{ left: `${percent}%` }}
+            />
+          </div>
+          <div className="mt-2 flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-10 rounded-full border-[#00A4DC]/40 bg-black/40 text-white hover:bg-[#00A4DC]/20 hover:text-white"
+              onClick={() => togglePlay()}
+              aria-label={paused ? "Play" : "Pause"}
+            >
+              {paused ? <Play className="fill-current" /> : <Pause />}
+            </Button>
+            <p className="min-w-[7.5rem] font-medium tabular-nums text-white">
+              {formatClock(now)}
+              <span className="text-white/45"> / {formatClock(length)}</span>
+            </p>
+            <label className="ml-auto flex items-center gap-2">
+              <button
+                type="button"
+                className="rounded-full border border-white/15 p-2 text-white"
+                onClick={() => setMuted((value) => !value)}
+                aria-label={muted ? "Unmute" : "Mute"}
+              >
+                {muted || volume === 0 ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+              </button>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={muted ? 0 : volume}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  setVolume(next);
+                  setMuted(next === 0);
+                }}
+                className="h-2 w-24 accent-[#00A4DC] sm:w-36"
+              />
+            </label>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-10 rounded-full border-[#AA5CC3]/40 bg-black/40 text-white hover:bg-[#AA5CC3]/20 hover:text-white"
+              onClick={() => toggleFullscreen()}
+              aria-label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+            >
+              {fullscreen ? <Minimize /> : <Maximize />}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {paused && synced && (
+        <div
+          className="absolute inset-0 z-20 flex items-end bg-gradient-to-t from-black via-black/70 to-transparent px-8 py-8 sm:px-16"
+          onClick={() => togglePlay()}
+        >
+          <div className="max-w-2xl pb-28 pt-24">
             <div className="flex items-center gap-3">
               <NarwhalMark className="size-10" />
               {logoOk && (
@@ -268,23 +805,31 @@ export function VideoPlayer({
                 <span className="rounded-full bg-white/12 px-3 py-1">{item.OfficialRating}</span>
               )}
               {formatRuntime(item.RunTimeTicks) && (
-                <span className="rounded-full bg-white/12 px-3 py-1">{formatRuntime(item.RunTimeTicks)}</span>
-              )}
-              {item.CommunityRating && (
-                <span className="rounded-full bg-white/12 px-3 py-1">{item.CommunityRating.toFixed(1)} ★</span>
+                <span className="rounded-full bg-[#00A4DC]/20 px-3 py-1 text-[#7dd3fc]">
+                  {formatRuntime(item.RunTimeTicks)}
+                  {finishAt ? ` · ends ${finishAt}` : ""}
+                </span>
               )}
             </div>
             {item.Overview && (
               <p className="mt-4 line-clamp-3 text-base leading-relaxed text-white/80">{item.Overview}</p>
             )}
-            <Button
-              size="lg"
-              className="mt-6 h-12 rounded-full px-6"
-              onClick={() => videoRef.current?.play()}
-            >
-              <Play data-icon="inline-start" className="fill-current" />
-              Resume
-            </Button>
+            {(sounds.length > 0 || tracks.length > 0) && (
+              <div
+                className="mt-5 w-full max-w-md rounded-2xl border border-white/10 bg-black/40 p-4"
+                onClick={(event) => event.stopPropagation()}
+                onPointerDown={(event) => event.stopPropagation()}
+              >
+                <TrackPickers
+                  sounds={sounds}
+                  tracks={tracks}
+                  audio={audio}
+                  track={track}
+                  onAudio={pickAudio}
+                  onTrack={setTrack}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

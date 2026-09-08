@@ -35,9 +35,20 @@ Do not open `http://0.0.0.0`. From another phone/laptop on the same Wi‑Fi, use
 
 To get this app on another computer: clone the GitHub repo, run `npm install`, then `npm run desktop`.
 
-## Seerr
+## Jellyseerr
 
-Open **Seerr** in the top bar. Paste your Seerr (or Jellyseerr) URL and an API key from Seerr → Settings → General. Search, request, and watch Radarr/Sonarr transfers in the left accordion. They refresh every few seconds.
+Open **Jellyseerr** in the top bar. Paste your Jellyseerr URL and an API key from Jellyseerr → Settings → General. Discover rows match the Jellyseerr home page. Search to request more. Active Radarr/Sonarr transfers show in the left accordion.
+
+## Mac app
+
+```bash
+npm install
+npm run mac
+```
+
+That builds `Narwhal.app` with the Narwhal logo and copies it to **Applications**. Open it from Launchpad, Spotlight, or the Applications folder. The first launch may ask macOS to allow an unsigned app: right-click → Open.
+
+Dev window (no install): `npm run desktop`.
 
 ## Connect Jellyfin on your LAN
 

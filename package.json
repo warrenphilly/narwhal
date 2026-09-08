@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "desktop": "node scripts/desktop.mjs",
+    "mac": "node scripts/mac.mjs",
     "build": "next build",
     "start": "next start --port 3000 --hostname 0.0.0.0",
     "lint": "eslint"
@@ -15,6 +16,7 @@
     "@base-ui/react": "^1.8.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.5",
+    "hls.js": "^1.7.2",
     "lucide-react": "^1.41.0",
     "next": "16.3.4",
     "react": "19.2.8",
@@ -28,9 +30,48 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "electron": "^38.8.6",
+    "electron-builder": "^24.13.3",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "build": {
+    "appId": "app.narwhal.desktop",
+    "productName": "Narwhal",
+    "asar": true,
+    "files": [
+      "desktop/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "public/icon.png",
+        "to": "icon.png"
+      },
+      {
+        "from": ".next/standalone",
+        "to": "server"
+      },
+      {
+        "from": ".next/static",
+        "to": "server/.next/static"
+      },
+      {
+        "from": "public",
+        "to": "server/public"
+      }
+    ],
+    "mac": {
+      "icon": "public/icon.png",
+      "category": "public.app-category.entertainment",
+      "target": [
+        "dir"
+      ],
+      "identity": null
+    },
+    "directories": {
+      "output": "dist"
+    }
   }
 }

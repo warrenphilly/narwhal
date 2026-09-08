@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { Download, LogOut, Moon, Search, Sun } from "lucide-react";
+import { Download, LogOut, Moon, Search, Settings, Sun } from "lucide-react";
 import { useSession } from "@/components/session-provider";
 import { useDownloads } from "@/components/downloads-provider";
 import { useProfiles } from "@/components/profile-provider";
+import { useSettings } from "@/components/app-settings";
 import { ProfilePicker } from "@/components/profile-picker";
 import { NarwhalMark } from "@/components/narwhal-mark";
 import { useTheme } from "@/components/theme-provider";
@@ -18,7 +19,8 @@ function navLinks() {
   return [
     { href: "/movies", label: "Movies", active: (path: string) => path === "/movies" },
     { href: "/shows", label: "TV Shows", active: (path: string) => path === "/shows" },
-    { href: "/seerr", label: "Seerr", active: (path: string) => path.startsWith("/seerr") },
+    { href: "/seerr", label: "Discover", active: (path: string) => path.startsWith("/seerr") || path.startsWith("/discover") },
+    { href: "/channels", label: "Channels", active: (path: string) => path.startsWith("/channels") },
   ];
 }
 
@@ -56,7 +58,7 @@ function ScrollHeader({ children }: { children: React.ReactNode }) {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-40 border-b border-black/8 bg-[var(--page-bg)]/95 backdrop-blur-md transition-transform duration-200 dark:border-white/10",
+        "fixed inset-x-0 top-0 z-40 overflow-hidden border-b border-black/8 bg-[var(--page-bg)]/95 backdrop-blur-md transition-transform duration-200 dark:border-white/10",
         hidden ? "-translate-y-full" : "translate-y-0"
       )}
     >
@@ -72,6 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { profile, picking, setPicking } = useProfiles();
   const { theme, toggle } = useTheme();
   const { downloads } = useDownloads();
+  const { openSettings } = useSettings();
   const active = downloads.filter((item) => item.status === "saving").length;
 
   if (session?.signedIn && picking) {
@@ -81,7 +84,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="tv-root flex min-h-full flex-col">
       <ScrollHeader key={pathname}>
-        <div className="page-gutter mx-auto flex h-14 items-center gap-2 sm:h-16 sm:gap-4">
+        <div className="pointer-events-none absolute -left-8 -top-10 size-36 rounded-full bg-[#00A4DC]/20 blur-2xl dark:bg-[#00A4DC]/15" />
+        <div className="pointer-events-none absolute right-24 -top-12 size-32 rounded-full bg-[#AA5CC3]/20 blur-2xl dark:bg-[#AA5CC3]/15" />
+        <div className="page-gutter relative mx-auto flex h-14 items-center gap-2 sm:h-16 sm:gap-4">
           <Link href={homeHref(lastTab())} className="flex shrink-0 items-center gap-2 text-zinc-900 dark:text-zinc-50">
             <NarwhalMark className="size-7 sm:size-8" />
             <span className="hidden text-[15px] font-semibold tracking-tight sm:inline">Narwhal</span>
@@ -98,12 +103,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               itemClass={(isActive) =>
                 cn(
                   "rounded-full px-3 py-1.5 text-sm text-zinc-600 transition hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50",
-                  isActive && "bg-black/6 text-zinc-950 dark:bg-white/12 dark:text-zinc-50"
+                  isActive &&
+                    "bg-gradient-to-r from-[#00A4DC]/15 to-[#AA5CC3]/15 text-zinc-950 dark:from-[#00A4DC]/25 dark:to-[#AA5CC3]/25 dark:text-zinc-50"
                 )
               }
             />
           </Suspense>
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => openSettings()}
+              aria-label="Settings"
+            >
+              <Settings />
+            </Button>
             <Button
               variant="ghost"
               size="icon"

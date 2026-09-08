@@ -171,3 +171,31 @@
 .shelf-scroll::-webkit-scrollbar {
   display: none;
 }
+
+@keyframes narwhal-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes narwhal-bob {
+  0%,
+  100% {
+    transform: translateY(2px) rotate(-8deg);
+  }
+  50% {
+    transform: translateY(-7px) rotate(8deg);
+  }
+}
+
+.narwhal-orbit {
+  animation: narwhal-orbit 0.9s linear infinite;
+}
+
+.narwhal-orbit-slow {
+  animation: narwhal-orbit 2.4s linear infinite reverse;
+}
+
+.narwhal-bob {
+  animation: narwhal-bob 1.1s ease-in-out infinite;
+}

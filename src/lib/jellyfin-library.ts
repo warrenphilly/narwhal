@@ -3,7 +3,7 @@ import { jellyfinFetch, tunnelFromSession } from "@/lib/jellyfin-request";
 import { authHeader, type JellyfinSession } from "@/lib/session";
 
 const FIELDS =
-  "Overview,Genres,ProductionYear,DateCreated,PremiereDate,CommunityRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,ChildCount,CollectionType";
+  "Genres,ProductionYear,DateCreated,PremiereDate,CommunityRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,ChildCount,CollectionType";
 
 function normalizeItem(row: unknown): JellyfinItem | null {
   if (!row || typeof row !== "object") return null;
@@ -100,12 +100,14 @@ export async function loadLibrary(session: JellyfinSession, itemType: "Movie" | 
     if (collected.some((item) => matchesType(item, itemType))) break;
   }
 
-  for (const view of views) {
-    const { data } = await jfJson(
-      session,
-      `Users/${encodeURIComponent(session.userId)}/Items?ParentId=${encodeURIComponent(view.id)}&Recursive=true&SortBy=SortName&Fields=${FIELDS}&Limit=500`
-    ).catch(() => ({ data: null }));
-    collected.push(...asItemList(data));
+  if (!collected.some((item) => matchesType(item, itemType))) {
+    for (const view of views) {
+      const { data } = await jfJson(
+        session,
+        `Users/${encodeURIComponent(session.userId)}/Items?ParentId=${encodeURIComponent(view.id)}&Recursive=true&SortBy=SortName&Fields=${FIELDS}&Limit=500`
+      ).catch(() => ({ data: null }));
+      collected.push(...asItemList(data));
+    }
   }
 
   const seen = new Set<string>();

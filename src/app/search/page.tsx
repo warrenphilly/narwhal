@@ -6,6 +6,7 @@ import { PageBack } from "@/components/back-button";
 import { LoginScreen } from "@/components/login-screen";
 import { PosterCard } from "@/components/poster-card";
 import { Input } from "@/components/ui/input";
+import { PageSpinner } from "@/components/narwhal-spinner";
 import { useSession } from "@/components/session-provider";
 import { searchMovies } from "@/lib/client-api";
 import { DEMO_MOVIES, DEMO_SHOWS } from "@/lib/demo-library";
@@ -44,7 +45,7 @@ export default function SearchPage() {
     return remoteResults;
   }, [trimmed, session?.signedIn, remoteResults]);
 
-  if (loading) return <div className="tv-root min-h-full" />;
+  if (loading) return <PageSpinner label="Waking Narwhal…" />;
   if (!session?.signedIn && !preview) return <LoginScreen />;
 
   return (

@@ -6,7 +6,7 @@ import {
   normalizeSeerrUrl,
   seerrCookieValue,
   type SeerrSession,
-} from "@/lib/seerr";
+} from "@/lib/seerr-session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

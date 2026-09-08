@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { BackButton } from "@/components/back-button";
 import { LoginScreen } from "@/components/login-screen";
 import { VideoPlayer } from "@/components/video-player";
+import { NarwhalSpinner } from "@/components/narwhal-spinner";
 import { useSession } from "@/components/session-provider";
 import { isDemoId } from "@/lib/demo-library";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
@@ -13,7 +14,7 @@ export default function WatchPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const { session, loading, preview } = useSession();
-  const [item, setItem] = useState<JellyfinItem | null>(id ? { Id: id, Name: "" } : null);
+  const [item, setItem] = useState<JellyfinItem | null>(null);
 
   useEffect(() => {
     if (!id || isDemoId(id) || !session?.userId) return;
@@ -37,14 +38,20 @@ export default function WatchPage() {
         setItem({ ...next, Id: next.Id || id });
       })
       .catch(() => {
-        /* play with the id from the URL even if metadata fails */
+        if (!cancelled) setItem({ Id: id, Name: "" });
       });
     return () => {
       cancelled = true;
     };
   }, [id, session?.userId]);
 
-  if (loading) return <div className="fixed inset-0 bg-black" />;
+  if (loading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black">
+        <NarwhalSpinner label="Cueing it up…" />
+      </div>
+    );
+  }
   if (!session?.signedIn && !preview) return <LoginScreen />;
   if (!id || isDemoId(id) || !session?.signedIn) {
     return (
@@ -62,9 +69,17 @@ export default function WatchPage() {
     );
   }
 
+  if (!item) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black">
+        <NarwhalSpinner label="Cueing it up…" />
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-black">
-      <VideoPlayer item={item ?? { Id: id, Name: "" }} userId={session.userId} />
+      <VideoPlayer item={item} userId={session.userId} />
     </div>
   );
 }
