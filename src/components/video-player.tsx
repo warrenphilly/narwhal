@@ -150,6 +150,7 @@ export function VideoPlayer({
         controls
         autoPlay
         playsInline
+        preload="auto"
         onError={() => {
           if (!forceTranscode) {
             setForceTranscode(true);

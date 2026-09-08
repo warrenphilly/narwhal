@@ -46,6 +46,14 @@ async function play(request: NextRequest, itemId: string) {
     { ...tunnelFromSession(session) }
   );
 
+  if (!upstream.ok && upstream.status !== 206) {
+    const detail = await upstream.text().catch(() => "");
+    return NextResponse.json(
+      { error: detail.slice(0, 300) || `Jellyfin stream failed (${upstream.status})` },
+      { status: upstream.status || 502 }
+    );
+  }
+
   const out = new Headers();
   upstream.headers.forEach((value, key) => {
     if (!hopByHop.has(key.toLowerCase()) && key.toLowerCase() !== "set-cookie") {

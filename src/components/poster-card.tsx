@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { imageUrl } from "@/lib/client-api";
-import { titlePageHref } from "@/lib/item-href";
+import { playHref } from "@/lib/item-href";
 import { formatRuntime } from "@/lib/jellyfin-types";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 import { demoPosterGradient, isDemoId } from "@/lib/demo-library";
@@ -25,7 +25,7 @@ export function PosterCard({
 
   return (
     <Link
-      href={titlePageHref(item)}
+      href={playHref(item)}
       className={cn(
         "poster-card group relative snap-start outline-none",
         layout === "grid" ? "min-w-0 w-full" : cn("shrink-0", widths[size])

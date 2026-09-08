@@ -6,6 +6,11 @@ export function titlePageHref(item: JellyfinItem) {
   return `/movie/${item.Id}`;
 }
 
+export function playHref(item: JellyfinItem) {
+  if (item.Type === "Series") return `/show/${item.Id}`;
+  return `/watch/${item.Id}`;
+}
+
 export function playerTitleHref(item: JellyfinItem) {
   if (item.SeriesId) return `/show/${item.SeriesId}`;
   if (item.Type === "Series") return `/show/${item.Id}`;

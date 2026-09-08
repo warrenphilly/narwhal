@@ -57,6 +57,10 @@ export default function MoviePage() {
       .catch(() => undefined);
   }, [params.id, session?.userId, router]);
 
+  useEffect(() => {
+    if (item && !isDemoId(item.Id)) setPlaying(true);
+  }, [item]);
+
   if (loading) return <div className="tv-root min-h-full" />;
   if (!session?.signedIn && !preview) return <LoginScreen />;
 

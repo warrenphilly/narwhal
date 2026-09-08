@@ -74,8 +74,9 @@ export function imageUrl(itemId: string, options?: { type?: string; maxWidth?: n
 }
 
 export function streamUrl(itemId: string, _info?: PlaybackInfo | null, forceTranscode = false) {
-  const params = forceTranscode ? "?transcode=1" : "";
-  return `/api/play/${encodeURIComponent(itemId)}${params}`;
+  const params = new URLSearchParams({ transcode: "1" });
+  if (forceTranscode) params.set("retry", "1");
+  return `/api/play/${encodeURIComponent(itemId)}?${params.toString()}`;
 }
 
 export function downloadUrl(itemId: string, filename: string) {
