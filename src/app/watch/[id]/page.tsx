@@ -30,6 +30,14 @@ export default function WatchPage() {
     setError(null);
     fetchMovie(session.userId, id)
       .then((item) => {
+        if (item.Type === "Series") {
+          window.location.replace(`/show/${item.Id}`);
+          return;
+        }
+        if (item.Type === "Season" && item.SeriesId) {
+          window.location.replace(`/show/${item.SeriesId}`);
+          return;
+        }
         setRemoteItem(item);
         setReady(true);
       })

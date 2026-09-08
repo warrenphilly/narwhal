@@ -124,3 +124,49 @@ export async function loadLibrary(session: JellyfinSession, itemType: "Movie" | 
     totalRecordCount,
   };
 }
+
+function byIndex(a: JellyfinItem, b: JellyfinItem) {
+  return (a.IndexNumber ?? 0) - (b.IndexNumber ?? 0);
+}
+
+export async function loadSeasons(session: JellyfinSession, seriesId: string) {
+  const user = encodeURIComponent(session.userId);
+  const id = encodeURIComponent(seriesId);
+  const paths = [
+    `Shows/${id}/Seasons?UserId=${user}&Fields=${FIELDS}`,
+    `Users/${user}/Items?ParentId=${id}&IncludeItemTypes=Season&Recursive=false&Fields=${FIELDS}&Limit=50`,
+    `Users/${user}/Items?ParentId=${id}&Recursive=false&Fields=${FIELDS}&Limit=50`,
+  ];
+  for (const path of paths) {
+    const { data } = await jfJson(session, path).catch(() => ({ data: null }));
+    const items = asItemList(data).filter((item) => {
+      const type = (item.Type || "Season").toLowerCase();
+      return type === "season" || type === "folder";
+    });
+    if (items.length) return items.sort(byIndex);
+  }
+  return [];
+}
+
+export async function loadEpisodes(session: JellyfinSession, seriesId: string, seasonId?: string) {
+  const user = encodeURIComponent(session.userId);
+  const series = encodeURIComponent(seriesId);
+  const paths: string[] = [];
+  if (seasonId) {
+    const season = encodeURIComponent(seasonId);
+    paths.push(
+      `Shows/${series}/Episodes?UserId=${user}&SeasonId=${season}&Fields=${FIELDS}&Limit=200`,
+      `Users/${user}/Items?ParentId=${season}&IncludeItemTypes=Episode&Recursive=true&Fields=${FIELDS}&Limit=200`
+    );
+  }
+  paths.push(
+    `Shows/${series}/Episodes?UserId=${user}&Fields=${FIELDS}&Limit=200`,
+    `Users/${user}/Items?ParentId=${series}&IncludeItemTypes=Episode&Recursive=true&Fields=${FIELDS}&Limit=200`
+  );
+  for (const path of paths) {
+    const { data } = await jfJson(session, path).catch(() => ({ data: null }));
+    const items = asItemList(data).filter((item) => (item.Type || "Episode").toLowerCase() === "episode");
+    if (items.length) return items.sort(byIndex);
+  }
+  return [];
+}

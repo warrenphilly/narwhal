@@ -7,8 +7,14 @@ export function titlePageHref(item: JellyfinItem) {
 }
 
 export function playHref(item: JellyfinItem) {
-  if (item.Type === "Series") return `/show/${item.Id}`;
-  return `/watch/${item.Id}`;
+  const type = (item.Type || "").toLowerCase();
+  if (type === "series" || type === "season") {
+    return `/show/${item.SeriesId || item.Id}`;
+  }
+  if (type === "episode" || type === "movie" || type === "video") {
+    return `/watch/${item.Id}`;
+  }
+  return titlePageHref(item);
 }
 
 export function playerTitleHref(item: JellyfinItem) {

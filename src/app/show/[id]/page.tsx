@@ -78,7 +78,7 @@ export default function ShowPage() {
     let cancelled = false;
     Promise.all([
       fetchMovie(userId, id),
-      fetchSeasons(userId, id).catch(() => [] as JellyfinItem[]),
+      fetchSeasons(userId, id),
       fetchNextUp(userId, id).catch(() => null),
     ])
       .then(([item, nextSeasons, upcoming]) => {
@@ -95,7 +95,7 @@ export default function ShowPage() {
         setPlayedState(Boolean(item.UserData?.Played));
         setSeasons(nextSeasons);
         setNextUp(upcoming);
-        setSeasonId(nextSeasons[0]?.Id ?? null);
+        setSeasonId(nextSeasons[0]?.Id ?? "__all__");
         setError(null);
         fetchLocalTrailers(userId, id)
           .then(setTrailers)
@@ -115,7 +115,8 @@ export default function ShowPage() {
     const userId = session?.userId;
     if (!userId || !show || isDemoId(show.Id) || !seasonId) return;
     let cancelled = false;
-    fetchEpisodes(userId, show.Id, seasonId)
+    const requestSeason = seasonId === "__all__" ? undefined : seasonId;
+    fetchEpisodes(userId, show.Id, requestSeason)
       .then((items) => {
         if (!cancelled) setEpisodes(items);
         const sample = items[0];
@@ -190,13 +191,11 @@ export default function ShowPage() {
       window.location.assign(`/watch/${series.Id}`);
       return;
     }
-    const firstSeasonId = seasonList[0]?.Id;
     const first =
-      (firstSeasonId
-        ? (await fetchEpisodes(session.userId, series.Id, firstSeasonId))[0]
-        : listed[0]) ?? null;
+      listed[0] ??
+      (await fetchEpisodes(session.userId, series.Id, seasonList[0]?.Id))[0] ??
+      null;
     if (first) setPlayItem(first);
-    else window.location.assign(`/watch/${series.Id}`);
   }
 
   function resumeWatching() {
@@ -331,7 +330,9 @@ export default function ShowPage() {
             </p>
             <div className="flex flex-col">
               {seasonList.length === 0 && (
-                <p className="py-6 text-sm text-zinc-500">No seasons yet.</p>
+                <p className="py-6 text-sm text-zinc-500">
+                  {listed.length ? "All episodes" : "Looking for seasons…"}
+                </p>
               )}
               {seasonList.map((season) => (
                 <div key={season.Id} className="flex items-center gap-2">
@@ -364,7 +365,9 @@ export default function ShowPage() {
 
           <div className="min-w-0">
             {listed.length === 0 && (
-              <p className="py-10 text-zinc-500">No episodes in this season yet.</p>
+              <p className="py-10 text-zinc-500">
+                {error ? error : "No episodes in this season yet."}
+              </p>
             )}
             {listed.map((episode) => (
               <EpisodeRow

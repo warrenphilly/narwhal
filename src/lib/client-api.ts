@@ -10,12 +10,13 @@ const LIST_FIELDS =
 
 function asItemList(data: unknown): JellyfinItem[] {
   if (Array.isArray(data)) {
-    return data.filter((row): row is JellyfinItem => Boolean(row && (row as JellyfinItem).Id));
+    return data.filter((row): row is JellyfinItem => Boolean(row && ((row as JellyfinItem).Id || (row as { id?: string }).id)));
   }
   if (data && typeof data === "object") {
-    const items = (data as JellyfinItemsResult).Items;
+    const obj = data as { Items?: JellyfinItem[]; items?: JellyfinItem[] };
+    const items = obj.Items ?? obj.items;
     if (Array.isArray(items)) {
-      return items.filter((row): row is JellyfinItem => Boolean(row && row.Id));
+      return items.filter((row) => Boolean(row && (row.Id || (row as { id?: string }).id)));
     }
   }
   return [];
@@ -258,23 +259,24 @@ export async function fetchMovie(userId: string, id: string) {
   );
 }
 
-export async function fetchSeasons(userId: string, seriesId: string) {
-  const data = await jf<JellyfinItemsResult>(
-    `Shows/${encodeURIComponent(seriesId)}/Seasons?UserId=${encodeURIComponent(userId)}&Fields=${ITEM_FIELDS}`
-  );
-  return data.Items ?? [];
+export async function fetchSeasons(_userId: string, seriesId: string) {
+  const response = await fetch(`/api/series/${encodeURIComponent(seriesId)}/seasons`, { cache: "no-store" });
+  const data = (await response.json()) as { items?: JellyfinItem[]; error?: string };
+  if (!response.ok) throw new Error(data.error || "Could not load seasons.");
+  return asItemList(data.items ?? data);
 }
 
-export async function fetchEpisodes(userId: string, seriesId: string, seasonId?: string) {
-  const params = new URLSearchParams({
-    UserId: userId,
-    Fields: ITEM_FIELDS,
-  });
-  if (seasonId) params.set("SeasonId", seasonId);
-  const data = await jf<JellyfinItemsResult>(
-    `Shows/${encodeURIComponent(seriesId)}/Episodes?${params.toString()}`
+export async function fetchEpisodes(_userId: string, seriesId: string, seasonId?: string) {
+  const params = new URLSearchParams();
+  if (seasonId) params.set("seasonId", seasonId);
+  const query = params.toString();
+  const response = await fetch(
+    `/api/series/${encodeURIComponent(seriesId)}/episodes${query ? `?${query}` : ""}`,
+    { cache: "no-store" }
   );
-  return data.Items ?? [];
+  const data = (await response.json()) as { items?: JellyfinItem[]; error?: string };
+  if (!response.ok) throw new Error(data.error || "Could not load episodes.");
+  return asItemList(data.items ?? data);
 }
 
 export async function fetchNextUp(userId: string, seriesId: string) {
