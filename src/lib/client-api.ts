@@ -1,6 +1,6 @@
 import type { JellyfinItem, JellyfinItemsResult, MediaStream, PlaybackInfo } from "@/lib/jellyfin-types";
 import { authHeader, getConnection } from "@/lib/jellyfin-connection";
-import { BROWSER_DEVICE_PROFILE } from "@/lib/jellyfin-play";
+import { BROWSER_DEVICE_PROFILE } from "@/lib/device-profile";
 
 const ITEM_FIELDS =
   "Overview,Genres,PrimaryImageAspectRatio,MediaSources,CanDownload,ProductionYear,DateCreated,PremiereDate,CommunityRating,CriticRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,People,Studios,RemoteTrailers,Taglines,Status,ProductionLocations,ChildCount,MediaStreams";

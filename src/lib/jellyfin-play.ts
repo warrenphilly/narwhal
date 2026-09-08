@@ -1,23 +1,7 @@
 import { authHeader, type JellyfinSession } from "@/lib/session";
 import { jellyfinFetch, tunnelFromSession } from "@/lib/jellyfin-request";
+import { BROWSER_DEVICE_PROFILE } from "@/lib/device-profile";
 import type { PlaybackInfo } from "@/lib/jellyfin-types";
-
-export const BROWSER_DEVICE_PROFILE = {
-  MaxStreamingBitrate: 12_000_000,
-  DirectPlayProfiles: [
-    { Container: "mp4,m4v,mov", Type: "Video", VideoCodec: "h264", AudioCodec: "aac,mp3" },
-  ],
-  TranscodingProfiles: [
-    {
-      Container: "mp4",
-      Type: "Video",
-      VideoCodec: "h264",
-      AudioCodec: "aac",
-      Protocol: "http",
-      EstimateContentLength: true,
-    },
-  ],
-};
 
 export async function resolveJellyfinPlayUrl(
   session: JellyfinSession,
