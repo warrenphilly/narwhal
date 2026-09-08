@@ -35,6 +35,7 @@ async function jf<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers,
     cache: "no-store",
+    credentials: "same-origin",
   });
   if (proxy.ok) return parseBody<T>(proxy);
   if (direct && (proxy.status === 401 || proxy.status === 502)) {
