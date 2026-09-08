@@ -1,7 +1,10 @@
 import { spawn } from "node:child_process";
+import fs from "node:fs";
 import net from "node:net";
+import path from "node:path";
 
 const preferred = Number(process.env.PORT || "43147");
+const useDev = process.env.NARWHAL_DEV === "1";
 
 function portFree(port) {
   return new Promise((resolve) => {
@@ -22,6 +25,20 @@ async function pickPort(start) {
 }
 
 function run(command, args, extraEnv = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      stdio: "inherit",
+      shell: process.platform === "win32",
+      env: { ...process.env, ...extraEnv },
+    });
+    child.on("exit", (code) => {
+      if (code) reject(new Error(`${command} exited with ${code}`));
+      else resolve();
+    });
+  });
+}
+
+function runDetached(command, args, extraEnv = {}) {
   return spawn(command, args, {
     stdio: "inherit",
     shell: process.platform === "win32",
@@ -44,21 +61,52 @@ async function waitForServer(url) {
 
 const port = await pickPort(preferred);
 const url = `http://127.0.0.1:${port}`;
+const buildIdPath = path.join(process.cwd(), ".next/BUILD_ID");
+const built = fs.existsSync(buildIdPath);
+
+function latestMtime(dir) {
+  let latest = 0;
+  if (!fs.existsSync(dir)) return 0;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const nextPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) latest = Math.max(latest, latestMtime(nextPath));
+    else latest = Math.max(latest, fs.statSync(nextPath).mtimeMs);
+  }
+  return latest;
+}
+
+function buildIsStale() {
+  if (!built) return true;
+  const builtAt = fs.statSync(buildIdPath).mtimeMs;
+  return latestMtime(path.join(process.cwd(), "src")) > builtAt;
+}
 
 console.log("");
 console.log("  Narwhal is Cinema in a desktop window.");
 if (port !== preferred) {
   console.log(`  Port ${preferred} is already in use (old Next/Narwhal).`);
   console.log(`  Using a fresh server at ${url}`);
-  console.log("  Optional: stop the old one with  lsof -ti :43147 | xargs kill");
 } else {
   console.log(`  Starting the web app at ${url}`);
 }
-console.log("");
 
-const next = run("npx", ["next", "dev", "--hostname", "127.0.0.1", "--port", String(port)], {
-  PORT: String(port),
-});
+let next;
+if (useDev) {
+  console.log("  Mode: development (slow — use only while editing code).");
+  next = runDetached("npx", ["next", "dev", "--hostname", "127.0.0.1", "--port", String(port)], {
+    PORT: String(port),
+  });
+} else {
+  if (buildIsStale()) {
+    console.log("  Source is newer than the last production build — compiling…");
+    await run("npx", ["next", "build"]);
+  }
+  console.log("  Mode: production (fast). Set NARWHAL_DEV=1 for live-reload dev mode.");
+  next = runDetached("npx", ["next", "start", "--hostname", "127.0.0.1", "--port", String(port)], {
+    PORT: String(port),
+  });
+}
+console.log("");
 
 next.on("exit", (code) => {
   if (code && code !== 0) process.exit(code);
@@ -66,7 +114,7 @@ next.on("exit", (code) => {
 
 await waitForServer(url);
 
-const electron = run("npx", ["electron", "."], {
+const electron = runDetached("npx", ["electron", "."], {
   NARWHAL_URL: url,
 });
 

@@ -5,6 +5,7 @@ import { Play } from "lucide-react";
 import { continueImageUrl } from "@/lib/client-api";
 import { episodeLabel } from "@/lib/clock";
 import { demoPosterGradient, isDemoId } from "@/lib/demo-library";
+import { formatCardFacts } from "@/lib/jellyfin-types";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 
 export function ContinueCard({ item }: { item: JellyfinItem }) {
@@ -12,17 +13,18 @@ export function ContinueCard({ item }: { item: JellyfinItem }) {
   const [from, to] = demoPosterGradient(item.Id);
   const progress = item.UserData?.PlayedPercentage;
   const title = item.SeriesName || item.Name;
+  const facts = formatCardFacts(item);
   const detail =
     item.Type === "Episode"
-      ? [episodeLabel(item), item.Name].filter(Boolean).join(" · ")
-      : item.Name;
+      ? [episodeLabel(item), item.Name, facts].filter(Boolean).join(" · ")
+      : facts;
 
   return (
     <Link
       href={item.Type === "Series" && item.Id ? `/show/${item.Id}` : `/watch/${item.Id}`}
-      className="group relative w-[220px] shrink-0 snap-start outline-none sm:w-[300px]"
+      className="continue-card group relative w-[min(78vw,280px)] shrink-0 snap-start outline-none sm:w-[380px]"
     >
-      <div className="relative aspect-video overflow-hidden rounded-xl bg-zinc-200 shadow-[0_16px_36px_rgba(0,0,0,0.12)] ring-2 ring-transparent transition group-hover:ring-zinc-900 group-focus-visible:ring-zinc-900 dark:bg-zinc-800 dark:group-hover:ring-zinc-100 dark:group-focus-visible:ring-zinc-100">
+      <div className="continue-case relative aspect-video overflow-hidden bg-zinc-900">
         {demo ? (
           <div
             className="absolute inset-0"
@@ -47,8 +49,8 @@ export function ContinueCard({ item }: { item: JellyfinItem }) {
           </div>
         )}
       </div>
-      <p className="mt-2 line-clamp-1 text-sm font-medium text-zinc-900 dark:text-zinc-50">{title}</p>
-      <p className="line-clamp-1 text-xs text-zinc-500">{detail}</p>
+      <p className="mt-2.5 line-clamp-1 text-sm font-medium text-[var(--page-fg)]">{title}</p>
+      {detail && <p className="line-clamp-1 text-xs text-muted">{detail}</p>}
     </Link>
   );
 }

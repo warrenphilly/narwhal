@@ -46,7 +46,7 @@ function TrackPickers({
           Audio
           <select
             className="mt-1 h-11 w-full rounded-xl border border-white/15 bg-[#0c0c0e] px-3 text-base text-white outline-none"
-            value={audio ?? ""}
+            value={audio ?? sounds[0]?.index ?? ""}
             onChange={(event) => onAudio(Number(event.target.value))}
           >
             {sounds.map((entry) => (
@@ -110,22 +110,29 @@ export function VideoPlayer({
   item,
   userId,
   startFresh = false,
+  startAtSeconds,
+  trackProgress = true,
   onEnded,
 }: {
   item: JellyfinItem;
   userId?: string;
   startFresh?: boolean;
+  startAtSeconds?: number;
+  trackProgress?: boolean;
   onEnded?: () => void;
 }) {
   const router = useRouter();
   const { rememberProgress, applyProfile } = useProfiles();
   const rememberRef = useRef(rememberProgress);
   rememberRef.current = rememberProgress;
+  const trackProgressRef = useRef(trackProgress);
+  trackProgressRef.current = trackProgress;
   const videoRef = useRef<HTMLVideoElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const [info, setInfo] = useState<PlaybackInfo | null>(null);
   const [track, setTrack] = useState("off");
   const [audio, setAudio] = useState<number | undefined>(undefined);
+  const [audioSession, setAudioSession] = useState(0);
   const [finishAt, setFinishAt] = useState("");
   const [paused, setPaused] = useState(false);
   const [logoOk, setLogoOk] = useState(true);
@@ -135,6 +142,8 @@ export function VideoPlayer({
   const [waiting, setWaiting] = useState(true);
   const [synced, setSynced] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [chromeVisible, setChromeVisible] = useState(true);
+  const hideChromeTimer = useRef<number | null>(null);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
   const mutedRef = useRef(muted);
@@ -143,10 +152,14 @@ export function VideoPlayer({
   const [fullscreen, setFullscreen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const resume = startFresh ? 0 : applyProfile(item).UserData?.PlaybackPositionTicks ?? 0;
-  const resumeSeconds = ticksToSeconds(resume > MIN_RESUME ? resume : 0);
-  const [startTicks, setStartTicks] = useState(0);
+  const resumeSeconds =
+    startAtSeconds ?? ticksToSeconds(startFresh ? 0 : resume > MIN_RESUME ? resume : 0);
+  const [startTicks, setStartTicks] = useState(() =>
+    startAtSeconds != null ? Math.round(startAtSeconds * 10_000_000) : 0
+  );
   const [now, setNow] = useState(resumeSeconds);
   const resumeGoal = useRef(resumeSeconds);
+  const offsetSecondsRef = useRef(0);
   const resumeRedirect = useRef(false);
   const errorStep = useRef(0);
   const endedRef = useRef(onEnded);
@@ -159,7 +172,7 @@ export function VideoPlayer({
   const needsTranscode = info?.MediaSources?.[0]?.SupportsDirectPlay === false;
   const usingHls = needsTranscode || forceTranscode || hardTranscode;
   const serverStart = usingHls ? startTicks : 0;
-  const src = usingHls ? hlsUrl(item.Id, audio, serverStart) : streamUrl(item.Id, info, false, audio, 0, false);
+  const src = usingHls ? hlsUrl(item.Id, audio, serverStart, audioSession) : streamUrl(item.Id, info, false, audio, 0, false);
   const tracks = useMemo(() => subtitleTracks(item.Id, info), [item.Id, info]);
   const sounds = useMemo(() => audioTracks(info), [info]);
   const [streamLength, setStreamLength] = useState(0);
@@ -177,8 +190,15 @@ export function VideoPlayer({
   useEffect(() => {
     errorStep.current = 0;
     resumeRedirect.current = false;
-    setStartTicks(0);
     setStreamLength(0);
+    if (startAtSeconds != null) {
+      const ticks = Math.round(startAtSeconds * 10_000_000);
+      setStartTicks(ticks);
+      resumeGoal.current = startAtSeconds;
+      setNow(startAtSeconds);
+      return;
+    }
+    setStartTicks(0);
     if (startFresh) {
       resumeGoal.current = 0;
       setNow(0);
@@ -188,7 +208,7 @@ export function VideoPlayer({
     const seconds = ticksToSeconds(next > MIN_RESUME ? next : 0);
     resumeGoal.current = seconds;
     setNow(seconds);
-  }, [item.Id, startFresh]);
+  }, [item.Id, startFresh, startAtSeconds]);
 
   useEffect(() => {
     if (length) setFinishAt(formatFinishTime(Math.max(0, length - now)));
@@ -206,6 +226,9 @@ export function VideoPlayer({
     fetchPlaybackInfo(item.Id, userId)
       .then((data) => {
         setInfo(data);
+        const audios = (data.MediaSources?.[0]?.MediaStreams ?? []).filter((stream) => stream.Type === "Audio");
+        const defaultSound = audios.find((stream) => stream.IsDefault) ?? audios[0];
+        if (typeof defaultSound?.Index === "number") setAudio(defaultSound.Index);
         const preferred = data.MediaSources?.[0]?.DefaultSubtitleStreamIndex;
         const match = data.MediaSources?.[0]?.MediaStreams?.find(
           (stream) => stream.Type === "Subtitle" && stream.Index === preferred
@@ -234,14 +257,20 @@ export function VideoPlayer({
   }, [track, tracks]);
 
   function displaySeconds() {
-    return ticksToSeconds(startTicks) + (videoRef.current?.currentTime ?? 0);
+    return offsetSecondsRef.current + (videoRef.current?.currentTime ?? 0);
   }
 
   function saveAt(seconds: number, done = false) {
+    if (!trackProgressRef.current) return;
     const ticks = Math.round(seconds * 10_000_000);
     if (!done && ticks < 5_000_000) return;
     const position = done ? (item.RunTimeTicks ?? ticks) : ticks;
-    rememberRef.current(item.Id, position, done);
+    rememberRef.current(
+      item.Id,
+      position,
+      done,
+      item.Type === "Episode" && item.SeriesId ? { seriesId: item.SeriesId } : undefined
+    );
     if (userId) {
       savePlayPosition(userId, item.Id, position, done).catch(() => undefined);
       if (done) setPlayed(userId, item.Id, true).catch(() => undefined);
@@ -249,15 +278,19 @@ export function VideoPlayer({
   }
 
   function goBack() {
-    saveAt(displaySeconds(), false);
+    if (trackProgressRef.current) saveAt(displaySeconds(), false);
     router.back();
   }
 
   function pickAudio(index: number) {
     const seconds = displaySeconds();
     saveAt(seconds, false);
+    resumeGoal.current = seconds;
+    offsetSecondsRef.current = seconds;
+    setNow(seconds);
     setStartTicks(Math.round(seconds * 10_000_000));
     setAudio(index);
+    setAudioSession(Date.now());
     setForceTranscode(true);
     setWaiting(true);
   }
@@ -267,7 +300,7 @@ export function VideoPlayer({
     const next = Math.max(0, Math.min(seconds, length > 1 ? length - 1 : seconds));
     setNow(next);
     saveAt(next, false);
-    const offset = ticksToSeconds(startTicks);
+    const offset = offsetSecondsRef.current;
     const local = next - offset;
     // HLS (hls.js) fetches whichever segment covers the target time on its own,
     // so a normal currentTime seek works for transcoded playback too — only
@@ -295,9 +328,16 @@ export function VideoPlayer({
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    const persist = (done: boolean) => saveAt(ticksToSeconds(startTicks) + video.currentTime, done);
+    let lastSecond = -1;
+    const persist = (done: boolean) => {
+      if (!trackProgressRef.current) return;
+      saveAt(offsetSecondsRef.current + video.currentTime, done);
+    };
     const onTime = () => {
-      const seconds = ticksToSeconds(startTicks) + video.currentTime;
+      const seconds = offsetSecondsRef.current + video.currentTime;
+      const whole = Math.floor(seconds);
+      if (whole === lastSecond) return;
+      lastSecond = whole;
       setNow(seconds);
       if (length) setFinishAt(formatFinishTime(Math.max(0, (length - seconds) / (video.playbackRate || 1))));
     };
@@ -309,9 +349,11 @@ export function VideoPlayer({
       setPaused(true);
       persist(false);
     };
-    const pulse = window.setInterval(() => {
-      if (!video.paused && video.currentTime > 1) persist(false);
-    }, 8_000);
+    const pulse = trackProgress
+      ? window.setInterval(() => {
+          if (!video.paused && video.currentTime > 1) persist(false);
+        }, 8_000)
+      : undefined;
     const onHide = () => persist(false);
     video.addEventListener("timeupdate", onTime);
     video.addEventListener("play", onPlay);
@@ -337,7 +379,7 @@ export function VideoPlayer({
     window.addEventListener("pagehide", onHide);
     return () => {
       persist(false);
-      window.clearInterval(pulse);
+      if (pulse) window.clearInterval(pulse);
       video.removeEventListener("timeupdate", onTime);
       video.removeEventListener("play", onPlay);
       video.removeEventListener("pause", onPause);
@@ -350,7 +392,7 @@ export function VideoPlayer({
     // includes `src`) whenever playback mode changes — e.g. once we learn a
     // title needs HLS. Without it, these listeners stay attached to the old,
     // now-detached element and the clock/progress bar stop updating.
-  }, [item.Id, item.RunTimeTicks, startTicks, userId, length, src]);
+  }, [item.Id, item.RunTimeTicks, startTicks, userId, length, src, trackProgress]);
 
   const percent = length ? Math.min(100, (now / length) * 100) : 0;
 
@@ -370,6 +412,7 @@ export function VideoPlayer({
     setWaiting(true);
     setSynced(false);
     video.pause();
+    offsetSecondsRef.current = ticksToSeconds(startTicks);
     const goal = startTicks > 0 ? 0 : resumeGoal.current;
 
     function escalate() {
@@ -397,7 +440,11 @@ export function VideoPlayer({
     let hls: Hls | null = null;
     if (usingHls) {
       if (Hls.isSupported()) {
-        hls = new Hls();
+        hls = new Hls({
+          maxBufferLength: 20,
+          maxMaxBufferLength: 40,
+          startFragPrefetch: true,
+        });
         hlsRef.current = hls;
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) escalate();
@@ -466,7 +513,20 @@ export function VideoPlayer({
     const onProgress = () => tryStart(false);
     const onMeta = () => {
       if (Number.isFinite(video.duration) && video.duration > 1) {
-        setStreamLength(video.duration + ticksToSeconds(startTicks));
+        setStreamLength(video.duration + offsetSecondsRef.current);
+      }
+      const full = ticksToSeconds(item.RunTimeTicks);
+      const offset = ticksToSeconds(startTicks);
+      // If Jellyfin ignored StartTimeTicks, this is the whole movie from 0 —
+      // seek to where we were instead of showing 0:00 while the clock stays at 19:00.
+      if (offset > 10 && full > 60 && Number.isFinite(video.duration) && video.duration >= full * 0.85) {
+        offsetSecondsRef.current = 0;
+        setStreamLength(video.duration);
+        if (Math.abs(video.currentTime - offset) > 1.25) {
+          seeking = true;
+          video.currentTime = offset;
+          return;
+        }
       }
       tryStart(false);
     };
@@ -493,7 +553,7 @@ export function VideoPlayer({
         hlsRef.current = null;
       }
     };
-  }, [src, usingHls]);
+  }, [src, usingHls, item.RunTimeTicks]);
 
   useEffect(() => {
     const onFull = () => setFullscreen(Boolean(document.fullscreenElement));
@@ -515,8 +575,34 @@ export function VideoPlayer({
     else await node.requestFullscreen().catch(() => undefined);
   }
 
+  function bumpChrome() {
+    setChromeVisible(true);
+    if (hideChromeTimer.current) window.clearTimeout(hideChromeTimer.current);
+    hideChromeTimer.current = null;
+    if (paused || settingsOpen || !synced || waiting) return;
+    hideChromeTimer.current = window.setTimeout(() => {
+      setChromeVisible(false);
+      setSettingsOpen(false);
+    }, 3000);
+  }
+
+  useEffect(() => {
+    bumpChrome();
+    return () => {
+      if (hideChromeTimer.current) window.clearTimeout(hideChromeTimer.current);
+    };
+  }, [paused, settingsOpen, synced, waiting, item.Id]);
+
+  const chromeShown = chromeVisible || paused || settingsOpen || !synced || waiting;
+
   return (
-    <div ref={rootRef} className="relative size-full overflow-hidden bg-black">
+    <div
+      ref={rootRef}
+      className={`relative size-full overflow-hidden bg-black ${chromeShown ? "" : "cursor-none"}`}
+      onMouseMove={bumpChrome}
+      onPointerDown={bumpChrome}
+      onTouchStart={bumpChrome}
+    >
       <div className="pointer-events-none absolute -left-16 -top-20 size-72 rounded-full bg-[#00A4DC]/25 blur-3xl" />
       <div className="pointer-events-none absolute -right-10 top-0 size-64 rounded-full bg-[#AA5CC3]/20 blur-3xl" />
       <video
@@ -583,36 +669,38 @@ export function VideoPlayer({
         type="button"
         aria-label={paused ? "Play" : "Pause"}
         className={`absolute inset-x-0 z-[15] cursor-pointer bg-transparent ${
-          settingsOpen ? "top-72" : "top-24"
-        } bottom-40`}
+          chromeShown ? (settingsOpen ? "top-72" : "top-24") : "top-0"
+        } ${chromeShown ? "bottom-40" : "bottom-0"}`}
         onClick={() => togglePlay()}
       />
       <div
-        className="pointer-events-auto absolute inset-x-0 top-0 z-40 bg-gradient-to-b from-black/85 via-black/30 to-transparent px-4 pt-4 pb-12"
+        className={`pointer-events-auto absolute inset-x-0 top-0 z-40 bg-gradient-to-b from-black/85 via-black/30 to-transparent px-4 pt-4 pb-12 transition-opacity duration-300 ${
+          chromeShown ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
             size="icon"
-            className="mt-0.5 size-10 shrink-0 rounded-full border-[#00A4DC]/40 bg-black/40 text-white hover:bg-[#00A4DC]/20 hover:text-white"
+            className="size-10 shrink-0 rounded-full border-[#00A4DC]/40 bg-black/40 text-white hover:bg-[#00A4DC]/20 hover:text-white"
             onClick={() => goBack()}
             aria-label="Back"
           >
             <ArrowLeft />
           </Button>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 overflow-hidden pr-2">
             <Link
               href={playerTitleHref(item)}
               onClick={() => saveAt(displaySeconds(), false)}
-              className="block truncate text-2xl font-semibold tracking-tight text-white hover:underline sm:text-3xl"
+              className="block truncate text-xl font-semibold tracking-tight text-white hover:underline sm:text-2xl"
             >
               {headline}
             </Link>
             {detail && <p className="mt-0.5 truncate text-sm text-white/65">{detail}</p>}
           </div>
-          <div className="relative flex shrink-0 items-center gap-2 pt-1">
+          <div className="relative flex shrink-0 items-center gap-2">
             {finishAt && (
               <p className="hidden rounded-full border border-white/10 bg-black/55 px-3 py-1 text-sm text-white sm:block">
                 Ends {finishAt}
@@ -704,7 +792,9 @@ export function VideoPlayer({
 
       <div
         data-no-toggle
-        className="absolute inset-x-0 bottom-0 z-40 bg-gradient-to-t from-black via-black/80 to-transparent px-4 pb-5 pt-14 sm:px-6 lg:px-10"
+        className={`absolute inset-x-0 bottom-0 z-40 bg-gradient-to-t from-black via-black/80 to-transparent px-4 pb-5 pt-14 transition-opacity duration-300 sm:px-6 lg:px-10 ${
+          chromeShown ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >

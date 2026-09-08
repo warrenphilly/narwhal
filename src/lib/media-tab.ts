@@ -1,13 +1,17 @@
-export type MediaTab = "movies" | "shows";
+export type MediaTab = "home" | "movies" | "shows";
 
 const TAB_KEY = "cinema-tab";
 
 export function tabFromSearch(tab: string | null | undefined): MediaTab {
-  return tab === "shows" ? "shows" : "movies";
+  if (tab === "shows") return "shows";
+  if (tab === "home") return "home";
+  return tab === "movies" ? "movies" : "home";
 }
 
 export function homeHref(tab: MediaTab) {
-  return tab === "shows" ? "/shows" : "/movies";
+  if (tab === "shows") return "/shows";
+  if (tab === "movies") return "/movies";
+  return "/";
 }
 
 export function rememberTab(tab: MediaTab) {
@@ -16,6 +20,6 @@ export function rememberTab(tab: MediaTab) {
 }
 
 export function lastTab(): MediaTab {
-  if (typeof window === "undefined") return "movies";
+  if (typeof window === "undefined") return "home";
   return tabFromSearch(window.sessionStorage.getItem(TAB_KEY));
 }

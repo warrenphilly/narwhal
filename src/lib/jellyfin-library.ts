@@ -82,9 +82,9 @@ export async function loadLibrary(session: JellyfinSession, itemType: "Movie" | 
   }));
 
   const queries = [
-    `Users/${encodeURIComponent(session.userId)}/Items?IncludeItemTypes=${itemType}&Recursive=true&SortBy=SortName&Fields=${FIELDS}&Limit=500`,
-    `Items?UserId=${encodeURIComponent(session.userId)}&IncludeItemTypes=${itemType}&Recursive=true&SortBy=SortName&Fields=${FIELDS}&Limit=500`,
-    `Users/${encodeURIComponent(session.userId)}/Items?Recursive=true&SortBy=SortName&Fields=${FIELDS}&Limit=500`,
+    `Users/${encodeURIComponent(session.userId)}/Items?IncludeItemTypes=${itemType}&Recursive=true&SortBy=SortName&Fields=${FIELDS}&Limit=150`,
+    `Items?UserId=${encodeURIComponent(session.userId)}&IncludeItemTypes=${itemType}&Recursive=true&SortBy=SortName&Fields=${FIELDS}&Limit=150`,
+    `Users/${encodeURIComponent(session.userId)}/Items?Recursive=true&SortBy=SortName&Fields=${FIELDS}&Limit=150`,
   ];
 
   let totalRecordCount: number | undefined;
@@ -104,7 +104,7 @@ export async function loadLibrary(session: JellyfinSession, itemType: "Movie" | 
     for (const view of views) {
       const { data } = await jfJson(
         session,
-        `Users/${encodeURIComponent(session.userId)}/Items?ParentId=${encodeURIComponent(view.id)}&Recursive=true&SortBy=SortName&Fields=${FIELDS}&Limit=500`
+        `Users/${encodeURIComponent(session.userId)}/Items?ParentId=${encodeURIComponent(view.id)}&Recursive=true&SortBy=SortName&Fields=${FIELDS}&Limit=150`
       ).catch(() => ({ data: null }));
       collected.push(...asItemList(data));
     }

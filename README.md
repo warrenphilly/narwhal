@@ -39,16 +39,56 @@ To get this app on another computer: clone the GitHub repo, run `npm install`, t
 
 Open **Jellyseerr** in the top bar. Paste your Jellyseerr URL and an API key from Jellyseerr → Settings → General. Discover rows match the Jellyseerr home page. Search to request more. Active Radarr/Sonarr transfers show in the left accordion.
 
-## Mac app
+## Mac app (DMG)
+
+On a Mac with this repo:
 
 ```bash
+# 1. Quit Narwhal completely (Cmd+Q)
+# 2. Build a fresh disk image
 npm install
 npm run mac
 ```
 
-That builds `Narwhal.app` with the Narwhal logo and copies it to **Applications**. Open it from Launchpad, Spotlight, or the Applications folder. The first launch may ask macOS to allow an unsigned app: right-click → Open.
+That writes something like `dist/Narwhal-0.2.0-arm64.dmg`.
 
-Dev window (no install): `npm run desktop`.
+**Install / update your local copy:**
+
+1. Quit Narwhal (Dock → Quit, or Cmd+Q).
+2. Open the new `.dmg`.
+3. Drag **Narwhal** onto **Applications** (replace the old one).
+4. Eject the disk image.
+5. Open **Applications → Narwhal** (first time: right-click → Open).
+
+## Windows app
+
+On a Windows machine (or via GitHub Actions):
+
+```bash
+npm install
+npm run win
+```
+
+Installer lands in `dist/` as an `.exe` (NSIS).
+
+## Web version
+
+```bash
+npm run dist:web   # or npm run build
+npm start          # http://127.0.0.1:3000
+```
+
+The standalone folder is `.next/standalone` after build.
+
+## GitHub releases
+
+Pushing a tag like `v0.2.0` runs `.github/workflows/release.yml`, which builds:
+
+- Mac `.dmg`
+- Windows `.exe`
+- Web `narwhal-web.tar.gz`
+
+You can also run the workflow manually from the Actions tab.
 
 ## Connect Jellyfin on your LAN
 

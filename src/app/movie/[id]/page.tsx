@@ -16,6 +16,7 @@ import { useDownloads } from "@/components/downloads-provider";
 import { useSession } from "@/components/session-provider";
 import { VideoPlayer } from "@/components/video-player";
 import { HeroArt } from "@/components/hero-art";
+import { PageHero } from "@/components/page-hero";
 import { TitleGroupControl } from "@/components/title-group";
 import { ChannelAdd } from "@/components/channel-add";
 import { PageSpinner } from "@/components/narwhal-spinner";
@@ -127,74 +128,72 @@ export default function MoviePage() {
 
   return (
     <AppShell>
-      <div className="relative min-h-[28rem] overflow-visible sm:min-h-[34rem]">
-        <HeroArt item={demo ? null : resolved} gradient={[from, to]} />
-        <div className="hero-wash absolute inset-0" />
-        <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-col px-4 py-6 sm:px-8">
-          <PageBack className="text-zinc-800 hover:bg-black/6 dark:text-zinc-100 dark:hover:bg-white/10" />
-          <div className="flex items-start gap-4 sm:gap-6">
-            <button type="button" className="text-left" onClick={startPlayback}>
-              <TitlePoster item={resolved} compact />
-            </button>
-            <div className="flex min-w-0 flex-1 flex-col">
-              <div className="flex flex-wrap items-center gap-3">
-                <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">Movie</p>
-                <TitleGenres item={resolved} />
-              </div>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight break-words text-zinc-950 drop-shadow-sm sm:text-4xl dark:text-white">
-                {resolved.Name}
-              </h1>
-              <TitleMeta item={resolved} streams={streams} trailers={trailers} />
-              {resolved.Taglines?.[0] && (
-                <p className="mt-2 text-sm italic text-zinc-700 dark:text-zinc-200">{resolved.Taglines[0]}</p>
-              )}
-              {resolved.Overview && (
-                <p className="mt-3 line-clamp-4 text-base leading-relaxed text-zinc-800 dark:text-zinc-100">
-                  {resolved.Overview}
-                </p>
-              )}
-              {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-              <div className="mt-4 flex flex-wrap gap-3">
-                <a
-                  href={`/watch/${resolved.Id}`}
-                  className={cn(buttonVariants({ size: "lg" }), "relative z-20 h-11 rounded-full px-6 text-base")}
-                  onClick={(event) => {
-                    if (demo) return;
-                    event.preventDefault();
-                    startPlayback();
-                  }}
-                >
-                  <Play data-icon="inline-start" className="fill-current" />
-                  Play
-                </a>
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="h-11 rounded-full px-6 text-base"
-                  disabled={demo || saving}
-                  onClick={onDownload}
-                >
-                  <Download data-icon="inline-start" />
-                  {demo ? "Connect to download" : saving ? "Saving…" : "Download to laptop"}
-                </Button>
-                <WatchedButton played={played} onToggle={() => togglePlayed()} disabled={demo} />
-                <LibraryButtons itemId={resolved.Id} disabled={demo} />
-              </div>
+      <PageHero art={<HeroArt item={demo ? null : resolved} gradient={[from, to]} />}>
+        <PageBack className="text-white hover:bg-white/10" />
+        <div className="flex items-end gap-4 sm:gap-6">
+          <button type="button" className="text-left" onClick={startPlayback}>
+            <TitlePoster item={resolved} compact />
+          </button>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-xs tracking-[0.24em] text-white uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">Movie</p>
+              <TitleGenres item={resolved} />
+            </div>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight break-words text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.65)] sm:text-4xl">
+              {resolved.Name}
+            </h1>
+            <TitleMeta item={resolved} streams={streams} trailers={trailers} />
+            {resolved.Taglines?.[0] && (
+              <p className="mt-2 text-sm italic text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">{resolved.Taglines[0]}</p>
+            )}
+            {resolved.Overview && (
+              <p className="mt-3 line-clamp-3 max-w-2xl text-base leading-relaxed text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+                {resolved.Overview}
+              </p>
+            )}
+            {error && <p className="mt-3 text-sm text-red-200">{error}</p>}
+            <div className="mt-4 flex flex-wrap gap-3">
+              <a
+                href={`/watch/${resolved.Id}`}
+                className={cn(buttonVariants({ size: "lg" }), "relative z-20 h-11 rounded-full px-6 text-base")}
+                onClick={(event) => {
+                  if (demo) return;
+                  event.preventDefault();
+                  startPlayback();
+                }}
+              >
+                <Play data-icon="inline-start" className="fill-current" />
+                Play
+              </a>
+              <Button
+                size="lg"
+                variant="secondary"
+                className="h-11 rounded-full px-6 text-base"
+                disabled={demo || saving}
+                onClick={onDownload}
+              >
+                <Download data-icon="inline-start" />
+                {demo ? "Connect to download" : saving ? "Saving…" : "Download to laptop"}
+              </Button>
+              <WatchedButton played={played} onToggle={() => togglePlayed()} disabled={demo} />
+              <LibraryButtons itemId={resolved.Id} disabled={demo} />
             </div>
           </div>
-          <div className="mt-4 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
-            <TitleGroupControl item={resolved} userId={session?.userId} tab="movies" />
-            <ChannelAdd itemId={resolved.Id} userId={session?.userId} name={resolved.Name} type="movie" />
-          </div>
-          <TitleCast item={resolved} />
-          <div className="mt-2">
-            <EpisodeRow
-              item={resolved}
-              eyebrow="Movie"
-              downloading={saving}
-              onDownload={() => onDownload().catch(() => undefined)}
-            />
-          </div>
+        </div>
+      </PageHero>
+      <div className="page-gutter mt-6 pb-10">
+        <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+          <TitleGroupControl item={resolved} userId={session?.userId} tab="movies" />
+          <ChannelAdd itemId={resolved.Id} userId={session?.userId} name={resolved.Name} type="movie" />
+        </div>
+        <TitleCast item={resolved} />
+        <div className="mt-2">
+          <EpisodeRow
+            item={resolved}
+            eyebrow="Movie"
+            downloading={saving}
+            onDownload={() => onDownload().catch(() => undefined)}
+          />
         </div>
       </div>
     </AppShell>

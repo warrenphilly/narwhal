@@ -159,10 +159,10 @@ export async function resolveJellyfinHlsUrl(
   if (!relative) {
     throw new Error("Jellyfin did not return an HLS playlist for this title.");
   }
-  // Don't stamp StartTimeTicks onto this URL directly: Jellyfin copies every
-  // query param on the playlist request down onto the child .ts segment
-  // requests it generates, and it rejects segment fetches that carry
-  // StartTimeTicks (400). The PlaybackInfo body value above is the only
-  // supported way to influence where the resulting session starts.
-  return new URL(relative, `${session.serverUrl}/`).toString();
+  const url = new URL(relative, `${session.serverUrl}/`);
+  url.searchParams.delete("StartTimeTicks");
+  if (typeof audioIndex === "number" && Number.isFinite(audioIndex)) {
+    url.searchParams.set("AudioStreamIndex", String(audioIndex));
+  }
+  return url.toString();
 }

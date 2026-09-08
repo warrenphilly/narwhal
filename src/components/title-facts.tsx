@@ -56,14 +56,14 @@ function streamLabels(streams: MediaStream[] | undefined, type: string) {
 
 function Pill({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-full bg-zinc-900/8 px-2.5 py-0.5 text-xs font-medium text-zinc-800 dark:bg-white/12 dark:text-zinc-100">
+    <span className="rounded-full bg-black/40 px-2.5 py-0.5 text-xs font-medium text-white ring-1 ring-white/30">
       {children}
     </span>
   );
 }
 
 function Dot() {
-  return <span className="text-zinc-400" aria-hidden>•</span>;
+  return <span className="text-white/55" aria-hidden>•</span>;
 }
 
 export function TitlePoster({ item, compact }: { item: JellyfinItem; compact?: boolean }) {
@@ -113,10 +113,10 @@ export function TitleMeta({
   ].filter(Boolean);
 
   return (
-    <div className="mt-4 space-y-2">
-      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm font-medium text-zinc-800 dark:text-zinc-100">
+    <div className="mt-3 space-y-2.5">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
         {item.OfficialRating && (
-          <span className="rounded border border-zinc-400/80 px-1.5 py-0.5 text-xs font-semibold tracking-wide dark:border-zinc-500">
+          <span className="rounded border border-white/70 bg-black/35 px-1.5 py-0.5 text-xs font-semibold tracking-wide text-white">
             {item.OfficialRating}
           </span>
         )}
@@ -127,18 +127,22 @@ export function TitleMeta({
           </span>
         ))}
         {item.Status && (
-          <span className="ml-0.5 rounded-full border border-zinc-900/25 px-2.5 py-0.5 text-xs font-semibold tracking-wide text-zinc-900 dark:border-white/30 dark:text-zinc-50">
+          <span className="ml-0.5 rounded-full border border-white/50 bg-black/35 px-2.5 py-0.5 text-xs font-semibold tracking-wide text-white">
             {item.Status}
           </span>
         )}
       </div>
-      <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">
-        {audio.length > 0 && <span>{audio.join(", ")}</span>}
+      <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+        {audio.length > 0 && (
+          <span className="rounded-full bg-black/45 px-2.5 py-1 text-white ring-1 ring-white/25">
+            {audio.join(", ")}
+          </span>
+        )}
         {local.map((trailer) => (
           <button
             key={trailer.Id}
             type="button"
-            className="inline-flex items-center gap-1 hover:underline"
+            className="inline-flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-1 text-white ring-1 ring-white/25 hover:bg-black/60 hover:ring-white/40"
             onClick={() => router.push(`/watch/${trailer.Id}`)}
           >
             <Play className="size-3 fill-current" />
@@ -151,7 +155,7 @@ export function TitleMeta({
             href={trailer.Url}
             target="_blank"
             rel="noreferrer"
-            className="hover:underline"
+            className="rounded-full bg-black/45 px-2.5 py-1 text-white ring-1 ring-white/25 hover:bg-black/60 hover:ring-white/40"
           >
             {trailer.Name || "Trailer"}
           </a>
@@ -180,7 +184,7 @@ export function TitleCast({ item }: { item: JellyfinItem }) {
     <div className="mt-8">
       <button
         type="button"
-        className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-zinc-500 uppercase hover:text-zinc-800 dark:hover:text-zinc-200"
+        className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted uppercase hover:text-[var(--page-fg)]"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
@@ -209,10 +213,10 @@ export function TitleCast({ item }: { item: JellyfinItem }) {
                   />
                 )}
               </div>
-              <p className="mt-2 line-clamp-1 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+              <p className="mt-2 line-clamp-1 text-sm font-medium text-[var(--page-fg)]">
                 {person.Name}
               </p>
-              {person.Role && <p className="line-clamp-1 text-xs text-zinc-500">{person.Role}</p>}
+              {person.Role && <p className="line-clamp-1 text-xs text-muted">{person.Role}</p>}
             </div>
           );
         })}

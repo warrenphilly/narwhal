@@ -74,25 +74,31 @@ export function imageUrl(
   if (options?.fillWidth) params.set("fillWidth", String(options.fillWidth));
   if (options?.fillHeight) params.set("fillHeight", String(options.fillHeight));
   if (options?.tag) params.set("tag", options.tag);
-  params.set("quality", "90");
-  return `/api/jf/Items/${encodeURIComponent(itemId)}/Images/${type}?${params.toString()}`;
+  params.set("quality", "70");
+  const path = `Items/${encodeURIComponent(itemId)}/Images/${type}?${params.toString()}`;
+  const direct = getConnection();
+  if (direct?.serverUrl && direct.token) {
+    params.set("api_key", direct.token);
+    return `${direct.serverUrl}/Items/${encodeURIComponent(itemId)}/Images/${type}?${params.toString()}`;
+  }
+  return `/api/jf/${path}`;
 }
 
 export function heroImage(item: JellyfinItem) {
   if (item.BackdropImageTags?.length) {
     return {
-      url: imageUrl(item.Id, { type: "Backdrop", fillWidth: 1920, fillHeight: 1080 }),
+      url: imageUrl(item.Id, { type: "Backdrop", fillWidth: 1280, fillHeight: 720 }),
       fit: "cover" as const,
     };
   }
   if (item.ImageTags?.Thumb) {
     return {
-      url: imageUrl(item.Id, { type: "Thumb", fillWidth: 1920, fillHeight: 1080 }),
+      url: imageUrl(item.Id, { type: "Thumb", fillWidth: 1280, fillHeight: 720 }),
       fit: "cover" as const,
     };
   }
   return {
-    url: imageUrl(item.Id, { type: "Primary", maxHeight: 1080 }),
+    url: imageUrl(item.Id, { type: "Primary", maxHeight: 720 }),
     fit: "contain" as const,
   };
 }
@@ -114,10 +120,11 @@ export function streamUrl(
   return `/api/play/${encodeURIComponent(itemId)}${query ? `?${query}` : ""}`;
 }
 
-export function hlsUrl(itemId: string, audioIndex?: number, startTicks = 0) {
+export function hlsUrl(itemId: string, audioIndex?: number, startTicks = 0, sessionKey = 0) {
   const params = new URLSearchParams();
   if (typeof audioIndex === "number") params.set("audio", String(audioIndex));
   if (startTicks > 0) params.set("startTicks", String(Math.round(startTicks)));
+  if (sessionKey > 0) params.set("sid", String(sessionKey));
   const query = params.toString();
   return `/api/play/${encodeURIComponent(itemId)}/master.m3u8${query ? `?${query}` : ""}`;
 }
@@ -256,6 +263,72 @@ export function uniqueItems(items: JellyfinItem[]) {
   return next;
 }
 
+export function uniqueContinueItems(
+  items: JellyfinItem[],
+  opts?: {
+    progress?: Record<string, { updatedAt: number }>;
+    lastEpisodeBySeries?: Record<string, { episodeId: string; updatedAt: number }>;
+  }
+) {
+  const progress = opts?.progress ?? {};
+  const lastBySeries = opts?.lastEpisodeBySeries ?? {};
+
+  function pickEpisodeForSeries(seriesId: string, candidates: JellyfinItem[]) {
+    if (!candidates.length) return null;
+    const preferred = lastBySeries[seriesId]?.episodeId;
+    if (preferred) {
+      const match = candidates.find((episode) => episode.Id === preferred);
+      if (match) return match;
+    }
+    return candidates.reduce((best, episode) => {
+      const bestAt = progress[best.Id]?.updatedAt ?? 0;
+      const nextAt = progress[episode.Id]?.updatedAt ?? 0;
+      return nextAt > bestAt ? episode : best;
+    });
+  }
+
+  const episodes: JellyfinItem[] = [];
+  const rest: JellyfinItem[] = [];
+  for (const item of items) {
+    if (item.Type === "Episode") episodes.push(item);
+    else rest.push(item);
+  }
+
+  const episodesBySeries = new Map<string, JellyfinItem[]>();
+  for (const episode of episodes) {
+    const seriesId = episode.SeriesId || episode.Id;
+    const bucket = episodesBySeries.get(seriesId) ?? [];
+    bucket.push(episode);
+    episodesBySeries.set(seriesId, bucket);
+  }
+
+  const pickedEpisodes: JellyfinItem[] = [];
+  for (const [seriesId, candidates] of episodesBySeries) {
+    const chosen = pickEpisodeForSeries(seriesId, candidates);
+    if (chosen) pickedEpisodes.push(chosen);
+  }
+
+  const rank = new Map(items.map((item, index) => [item.Id, index]));
+  pickedEpisodes.sort((a, b) => (rank.get(a.Id) ?? 0) - (rank.get(b.Id) ?? 0));
+
+  const seen = new Set<string>();
+  const kept: JellyfinItem[] = [];
+  for (const item of [...pickedEpisodes, ...rest]) {
+    const key =
+      item.Type === "Episode"
+        ? `series:${item.SeriesId || item.Id}`
+        : item.Type === "Series"
+          ? `series:${item.Id}`
+          : `movie:${item.Id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    kept.push(item);
+  }
+
+  kept.sort((a, b) => (rank.get(a.Id) ?? 0) - (rank.get(b.Id) ?? 0));
+  return kept;
+}
+
 export function featuredWithNewReleases(current: JellyfinItem[], incoming: JellyfinItem[]) {
   const fresh = uniqueItems(incoming);
   if (!fresh.length) return current;
@@ -281,6 +354,41 @@ export function seriesForNewEpisodes(episodes: JellyfinItem[], catalog: Jellyfin
     );
   }
   return next;
+}
+
+export type FeaturedItem = JellyfinItem & { hasNewEpisodes?: boolean };
+
+export function buildFeaturedLineup(input: {
+  latest: JellyfinItem[];
+  newEpisodes: JellyfinItem[];
+  unplayedMovies: JellyfinItem[];
+  unplayedSeries: JellyfinItem[];
+  catalog: JellyfinItem[];
+  tab: "home" | "movies" | "shows";
+}): FeaturedItem[] {
+  const { latest, newEpisodes, unplayedMovies, unplayedSeries, catalog, tab } = input;
+  const seriesWithNewEps = new Set(
+    newEpisodes.filter(isNewRelease).map((episode) => episode.SeriesId).filter(Boolean) as string[]
+  );
+
+  const incoming: JellyfinItem[] = [];
+  if (tab !== "movies") {
+    incoming.push(
+      ...seriesForNewEpisodes(newEpisodes.filter(isNewRelease), catalog),
+      ...unplayedSeries.filter(isNewRelease)
+    );
+  }
+  if (tab !== "shows") {
+    incoming.push(...unplayedMovies.filter(isNewRelease));
+  }
+
+  const base = latest.filter((item) => item.Type === "Series" || item.Type === "Movie" || !item.Type);
+  return featuredWithNewReleases(base, incoming)
+    .filter((item) => item.Type !== "Episode")
+    .map((item) => ({
+      ...item,
+      hasNewEpisodes: item.Type === "Series" && seriesWithNewEps.has(item.Id),
+    }));
 }
 
 export async function fetchPlayableId(userId: string, item: JellyfinItem) {

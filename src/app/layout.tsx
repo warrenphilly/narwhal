@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
+import { LiquidScene } from "@/components/liquid-scene";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -30,8 +31,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="min-h-full bg-[var(--page-bg)] font-sans text-[var(--page-fg)]">
-        <Providers>{children}</Providers>
+      <body className="min-h-full font-sans text-[var(--page-fg)]">
+        <LiquidScene />
+        <div className="relative z-10 min-h-full">
+          <Providers>{children}</Providers>
+        </div>
       </body>
     </html>
   );

@@ -10,11 +10,13 @@ import { Button } from "@/components/ui/button";
 import { LibraryButtons } from "@/components/library-buttons";
 import { WatchedButton } from "@/components/watched-button";
 import { useDownloads } from "@/components/downloads-provider";
+import { useProfiles } from "@/components/profile-provider";
 import { useSession } from "@/components/session-provider";
 import { VideoPlayer } from "@/components/video-player";
 import { EpisodeRow } from "@/components/episode-row";
 import { TitleCast, TitleGenres, TitleMeta, TitlePoster } from "@/components/title-facts";
 import { HeroArt } from "@/components/hero-art";
+import { PageHero } from "@/components/page-hero";
 import { TitleGroupControl } from "@/components/title-group";
 import { ChannelAdd } from "@/components/channel-add";
 import { PageSpinner } from "@/components/narwhal-spinner";
@@ -60,6 +62,7 @@ export default function ShowPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { session, loading, preview } = useSession();
+  const { profile } = useProfiles();
   const { downloadMovie } = useDownloads();
   const [show, setShow] = useState<JellyfinItem | null>(null);
   const [seasons, setSeasons] = useState<JellyfinItem[]>([]);
@@ -198,7 +201,7 @@ export default function ShowPage() {
 
   const series = resolved;
   const [from, to] = demoPosterGradient(series.Id);
-  const canResume = Boolean(nextUp);
+  const canResume = Boolean(nextUp || profile?.lastEpisodeBySeries?.[series.Id]?.episodeId);
 
   async function startWatching() {
     if (!session?.userId || demo) {
@@ -212,7 +215,20 @@ export default function ShowPage() {
     if (first) setPlayItem(first);
   }
 
-  function resumeWatching() {
+  async function resumeWatching() {
+    const lastId = profile?.lastEpisodeBySeries?.[series.Id]?.episodeId;
+    const fromList = lastId ? listed.find((episode) => episode.Id === lastId) : null;
+    if (fromList) {
+      setPlayItem(fromList);
+      return;
+    }
+    if (lastId && session?.userId && !demo) {
+      const episode = await fetchMovie(session.userId, lastId).catch(() => null);
+      if (episode) {
+        setPlayItem(episode);
+        return;
+      }
+    }
     if (nextUp) setPlayItem(nextUp);
   }
 
@@ -262,86 +278,78 @@ export default function ShowPage() {
 
   return (
     <AppShell>
-      <div className="relative min-h-[28rem] overflow-visible sm:min-h-[34rem]">
-        <HeroArt item={demo ? null : resolved} gradient={[from, to]} />
-        <div className="hero-wash absolute inset-0" />
-        <div className="relative z-10 mx-auto flex max-w-[1600px] flex-col px-4 py-6 sm:px-8">
-          <PageBack className="text-zinc-800 hover:bg-black/6 dark:text-zinc-100 dark:hover:bg-white/10" />
-          <div className="flex items-start gap-5 sm:gap-8">
-            <TitlePoster item={resolved} />
-            <div className="flex min-w-0 flex-1 flex-col">
-              <div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <p className="text-xs tracking-[0.24em] text-zinc-700 uppercase dark:text-zinc-200">
-                    Series
-                  </p>
-                  <TitleGenres item={resolved} />
-                </div>
-                <h1 className="mt-2 text-2xl font-semibold tracking-tight break-words text-zinc-950 drop-shadow-sm sm:text-4xl dark:text-white">
-                  {resolved.Name}
-                </h1>
-                <TitleMeta
-                  item={resolved}
-                  streams={streams}
-                  trailers={trailers}
-                  extras={
-                    seasonList.length
-                      ? [`${seasonList.length} season${seasonList.length === 1 ? "" : "s"}`]
-                      : []
-                  }
-                />
-                {resolved.Overview && (
-                  <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-zinc-800 sm:text-base dark:text-zinc-100">
-                    {resolved.Overview}
-                  </p>
-                )}
+      <PageHero art={<HeroArt item={demo ? null : resolved} gradient={[from, to]} />}>
+        <PageBack className="text-white hover:bg-white/10" />
+        <div className="flex items-end gap-5 sm:gap-8">
+          <TitlePoster item={resolved} />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div>
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-xs tracking-[0.24em] text-white uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">Series</p>
+                <TitleGenres item={resolved} />
               </div>
-              <div className="mt-4 flex flex-wrap gap-2 sm:gap-3">
-                <Button size="lg" className="h-10 rounded-full px-5 text-sm sm:h-11 sm:text-base" onClick={() => startWatching()}>
-                  <Play data-icon="inline-start" className="fill-current" />
-                  Start watching
-                </Button>
-                {canResume && (
-                  <Button
-                    size="lg"
-                    variant="secondary"
-                    className="h-10 rounded-full px-5 text-sm sm:h-11 sm:text-base"
-                    onClick={resumeWatching}
-                  >
-                    Resume from {episodeLabel(nextUp!)}
-                  </Button>
-                )}
+              <h1 className="mt-2 text-2xl font-semibold tracking-tight break-words text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.65)] sm:text-4xl">
+                {resolved.Name}
+              </h1>
+              <TitleMeta
+                item={resolved}
+                streams={streams}
+                trailers={trailers}
+                extras={
+                  seasonList.length ? [`${seasonList.length} season${seasonList.length === 1 ? "" : "s"}`] : []
+                }
+              />
+              {resolved.Overview && (
+                <p className="mt-3 line-clamp-3 max-w-2xl text-sm leading-relaxed text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] sm:text-base">
+                  {resolved.Overview}
+                </p>
+              )}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2 sm:gap-3">
+              <Button size="lg" className="h-10 rounded-full px-5 text-sm sm:h-11 sm:text-base" onClick={() => startWatching()}>
+                <Play data-icon="inline-start" className="fill-current" />
+                Start watching
+              </Button>
+              {canResume && (
                 <Button
                   size="lg"
                   variant="secondary"
                   className="h-10 rounded-full px-5 text-sm sm:h-11 sm:text-base"
-                  onClick={() => shufflePlay()}
+                  onClick={resumeWatching}
                 >
-                  <Shuffle data-icon="inline-start" />
-                  Shuffle
+                  Resume from {episodeLabel(nextUp!)}
                 </Button>
-                <WatchedButton played={played} onToggle={() => togglePlayed()} disabled={demo} />
-                <LibraryButtons itemId={resolved.Id} disabled={demo} />
-              </div>
+              )}
+              <Button
+                size="lg"
+                variant="secondary"
+                className="h-10 rounded-full px-5 text-sm sm:h-11 sm:text-base"
+                onClick={() => shufflePlay()}
+              >
+                <Shuffle data-icon="inline-start" />
+                Shuffle
+              </Button>
+              <WatchedButton played={played} onToggle={() => togglePlayed()} disabled={demo} />
+              <LibraryButtons itemId={resolved.Id} disabled={demo} />
             </div>
           </div>
-          <div className="mt-4 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
-            <TitleGroupControl item={resolved} userId={session?.userId} tab="shows" />
-            <ChannelAdd itemId={resolved.Id} userId={session?.userId} name={resolved.Name} type="series" />
-          </div>
-          <TitleCast item={resolved} />
         </div>
-      </div>
+      </PageHero>
 
-      <div className="relative z-10 mx-auto max-w-[1600px] px-4 pb-20 sm:px-8">
-        <div className="grid gap-8 lg:grid-cols-[210px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]">
+      <div className="page-gutter mt-6 pb-20">
+        <div className="mb-8 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+          <TitleGroupControl item={resolved} userId={session?.userId} tab="shows" />
+          <ChannelAdd itemId={resolved.Id} userId={session?.userId} name={resolved.Name} type="series" />
+        </div>
+        <TitleCast item={resolved} />
+        <div className="mt-8 grid gap-8 lg:grid-cols-[210px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]">
           <aside>
-            <p className="pb-3 text-xs font-semibold tracking-[0.18em] text-zinc-500 uppercase">
+            <p className="pb-3 text-xs font-semibold tracking-[0.18em] text-muted uppercase">
               Seasons
             </p>
             <div className="flex flex-col">
               {seasonList.length === 0 && (
-                <p className="py-6 text-sm text-zinc-500">
+                <p className="py-6 text-sm text-muted">
                   {listed.length ? "All episodes" : "Looking for seasons…"}
                 </p>
               )}
@@ -353,8 +361,8 @@ export default function ShowPage() {
                     className={cn(
                       "py-2 text-left text-sm transition",
                       season.Id === activeSeasonId
-                        ? "font-semibold text-zinc-950 dark:text-zinc-50"
-                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                        ? "font-semibold text-[var(--page-fg)]"
+                        : "text-muted hover:text-[var(--page-fg)]"
                     )}
                   >
                     {season.Name}
@@ -362,7 +370,10 @@ export default function ShowPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="size-8 shrink-0"
+                    className={cn(
+                      "size-8 shrink-0",
+                      season.Id === activeSeasonId ? "text-[var(--page-fg)]" : "text-muted"
+                    )}
                     disabled={demo || season.Id !== activeSeasonId || Boolean(savingId)}
                     aria-label={`Download ${season.Name}`}
                     onClick={() => downloadSeason()}

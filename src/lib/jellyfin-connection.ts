@@ -33,6 +33,23 @@ export function setConnection(next: DirectConnection | null) {
   }
 }
 
+export function rememberConnection(data: {
+  serverUrl?: string;
+  token?: string;
+  userId?: string;
+  userName?: string;
+  deviceId?: string;
+}) {
+  if (!data.serverUrl || !data.token || !data.userId) return;
+  setConnection({
+    serverUrl: data.serverUrl,
+    token: data.token,
+    userId: data.userId,
+    userName: data.userName || "User",
+    deviceId: data.deviceId || `narwhal-${data.userId}`,
+  });
+}
+
 export function authHeader(deviceId: string, token?: string) {
   const parts = [
     'Client="Cinema"',

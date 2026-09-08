@@ -7,7 +7,7 @@ import { PageBack } from "@/components/back-button";
 import { LoginScreen } from "@/components/login-screen";
 import { PageSpinner } from "@/components/narwhal-spinner";
 import { SeerrRequestDialog } from "@/components/seerr-request-dialog";
-import { Button } from "@/components/ui/button";
+import { PageHero } from "@/components/page-hero";
 import { useSession } from "@/components/session-provider";
 import {
   backdropUrl,
@@ -108,78 +108,86 @@ export default function DiscoverTitlePage() {
 
   return (
     <AppShell>
-      <div className="relative min-h-[28rem] overflow-hidden">
-        {hero && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={hero} alt="" className="pointer-events-none absolute inset-0 size-full object-cover opacity-35" />
-        )}
-        <div className="hero-wash absolute inset-0" />
-        <div className="page-gutter relative z-10 py-6">
-          <PageBack />
-          {!detail && !error && <PageSpinner label="Finding this title…" />}
-          {error && <p className="text-zinc-500">{error}</p>}
-          {detail && (
-            <div className="mt-4 flex flex-col gap-6 sm:flex-row">
-              <div className="w-full max-w-[220px] overflow-hidden rounded-2xl bg-zinc-800 shadow-lg">
-                {art ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={art} alt="" className="aspect-[2/3] w-full object-cover" />
-                ) : (
-                  <div className="aspect-[2/3]" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs tracking-[0.24em] text-zinc-600 uppercase dark:text-zinc-300">
-                  {kind === "tv" ? "Series" : "Movie"}
-                </p>
-                <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
-                  {title}
-                  {year ? ` (${year})` : ""}
-                </h1>
-                <div className="mt-3 flex flex-wrap gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-                  {runtime && <span>{runtime}</span>}
-                  {detail.status && <span>{detail.status}</span>}
-                  {typeof detail.voteAverage === "number" && detail.voteAverage > 0 && (
-                    <span>
-                      {detail.voteAverage.toFixed(1)} / 10
-                      {detail.voteCount ? ` · ${detail.voteCount.toLocaleString()} reviews` : ""}
-                    </span>
-                  )}
-                  {statusLabel(detail.mediaInfo?.status) && <span>{statusLabel(detail.mediaInfo?.status)}</span>}
-                </div>
-                {kinds.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {kinds.map((name) => (
-                      <span key={name} className="rounded-full bg-black/5 px-3 py-1 text-xs dark:bg-white/10">
-                        {name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {detail.genres?.length ? (
-                  <p className="mt-3 text-sm text-zinc-500">{detail.genres.map((genre) => genre.name).filter(Boolean).join(" · ")}</p>
-                ) : null}
-                {detail.overview && <p className="mt-4 max-w-2xl text-base leading-relaxed">{detail.overview}</p>}
-                {canRequest && (
-                  <Button className="mt-5 rounded-full" onClick={() => setOpen(true)}>
-                    Request
-                  </Button>
-                )}
-                {reviews.length > 0 && (
-                  <div className="mt-8 space-y-4">
-                    <h2 className="text-lg font-semibold">Reviews</h2>
-                    {reviews.map((review) => (
-                      <blockquote key={review.author} className="rounded-2xl border border-black/8 p-4 text-sm dark:border-white/10">
-                        <p className="line-clamp-5">{review.content}</p>
-                        {review.author && <footer className="mt-2 text-xs text-zinc-500">— {review.author}</footer>}
-                      </blockquote>
-                    ))}
-                  </div>
-                )}
-              </div>
+      <PageHero
+        art={
+          hero ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={hero} alt="" className="pointer-events-none absolute inset-0 size-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 bg-zinc-900" />
+          )
+        }
+      >
+        <PageBack className="text-white hover:bg-white/10" />
+        {!detail && !error && <PageSpinner label="Finding this title…" />}
+        {error && <p className="text-white/80">{error}</p>}
+        {detail && (
+          <div>
+            <p className="text-xs tracking-[0.24em] text-white/80 uppercase">
+              {kind === "tv" ? "Series" : "Movie"}
+            </p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+              {title}
+              {year ? ` (${year})` : ""}
+            </h1>
+            <div className="mt-3 flex flex-wrap gap-2 text-sm text-white/85">
+              {runtime && <span>{runtime}</span>}
+              {detail.status && <span>{detail.status}</span>}
+              {typeof detail.voteAverage === "number" && detail.voteAverage > 0 && (
+                <span>
+                  {detail.voteAverage.toFixed(1)} / 10
+                  {detail.voteCount ? ` · ${detail.voteCount.toLocaleString()} reviews` : ""}
+                </span>
+              )}
+              {statusLabel(detail.mediaInfo?.status) && <span>{statusLabel(detail.mediaInfo?.status)}</span>}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+      </PageHero>
+      <div className="page-gutter py-6">
+        {detail && (
+          <div className="flex flex-col gap-6 sm:flex-row">
+            <div className="poster-case w-full max-w-[220px] overflow-hidden bg-zinc-800">
+              {art ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={art} alt="" className="aspect-[2/3] w-full object-cover" />
+              ) : (
+                <div className="aspect-[2/3]" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              {kinds.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {kinds.map((name) => (
+                    <span key={name} className="rounded-full bg-black/5 px-3 py-1 text-xs dark:bg-white/10">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {detail.genres?.length ? (
+                <p className="mt-3 text-sm text-zinc-500">{detail.genres.map((genre) => genre.name).filter(Boolean).join(" · ")}</p>
+              ) : null}
+              {detail.overview && <p className="mt-4 max-w-2xl text-base leading-relaxed">{detail.overview}</p>}
+              {canRequest && (
+                <Button className="mt-5 rounded-full" onClick={() => setOpen(true)}>
+                  Request
+                </Button>
+              )}
+              {reviews.length > 0 && (
+                <div className="mt-8 space-y-4">
+                  <h2 className="text-lg font-semibold">Reviews</h2>
+                  {reviews.map((review) => (
+                    <blockquote key={review.author} className="rounded-2xl border border-black/8 p-4 text-sm dark:border-white/10">
+                      <p className="line-clamp-5">{review.content}</p>
+                      {review.author && <footer className="mt-2 text-xs text-zinc-500">— {review.author}</footer>}
+                    </blockquote>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
       <SeerrRequestDialog
         item={item}

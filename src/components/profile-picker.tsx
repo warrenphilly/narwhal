@@ -8,6 +8,7 @@ import { useProfiles, type ViewingProfile } from "@/components/profile-provider"
 import { useSession } from "@/components/session-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 const COLORS = ["#AA5CC3", "#00A4DC", "#F59E0B", "#FB7185", "#34D399", "#818CF8", "#F472B6", "#22D3EE"];
 const EMOJIS = ["🐋", "🎬", "🍿", "🌙", "🚀", "🎧", "🦊", "👾", "⭐", "🌊"];
@@ -78,7 +79,7 @@ export function ProfilePicker() {
       )}
 
       {editing && (
-        <div className="mt-10 w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-6 dark:border-white/10 dark:bg-zinc-900">
+        <div className="glass-card glass-edge mt-10 w-full max-w-md rounded-3xl p-6">
           <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Customize {editing.name}</p>
           <label className="mt-4 block text-xs text-zinc-500">Name</label>
           <Input
@@ -92,9 +93,10 @@ export function ProfilePicker() {
               <button
                 key={emoji}
                 type="button"
-                className={`flex size-10 items-center justify-center rounded-xl text-xl ${
-                  editing.emoji === emoji ? "ring-2 ring-zinc-900 dark:ring-white" : "bg-zinc-100 dark:bg-white/10"
-                }`}
+                className={cn(
+                  "flex size-10 items-center justify-center rounded-xl text-xl",
+                  editing.emoji === emoji ? "ring-2 ring-zinc-900 dark:ring-white" : "glass-chip"
+                )}
                 onClick={() => setEditing({ ...editing, emoji })}
               >
                 {emoji}

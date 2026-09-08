@@ -57,13 +57,13 @@ export function LoginScreen() {
       <img src="/login-cinema.jpg" alt="" className="absolute inset-0 size-full object-cover" />
       <div className="absolute inset-0 bg-black/55" />
       <div className="relative flex min-h-full items-center justify-center px-4 py-16">
-        <div className="w-full max-w-md space-y-4 rounded-3xl bg-zinc-950/75 px-8 py-10 text-white shadow-2xl ring-1 ring-white/10 backdrop-blur-xl">
+        <div className="glass-edge w-full max-w-md space-y-4 rounded-3xl bg-zinc-950/75 px-8 py-10 text-white backdrop-blur-xl">
           <div className="mb-2 flex flex-col items-center text-center">
             <NarwhalMark className="size-16" />
             <p className="mt-4 text-2xl font-semibold tracking-tight">Narwhal</p>
             <p className="mt-1 text-sm text-white/60">Home Wi‑Fi or Tailscale — pick one, then sign in.</p>
           </div>
-          <div className="login-form [&_label]:text-white/80 [&_input]:border-white/15 [&_input]:bg-white/8 [&_input]:text-white">
+          <div className="login-form [&_label]:text-white/80 [&_input]:border-white/15! [&_input]:bg-white/8! [&_input]:text-white!">
             <ConnectionForm />
           </div>
           <button
@@ -74,7 +74,7 @@ export function LoginScreen() {
             {showTunnel ? "Hide" : "Tunnel & remote access"}
           </button>
           {showTunnel && (
-            <div className="space-y-3 rounded-2xl border border-white/10 bg-black/30 p-4">
+            <div className="space-y-3 rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-md">
               <p className="text-xs leading-relaxed text-white/55">
                 Only needed for a public Cloudflare URL. Home network and Tailscale do not use this.
               </p>
@@ -86,7 +86,7 @@ export function LoginScreen() {
                   id="cf-id"
                   value={cfAccessClientId}
                   onChange={(event) => setCfAccessClientId(event.target.value)}
-                  className="h-11 border-white/15 bg-white/8 text-white"
+                  className="h-11 border-white/15! bg-white/8! text-white!"
                   autoComplete="off"
                 />
               </div>
@@ -99,7 +99,7 @@ export function LoginScreen() {
                   type="password"
                   value={cfAccessClientSecret}
                   onChange={(event) => setCfAccessClientSecret(event.target.value)}
-                  className="h-11 border-white/15 bg-white/8 text-white"
+                  className="h-11 border-white/15! bg-white/8! text-white!"
                   autoComplete="off"
                 />
               </div>

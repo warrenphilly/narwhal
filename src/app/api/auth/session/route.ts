@@ -11,5 +11,7 @@ export async function GET() {
     userName: session.userName,
     userId: session.userId,
     serverUrl: session.serverUrl,
+    token: session.token,
+    deviceId: session.deviceId,
   });
 }

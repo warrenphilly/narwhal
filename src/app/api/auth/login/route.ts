@@ -4,6 +4,7 @@ import {
   authHeader,
   normalizeServerUrl,
   sessionCookieValue,
+  sessionCookieOptions,
   type JellyfinSession,
 } from "@/lib/session";
 import {
@@ -123,14 +124,10 @@ export async function POST(request: Request) {
       userName: session.userName,
       userId: session.userId,
       serverUrl: session.serverUrl,
+      token: session.token,
+      deviceId: session.deviceId,
     });
-    res.cookies.set(SESSION_COOKIE, sessionCookieValue(session), {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-    });
+    res.cookies.set(SESSION_COOKIE, sessionCookieValue(session), sessionCookieOptions());
     return res;
   } catch (error) {
     const message = describeConnectError(error, serverUrl || "your Jellyfin server");

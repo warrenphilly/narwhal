@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { NarwhalSpinner } from "@/components/narwhal-spinner";
 import { Button } from "@/components/ui/button";
-import { expandChannelItems, buildGuideBlocks, type GuideBlock } from "@/lib/channel-play";
+import { expandChannelItems, buildGuideBlocks, guideAnchor, type GuideBlock } from "@/lib/channel-play";
 import type { Channel } from "@/lib/channels";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 
 const HOURS = [6, 12] as const;
+const TICK_MS = 30_000;
 
 function hourLabel(ms: number) {
   return new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -32,19 +33,20 @@ export function ChannelGuide({
   userId?: string;
 }) {
   const [hours, setHours] = useState<(typeof HOURS)[number]>(6);
+  const [now, setNow] = useState(() => Date.now());
   const [rows, setRows] = useState<{ channel: Channel; blocks: GuideBlock[] }[]>([]);
   const [busy, setBusy] = useState(false);
   const stamp = channels.map((row) => `${row.id}:${row.kind}:${row.alwaysOn}:${row.hours}:${row.entries.map((entry) => entry.itemId).join(",")}`).join("|");
-  const start = useMemo(() => {
-    const now = new Date();
-    now.setMinutes(now.getMinutes() < 30 ? 0 : 30, 0, 0);
-    return now.getTime();
-  }, [hours]);
+  const start = guideAnchor(now);
   const windowMs = hours * 60 * 60 * 1000;
   const pxPerMin = hours === 6 ? 4 : 2.5;
   const width = hours * 60 * pxPerMin;
   const ticks = Array.from({ length: hours * 2 + 1 }, (_, i) => start + i * 30 * 60 * 1000);
-  const now = Date.now();
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), TICK_MS);
+    return () => window.clearInterval(id);
+  }, []);
 
   useEffect(() => {
     if (!userId) return;
@@ -67,13 +69,17 @@ export function ChannelGuide({
     };
   }, [userId, hours, start, windowMs, stamp]);
 
+  const hasAlwaysOn = useMemo(() => channels.some((channel) => channel.alwaysOn), [channels]);
+
   if (!channels.length) return null;
 
   return (
     <section className="w-full rounded-2xl border border-black/8 bg-white/70 p-4 dark:border-white/10 dark:bg-black/30">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-lg font-semibold">Guide</h2>
-        <p className="text-sm text-zinc-500">What is on for the next {hours} hours.</p>
+        <p className="text-sm text-zinc-500">
+          {hasAlwaysOn ? "Live schedule — updates automatically." : `What is on for the next ${hours} hours.`}
+        </p>
         <div className="ml-auto flex gap-2">
           {HOURS.map((value) => (
             <Button
@@ -130,7 +136,7 @@ export function ChannelGuide({
                     return (
                       <Link
                         key={`${channel.id}-${block.item.Id}-${block.start}`}
-                        href={`/channels/${channel.id}/watch?item=${encodeURIComponent(block.item.Id)}`}
+                        href={`/channels/${channel.id}/watch?start=${block.start}`}
                         className={`absolute top-0 flex h-16 flex-col justify-center overflow-hidden rounded-lg px-2 text-left text-xs ${
                           live
                             ? "bg-gradient-to-r from-[#00A4DC] to-[#AA5CC3] text-white"

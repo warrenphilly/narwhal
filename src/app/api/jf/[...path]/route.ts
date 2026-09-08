@@ -51,6 +51,7 @@ async function proxy(request: NextRequest, path: string[]) {
   try {
     const method = request.method;
     const hasBody = method !== "GET" && method !== "HEAD";
+    const isImage = joined.includes("/Images/");
     const upstream = await jellyfinFetch(
       target.toString(),
       {
@@ -59,7 +60,7 @@ async function proxy(request: NextRequest, path: string[]) {
         body: hasBody ? await request.arrayBuffer() : undefined,
         redirect: "follow",
       },
-      { ...tunnelFromSession(session), timeoutMs: 120_000 }
+      { ...tunnelFromSession(session), timeoutMs: isImage ? 20_000 : 30_000 }
     );
 
     const out = new Headers();
@@ -68,9 +69,9 @@ async function proxy(request: NextRequest, path: string[]) {
         out.set(key, value);
       }
     });
+    if (isImage) out.set("Cache-Control", "public, max-age=86400");
 
-    const body = await upstream.arrayBuffer();
-    return new NextResponse(body, {
+    return new NextResponse(upstream.body, {
       status: upstream.status,
       headers: out,
     });

@@ -51,7 +51,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
   } else {
     const segments = path.map(encodeURIComponent).join("/");
-    target = `${session.serverUrl}/Videos/${encodeURIComponent(itemId)}/${segments}${request.nextUrl.search}`;
+    const url = new URL(`${session.serverUrl}/Videos/${encodeURIComponent(itemId)}/${segments}`);
+    request.nextUrl.searchParams.forEach((value, key) => {
+      if (key.toLowerCase() === "starttimeticks") return;
+      url.searchParams.append(key, value);
+    });
+    target = url.toString();
   }
 
   const headers = new Headers();

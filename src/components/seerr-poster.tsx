@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { posterUrl, statusLabel, type SeerrSearchResult } from "@/lib/seerr";
-import { cn } from "@/lib/utils";
 
 export function SeerrPoster({
   item,
@@ -22,38 +21,37 @@ export function SeerrPoster({
   const href = `/discover/${item.mediaType}/${item.id}`;
 
   return (
-    <article className="w-[240px] shrink-0 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/10 dark:bg-zinc-900">
-      <Link href={href} className="block aspect-[2/3] bg-zinc-200 dark:bg-zinc-800">
-        {art ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={art} alt="" className="size-full object-cover" />
-        ) : null}
+    <article className="poster-card group relative w-[210px] shrink-0 snap-start">
+      <Link href={href} className="block outline-none">
+        <div className="poster-case relative aspect-[2/3] overflow-hidden bg-zinc-800">
+          {art ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={art} alt="" className="absolute inset-0 size-full object-cover" />
+          ) : null}
+          {canRequest && (
+            <Button
+              size="sm"
+              className="absolute inset-x-2 bottom-2 z-10 h-8 rounded-full opacity-0 transition group-hover:opacity-100"
+              disabled={requesting}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onRequest(item);
+              }}
+            >
+              {requesting ? "Requesting…" : "Request"}
+            </Button>
+          )}
+        </div>
+        <p className="mt-2.5 line-clamp-1 text-sm text-[var(--page-fg)]">
+          {title}
+          {year ? ` (${year})` : ""}
+        </p>
+        <p className="mt-0.5 line-clamp-1 text-xs text-muted">
+          {item.mediaType === "tv" ? "TV show" : "Movie"}
+          {status ? ` · ${status}` : ""}
+        </p>
       </Link>
-      <div className="space-y-2.5 p-4">
-        <Link href={href} className="block">
-          <p className="line-clamp-2 text-base font-semibold text-zinc-900 dark:text-zinc-50">
-            {title}
-            {year ? ` (${year})` : ""}
-          </p>
-          <p className="mt-1 text-sm text-zinc-500">{item.mediaType === "tv" ? "TV" : "Movie"}</p>
-        </Link>
-        {status ? (
-          <p className={cn("text-sm", item.mediaInfo?.status === 5 ? "text-emerald-600" : "text-sky-600")}>{status}</p>
-        ) : null}
-        {canRequest && (
-          <Button
-            size="sm"
-            className="h-9 w-full rounded-full"
-            disabled={requesting}
-            onClick={(event) => {
-              event.preventDefault();
-              onRequest(item);
-            }}
-          >
-            {requesting ? "Requesting…" : "Request"}
-          </Button>
-        )}
-      </div>
     </article>
   );
 }

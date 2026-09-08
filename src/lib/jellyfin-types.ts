@@ -111,6 +111,15 @@ export function formatRuntime(ticks?: number) {
   return `${hours}h ${rest}m`;
 }
 
+export function formatCardFacts(item: { CommunityRating?: number; RunTimeTicks?: number }) {
+  return [
+    item.CommunityRating ? `${item.CommunityRating.toFixed(1)} ★` : "",
+    formatRuntime(item.RunTimeTicks),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 export function formatBytes(bytes?: number) {
   if (!bytes) return "";
   const units = ["B", "KB", "MB", "GB", "TB"];

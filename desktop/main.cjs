@@ -1,6 +1,7 @@
-const { app, BrowserWindow, dialog, ipcMain, shell } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, shell, utilityProcess } = require("electron");
 const { spawn } = require("node:child_process");
 const fs = require("node:fs/promises");
+const fsSync = require("node:fs");
 const path = require("node:path");
 const net = require("node:net");
 
@@ -8,6 +9,7 @@ const VIDEO_EXT = new Set([".mp4", ".mkv", ".avi", ".mov", ".m4v", ".webm", ".ts
 const activeSaves = new Map();
 
 let child = null;
+let serverUrl = "";
 
 function iconPath() {
   if (app.isPackaged) return path.join(process.resourcesPath, "icon.png");
@@ -45,20 +47,35 @@ async function waitForServer(url) {
   throw new Error("Narwhal did not start.");
 }
 
+function packedServerJs() {
+  const serverDir = path.join(process.resourcesPath, "server");
+  const nested = path.join(serverDir, "server.js");
+  const named = path.join(serverDir, "narwhal", "server.js");
+  if (fsSync.existsSync(nested)) return { serverDir, serverJs: nested };
+  if (fsSync.existsSync(named)) return { serverDir: path.join(serverDir, "narwhal"), serverJs: named };
+  return { serverDir, serverJs: nested };
+}
+
 async function startPackedServer() {
   const port = await pickPort(43147);
   const url = `http://127.0.0.1:${port}`;
-  const serverDir = path.join(process.resourcesPath, "server");
-  const serverJs = path.join(serverDir, "server.js");
-  child = spawn(process.execPath, [serverJs], {
+  const { serverDir, serverJs } = packedServerJs();
+  if (!fsSync.existsSync(serverJs)) {
+    throw new Error(`Missing packed server at ${serverJs}`);
+  }
+  // Do not spawn process.execPath (Narwhal.app/Contents/MacOS/Narwhal).
+  // On macOS that opens a second Dock item that looks like a .exec, and the
+  // real window hangs waiting for a server that never starts.
+  child = utilityProcess.fork(serverJs, [], {
     cwd: serverDir,
     env: {
       ...process.env,
-      ELECTRON_RUN_AS_NODE: "1",
+      NODE_ENV: "production",
       PORT: String(port),
       HOSTNAME: "127.0.0.1",
     },
-    stdio: "ignore",
+    stdio: "pipe",
+    serviceName: "narwhal-next",
   });
   await waitForServer(url);
   return url;
@@ -85,6 +102,7 @@ function createWindow(url) {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      backgroundThrottling: false,
     },
   });
   win.loadURL(url);
@@ -181,14 +199,22 @@ ipcMain.handle("narwhal:delete-file", async (_event, filePath) => {
   return { ok: true };
 });
 
+app.commandLine.appendSwitch("ignore-gpu-blocklist");
+
 app.whenReady().then(async () => {
   if (process.platform === "darwin") {
     app.dock.setIcon(iconPath());
   }
-  const url = await startUrl();
-  createWindow(url);
+  try {
+    serverUrl = await startUrl();
+  } catch (error) {
+    dialog.showErrorBox("Narwhal could not start", error instanceof Error ? error.message : String(error));
+    app.quit();
+    return;
+  }
+  createWindow(serverUrl);
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow(url);
+    if (BrowserWindow.getAllWindows().length === 0 && serverUrl) createWindow(serverUrl);
   });
 });
 
@@ -199,7 +225,11 @@ app.on("window-all-closed", () => {
 let quitting = false;
 app.on("before-quit", (event) => {
   if (quitting) {
-    if (child) child.kill();
+    try {
+      child?.kill();
+    } catch {
+      /* already gone */
+    }
     return;
   }
   event.preventDefault();

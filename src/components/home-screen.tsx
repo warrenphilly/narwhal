@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import { HeroBanner } from "@/components/hero-banner";
 import { NarwhalSpinner } from "@/components/narwhal-spinner";
 import { Shelf } from "@/components/shelf";
@@ -10,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useSession } from "@/components/session-provider";
 import { useProfiles } from "@/components/profile-provider";
 import {
-  featuredWithNewReleases,
+  buildFeaturedLineup,
   fetchLatest,
   fetchMovies,
   fetchResume,
@@ -18,8 +19,8 @@ import {
   fetchUnplayedRecent,
   fetchViews,
   isNewRelease,
-  seriesForNewEpisodes,
   uniqueItems,
+  uniqueContinueItems,
 } from "@/lib/client-api";
 import { DEMO_MOVIES, DEMO_SHOWS } from "@/lib/demo-library";
 import {
@@ -42,6 +43,8 @@ type HomeSnap = {
   latest: JellyfinItem[];
   extraLatest: JellyfinItem[];
   unplayed: JellyfinItem[];
+  unplayedMovies: JellyfinItem[];
+  unplayedEpisodes: JellyfinItem[];
   extraUnplayed: JellyfinItem[];
   catalog: JellyfinItem[];
   viewNames: string[];
@@ -68,6 +71,8 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
   const [organize, setOrganize] = useState(false);
   const [moving, setMoving] = useState<JellyfinItem | null>(null);
   const [newGroup, setNewGroup] = useState("");
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "unwatched" | "new">("all");
 
   useEffect(() => {
     if (!signedIn || !session?.userId) return;
@@ -80,25 +85,42 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
       setLoaded(true);
     }
 
-    const movie = tab === "movies";
+    const mixed = tab === "home";
+    const movieOnly = tab === "movies";
     Promise.all([
       fetchResume(userId).catch(() => [] as JellyfinItem[]),
-      fetchLatest(userId, movie ? "Movie" : "Series").catch(() => [] as JellyfinItem[]),
-      movie ? Promise.resolve([] as JellyfinItem[]) : fetchLatest(userId, "Episode").catch(() => [] as JellyfinItem[]),
-      fetchUnplayedRecent(userId, movie ? "Movie" : "Episode").catch(() => [] as JellyfinItem[]),
-      movie ? Promise.resolve([] as JellyfinItem[]) : fetchUnplayedRecent(userId, "Series").catch(() => [] as JellyfinItem[]),
-      movie ? fetchMovies(userId) : fetchShows(userId),
+      movieOnly || mixed ? fetchLatest(userId, "Movie").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
+      !movieOnly ? fetchLatest(userId, "Series").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
+      !movieOnly ? fetchLatest(userId, "Episode").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
+      movieOnly || mixed ? fetchUnplayedRecent(userId, "Movie").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
+      !movieOnly ? fetchUnplayedRecent(userId, "Episode").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
+      !movieOnly ? fetchUnplayedRecent(userId, "Series").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
+      movieOnly || mixed ? fetchMovies(userId).catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
+      !movieOnly ? fetchShows(userId).catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
       fetchViews(userId).catch(() => [] as JellyfinItem[]),
     ])
-      .then(([resume, latest, extraLatest, unplayed, extraUnplayed, catalog, views]) => {
+      .then(([
+        resume,
+        latestMovies,
+        latestShows,
+        extraLatest,
+        unplayedMovies,
+        unplayedEpisodes,
+        extraUnplayed,
+        movies,
+        shows,
+        views,
+      ]) => {
         if (cancelled) return;
         const next: HomeSnap = {
           resume,
-          latest,
+          latest: uniqueItems([...latestMovies, ...latestShows]),
           extraLatest,
-          unplayed,
+          unplayed: uniqueItems([...unplayedMovies, ...unplayedEpisodes]),
+          unplayedMovies,
+          unplayedEpisodes,
           extraUnplayed,
-          catalog,
+          catalog: uniqueItems([...movies, ...shows]),
           viewNames: views.map((view) => view.Name).filter(Boolean),
         };
         homeCache.set(key, next);
@@ -125,7 +147,15 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
   const { applyProfile, listedItems, profile } = useProfiles();
   const resume = (snap?.resume ?? []).map(applyProfile);
   const latest = (snap?.latest ?? []).map(applyProfile);
-  const catalog = (signedIn ? snap?.catalog ?? [] : tab === "movies" ? DEMO_MOVIES : DEMO_SHOWS).map(applyProfile);
+  const catalog = (
+    signedIn
+      ? snap?.catalog ?? []
+      : tab === "movies"
+        ? DEMO_MOVIES
+        : tab === "shows"
+          ? DEMO_SHOWS
+          : [...DEMO_MOVIES, ...DEMO_SHOWS]
+  ).map(applyProfile);
   const localResume = catalog
     .filter((item) => {
       const saved = profile?.progress[item.Id];
@@ -133,28 +163,54 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
     })
     .sort((a, b) => (profile?.progress[b.Id]?.updatedAt ?? 0) - (profile?.progress[a.Id]?.updatedAt ?? 0));
   const watching = signedIn
-    ? uniqueItems([
-        ...resume.filter((item) =>
-          tab === "movies" ? item.Type === "Movie" || !item.Type : item.Type === "Episode" || item.Type === "Series"
-        ),
-        ...localResume.filter((item) =>
-          tab === "movies" ? item.Type === "Movie" || !item.Type : item.Type === "Episode" || item.Type === "Series"
-        ),
-      ])
-    : (tab === "movies" ? DEMO_MOVIES.slice(0, 4) : DEMO_SHOWS.slice(0, 2)).map(applyProfile);
-  const latestSigned = signedIn ? latest : catalog;
-  const featured =
-    tab === "movies"
-      ? featuredWithNewReleases(latestSigned, [...(snap?.unplayed ?? []), ...latestSigned].filter(isNewRelease).map(applyProfile))
-      : featuredWithNewReleases(latestSigned, [
-          ...seriesForNewEpisodes(
-            [...(snap?.extraLatest ?? []), ...(snap?.unplayed ?? [])].filter(isNewRelease),
-            catalog
+    ? uniqueContinueItems(
+        [
+          ...resume.filter((item) =>
+            tab === "home"
+              ? true
+              : tab === "movies"
+                ? item.Type === "Movie" || !item.Type
+                : item.Type === "Episode" || item.Type === "Series"
           ),
-          ...(snap?.extraUnplayed ?? []).filter(isNewRelease),
-        ].map(applyProfile));
-  const myList = listedItems(catalog, "watchlist");
-  const favorites = listedItems(catalog, "favorites");
+          ...localResume.filter((item) =>
+            tab === "home"
+              ? true
+              : tab === "movies"
+                ? item.Type === "Movie" || !item.Type
+                : item.Type === "Episode" || item.Type === "Series"
+          ),
+        ],
+        {
+          progress: profile?.progress,
+          lastEpisodeBySeries: profile?.lastEpisodeBySeries,
+        }
+      )
+    : (tab === "movies" ? DEMO_MOVIES.slice(0, 4) : tab === "shows" ? DEMO_SHOWS.slice(0, 2) : [...DEMO_MOVIES.slice(0, 3), ...DEMO_SHOWS.slice(0, 2)]).map(applyProfile);
+  const latestSigned = signedIn ? latest : catalog;
+  const featured = signedIn
+    ? buildFeaturedLineup({
+        latest: latestSigned,
+        newEpisodes: snap?.extraLatest ?? [],
+        unplayedMovies:
+          snap?.unplayedMovies ?? (snap?.unplayed ?? []).filter((item) => item.Type === "Movie" || !item.Type),
+        unplayedSeries: snap?.extraUnplayed ?? [],
+        catalog,
+        tab: tab === "movies" ? "movies" : tab === "shows" ? "shows" : "home",
+      }).map((item) => ({ ...applyProfile(item), hasNewEpisodes: item.hasNewEpisodes }))
+    : catalog.slice(0, 6).map((item) => ({ ...item }));
+
+  function matchesShelf(item: JellyfinItem) {
+    const needle = query.trim().toLowerCase();
+    const hay = `${item.Name} ${item.SeriesName ?? ""} ${(item.Genres ?? []).join(" ")}`.toLowerCase();
+    if (needle && !hay.includes(needle)) return false;
+    if (filter === "unwatched" && item.UserData?.Played) return false;
+    if (filter === "new" && !isNewRelease(item)) return false;
+    return true;
+  }
+
+  const myList = listedItems(catalog, "watchlist").filter(matchesShelf);
+  const favorites = listedItems(catalog, "favorites").filter(matchesShelf);
+  const watchingShown = watching.filter(matchesShelf);
   const genres = useMemo(() => {
     const skip = new Set<string>();
     for (const item of [...myList, ...favorites]) {
@@ -162,11 +218,11 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
       if (item.SeriesId) skip.add(item.SeriesId);
     }
     const rows = groupItems(
-      catalog.filter((item) => !skip.has(item.Id) && !(item.SeriesId && skip.has(item.SeriesId))),
+      catalog.filter((item) => !skip.has(item.Id) && !(item.SeriesId && skip.has(item.SeriesId)) && matchesShelf(item)),
       groups
     );
     return organize ? rows : rows.filter(([, list]) => list.length > 0);
-  }, [catalog, myList, favorites, groups, organize]);
+  }, [catalog, myList, favorites, groups, organize, query, filter]);
 
   function persist(next: GroupStore) {
     if (!session?.userId) return;
@@ -187,11 +243,12 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
   return (
     <div className="pb-8">
       <HeroBanner items={featured.length ? featured : latestSigned} />
-      <div className="page-gutter mt-6 space-y-8">
+      <div className="page-gutter mt-10 space-y-10 pb-10">
         {error && <p className="text-sm text-red-600">{error}</p>}
         {signedIn && loaded && catalog.length === 0 && !error && (
-          <p className="text-sm text-zinc-500">
-            Connected to {session?.serverUrl || "Jellyfin"}, but no {tab === "movies" ? "movies" : "TV shows"} came
+          <p className="text-sm text-muted">
+            Connected to {session?.serverUrl || "Jellyfin"}, but no{" "}
+            {tab === "movies" ? "movies" : tab === "shows" ? "TV shows" : "movies or TV shows"} came
             back.
             {snap?.viewNames.length
               ? ` Libraries on this user: ${snap.viewNames.join(", ")}.`
@@ -200,14 +257,43 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
           </p>
         )}
         {!signedIn && (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted">
             Sample library. Sign in at the top right to load titles from your Jellyfin server.
           </p>
         )}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="glass-panel glass-edge flex flex-wrap items-center gap-2 rounded-2xl p-2 sm:p-3">
           <Button type="button" variant={organize ? "default" : "outline"} size="sm" className="rounded-full" onClick={() => setOrganize((value) => !value)}>
             {organize ? "Done organizing" : "Organize shelves"}
           </Button>
+          <label className="relative min-w-[12rem] flex-1">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search this library"
+              className="h-8 pl-9"
+            />
+          </label>
+          <div className="flex flex-wrap gap-1">
+            {(
+              [
+                ["all", "All"],
+                ["unwatched", "Unwatched"],
+                ["new", "New"],
+              ] as const
+            ).map(([id, label]) => (
+              <Button
+                key={id}
+                type="button"
+                size="sm"
+                variant={filter === id ? "default" : "outline"}
+                className="rounded-full"
+                onClick={() => setFilter(id)}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
           {organize && (
             <form
               className="flex gap-2"
@@ -229,7 +315,7 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
             </form>
           )}
         </div>
-        <Shelf title="Currently watching" items={watching} variant="continue" />
+        <Shelf title="Currently watching" items={watchingShown} variant="continue" />
         <Shelf title="My list" items={myList} />
         <Shelf title="Favorites" items={favorites} />
         {genres.map(([genre, items]) => (

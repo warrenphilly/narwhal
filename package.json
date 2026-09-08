@@ -1,13 +1,16 @@
 {
   "name": "narwhal",
   "productName": "Narwhal",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "main": "desktop/main.cjs",
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "desktop": "node scripts/desktop.mjs",
+    "desktop:dev": "NARWHAL_DEV=1 node scripts/desktop.mjs",
     "mac": "node scripts/mac.mjs",
+    "win": "node scripts/win.mjs",
+    "dist:web": "next build",
     "build": "next build",
     "start": "next start --port 3000 --hostname 0.0.0.0",
     "lint": "eslint"
@@ -66,9 +69,28 @@
       "icon": "public/icon.png",
       "category": "public.app-category.entertainment",
       "target": [
-        "dir"
+        { "target": "dmg", "arch": ["arm64"] }
       ],
       "identity": null
+    },
+    "win": {
+      "icon": "public/icon.png",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Narwhal"
+    },
+    "dmg": {
+      "title": "Narwhal",
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
     },
     "directories": {
       "output": "dist"

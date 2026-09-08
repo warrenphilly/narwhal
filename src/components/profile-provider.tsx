@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useSession } from "@/components/session-provider";
@@ -19,6 +20,7 @@ export type ViewingProfile = {
   favorites: string[];
   watchlist: string[];
   progress: Record<string, { positionTicks: number; played: boolean; updatedAt: number }>;
+  lastEpisodeBySeries?: Record<string, { episodeId: string; updatedAt: number }>;
 };
 
 const COLORS = ["#AA5CC3", "#00A4DC", "#F59E0B", "#FB7185", "#34D399", "#818CF8"];
@@ -41,7 +43,12 @@ type ProfileContextValue = {
   toggleWatchlist: (itemId: string) => void;
   isFavorite: (itemId: string) => boolean;
   isWatchlisted: (itemId: string) => boolean;
-  rememberProgress: (itemId: string, positionTicks: number, played?: boolean) => void;
+  rememberProgress: (
+    itemId: string,
+    positionTicks: number,
+    played?: boolean,
+    context?: { seriesId?: string }
+  ) => void;
   applyProfile: (item: JellyfinItem) => JellyfinItem;
   listedItems: (items: JellyfinItem[], kind: "favorites" | "watchlist") => JellyfinItem[];
 };
@@ -71,15 +78,32 @@ function writeStore(userId: string | undefined, store: Store) {
   window.localStorage.setItem(storageKey(userId), JSON.stringify(store));
 }
 
+function activeProfile(store: Store) {
+  return store.profiles.find((row) => row.id === store.activeId) ?? null;
+}
+
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const { session } = useSession();
   const [store, setStore] = useState<Store>({ profiles: [], activeId: null });
+  const storeRef = useRef(store);
+  const flushTimer = useRef<number | null>(null);
   const [picking, setPicking] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    storeRef.current = store;
+  }, [store]);
+
+  useEffect(() => {
+    return () => {
+      if (flushTimer.current) window.clearTimeout(flushTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!session?.signedIn) {
       setStore({ profiles: [], activeId: null });
+      storeRef.current = { profiles: [], activeId: null };
       setPicking(false);
       setReady(true);
       return;
@@ -97,17 +121,32 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       };
       const created = { profiles: [first], activeId: first.id };
       writeStore(session.userId, created);
+      storeRef.current = created;
       setStore(created);
       setPicking(true);
     } else {
+      storeRef.current = next;
       setStore(next);
       setPicking(!next.activeId);
     }
     setReady(true);
   }, [session?.signedIn, session?.userId, session?.userName]);
 
+  const scheduleFlush = useCallback(
+    (next: Store) => {
+      storeRef.current = next;
+      if (flushTimer.current) window.clearTimeout(flushTimer.current);
+      flushTimer.current = window.setTimeout(() => {
+        writeStore(session?.userId, storeRef.current);
+        flushTimer.current = null;
+      }, 500);
+    },
+    [session?.userId]
+  );
+
   const persist = useCallback(
     (next: Store) => {
+      storeRef.current = next;
       setStore(next);
       writeStore(session?.userId, next);
     },
@@ -116,42 +155,76 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
   const updateActive = useCallback(
     (patch: (profile: ViewingProfile) => ViewingProfile) => {
-      if (!store.activeId) return;
+      const current = storeRef.current;
+      if (!current.activeId) return;
       persist({
-        ...store,
-        profiles: store.profiles.map((row) => (row.id === store.activeId ? patch(row) : row)),
+        ...current,
+        profiles: current.profiles.map((row) => (row.id === current.activeId ? patch(row) : row)),
       });
     },
-    [persist, store]
+    [persist]
   );
 
-  const rememberProgress = useCallback((itemId: string, positionTicks: number, played?: boolean) => {
-    setStore((current) => {
-      if (!current.activeId) return current;
-      const active = current.profiles.find((row) => row.id === current.activeId);
+  const rememberProgress = useCallback(
+    (itemId: string, positionTicks: number, played?: boolean, context?: { seriesId?: string }) => {
+      const current = storeRef.current;
+      if (!current.activeId) return;
+      const active = activeProfile(current);
       const prev = active?.progress[itemId];
       const nextPlayed = played ?? prev?.played ?? false;
-      if (prev && prev.played === nextPlayed && Math.abs(prev.positionTicks - positionTicks) < 20_000_000) {
-        return current;
+      const now = Date.now();
+      const seriesId = context?.seriesId;
+      const lastEpisodeBySeries =
+        seriesId && itemId
+          ? { ...(active?.lastEpisodeBySeries ?? {}), [seriesId]: { episodeId: itemId, updatedAt: now } }
+          : active?.lastEpisodeBySeries;
+
+      if (
+        prev &&
+        prev.played === nextPlayed &&
+        Math.abs(prev.positionTicks - positionTicks) < 20_000_000 &&
+        !seriesId
+      ) {
+        return;
       }
-      const next = {
+
+      const next: Store = {
         ...current,
         profiles: current.profiles.map((row) =>
           row.id === current.activeId
             ? {
                 ...row,
+                lastEpisodeBySeries,
                 progress: {
                   ...row.progress,
-                  [itemId]: { positionTicks, played: nextPlayed, updatedAt: Date.now() },
+                  [itemId]: { positionTicks, played: nextPlayed, updatedAt: now },
                 },
               }
             : row
         ),
       };
-      writeStore(session?.userId, next);
-      return next;
-    });
-  }, [session?.userId]);
+      scheduleFlush(next);
+    },
+    [scheduleFlush]
+  );
+
+  const applyProfile = useCallback((item: JellyfinItem) => {
+    const saved = activeProfile(storeRef.current)?.progress[item.Id];
+    if (!saved || saved.positionTicks < 10 * 10_000_000) return item;
+    const runtime = item.RunTimeTicks || 0;
+    const finished = Boolean(saved.played && runtime > 0 && saved.positionTicks >= runtime * 0.95);
+    const ticks = Math.max(saved.positionTicks, item.UserData?.PlaybackPositionTicks ?? 0);
+    return {
+      ...item,
+      UserData: {
+        ...item.UserData,
+        PlaybackPositionTicks: finished ? 0 : ticks,
+        Played: finished || Boolean(item.UserData?.Played),
+        PlayedPercentage:
+          runtime > 0 ? Math.min(100, (ticks / runtime) * 100) : item.UserData?.PlayedPercentage,
+      },
+    };
+  }, []);
 
   const profile = store.profiles.find((row) => row.id === store.activeId) ?? null;
 
@@ -162,33 +235,37 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       picking: Boolean(session?.signedIn && ready && (picking || !profile)),
       setPicking,
       selectProfile: (id) => {
-        persist({ ...store, activeId: id });
+        persist({ ...storeRef.current, activeId: id });
         setPicking(false);
       },
       addProfile: (name) => {
+        const current = storeRef.current;
         const next: ViewingProfile = {
           id: crypto.randomUUID(),
-          name: name.trim() || `Profile ${store.profiles.length + 1}`,
-          color: COLORS[store.profiles.length % COLORS.length],
+          name: name.trim() || `Profile ${current.profiles.length + 1}`,
+          color: COLORS[current.profiles.length % COLORS.length],
           emoji: "🎬",
           favorites: [],
           watchlist: [],
           progress: {},
         };
-        persist({ profiles: [...store.profiles, next], activeId: next.id });
+        persist({ profiles: [...current.profiles, next], activeId: next.id });
         setPicking(false);
       },
-      updateProfile: (id, patch) =>
+      updateProfile: (id, patch) => {
+        const current = storeRef.current;
         persist({
-          ...store,
-          profiles: store.profiles.map((row) => (row.id === id ? { ...row, ...patch } : row)),
-        }),
+          ...current,
+          profiles: current.profiles.map((row) => (row.id === id ? { ...row, ...patch } : row)),
+        });
+      },
       removeProfile: (id) => {
-        const profiles = store.profiles.filter((row) => row.id !== id);
+        const current = storeRef.current;
+        const profiles = current.profiles.filter((row) => row.id !== id);
         if (!profiles.length) return;
         persist({
           profiles,
-          activeId: store.activeId === id ? profiles[0].id : store.activeId,
+          activeId: current.activeId === id ? profiles[0].id : current.activeId,
         });
       },
       toggleFavorite: (itemId) =>
@@ -208,29 +285,13 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       isFavorite: (itemId) => Boolean(profile?.favorites.includes(itemId)),
       isWatchlisted: (itemId) => Boolean(profile?.watchlist.includes(itemId)),
       rememberProgress,
-      applyProfile: (item) => {
-        const saved = profile?.progress[item.Id];
-        if (!saved || saved.positionTicks < 10 * 10_000_000) return item;
-        const runtime = item.RunTimeTicks || 0;
-        const finished = Boolean(saved.played && runtime > 0 && saved.positionTicks >= runtime * 0.95);
-        const ticks = Math.max(saved.positionTicks, item.UserData?.PlaybackPositionTicks ?? 0);
-        return {
-          ...item,
-          UserData: {
-            ...item.UserData,
-            PlaybackPositionTicks: finished ? 0 : ticks,
-            Played: finished || Boolean(item.UserData?.Played),
-            PlayedPercentage:
-              runtime > 0 ? Math.min(100, (ticks / runtime) * 100) : item.UserData?.PlayedPercentage,
-          },
-        };
-      },
+      applyProfile,
       listedItems: (items, kind) => {
         const ids = new Set(profile?.[kind] ?? []);
         return items.filter((item) => ids.has(item.Id) || (item.SeriesId ? ids.has(item.SeriesId) : false));
       },
     }),
-    [persist, picking, profile, ready, rememberProgress, session?.signedIn, store, updateActive]
+    [applyProfile, persist, picking, profile, ready, rememberProgress, session?.signedIn, store.profiles, store.activeId, updateActive]
   );
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;

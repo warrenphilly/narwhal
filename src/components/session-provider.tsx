@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { getConnection, setConnection } from "@/lib/jellyfin-connection";
+import { getConnection, rememberConnection, setConnection } from "@/lib/jellyfin-connection";
 import { browserSignIn } from "@/lib/jellyfin-browser";
 
 export type SessionInfo = {
@@ -16,6 +16,8 @@ export type SessionInfo = {
   userName?: string;
   userId?: string;
   serverUrl?: string;
+  token?: string;
+  deviceId?: string;
 };
 
 type SessionContextValue = {
@@ -51,6 +53,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     const response = await fetch("/api/auth/session", { cache: "no-store" });
     const data = (await response.json()) as SessionInfo;
+    if (data.signedIn) rememberConnection(data);
     setSession(data);
   }, []);
 
@@ -78,6 +81,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           });
           return;
         }
+        if (data.signedIn) rememberConnection(data);
         setSession(data);
       })
       .catch(() => {
@@ -112,7 +116,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       });
       const data = (await response.json()) as SessionInfo & { error?: string };
       if (response.ok) {
-        setConnection(null);
+        rememberConnection(data);
         window.sessionStorage.removeItem("cinema-preview");
         setPreview(false);
         setSession({ ...data, signedIn: true });

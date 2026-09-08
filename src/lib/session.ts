@@ -70,3 +70,14 @@ export async function getSession(): Promise<JellyfinSession | null> {
 export function sessionCookieValue(session: JellyfinSession) {
   return JSON.stringify(session);
 }
+
+/** Narwhal desktop always runs on http://127.0.0.1 — Secure cookies would never stick. */
+export function sessionCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: false,
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  };
+}
