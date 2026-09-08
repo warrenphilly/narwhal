@@ -76,9 +76,10 @@ export function imageUrl(itemId: string, options?: { type?: string; maxWidth?: n
 }
 
 export function streamUrl(itemId: string, _info?: PlaybackInfo | null, forceTranscode = false) {
-  const params = new URLSearchParams({ transcode: "1" });
-  if (forceTranscode) params.set("retry", "1");
-  return `/api/play/${encodeURIComponent(itemId)}?${params.toString()}`;
+  const params = new URLSearchParams();
+  if (forceTranscode) params.set("transcode", "1");
+  const query = params.toString();
+  return `/api/play/${encodeURIComponent(itemId)}${query ? `?${query}` : ""}`;
 }
 
 export function downloadUrl(itemId: string, filename: string) {
@@ -261,7 +262,10 @@ export async function fetchMovie(userId: string, id: string) {
 }
 
 export async function fetchSeasons(_userId: string, seriesId: string) {
-  const response = await fetch(`/api/series/${encodeURIComponent(seriesId)}/seasons`, { cache: "no-store" });
+  const response = await fetch(`/api/series/${encodeURIComponent(seriesId)}/seasons`, {
+    cache: "no-store",
+    credentials: "same-origin",
+  });
   const data = (await response.json()) as { items?: JellyfinItem[]; error?: string };
   if (!response.ok) throw new Error(data.error || "Could not load seasons.");
   return asItemList(data.items ?? data);
@@ -273,7 +277,7 @@ export async function fetchEpisodes(_userId: string, seriesId: string, seasonId?
   const query = params.toString();
   const response = await fetch(
     `/api/series/${encodeURIComponent(seriesId)}/episodes${query ? `?${query}` : ""}`,
-    { cache: "no-store" }
+    { cache: "no-store", credentials: "same-origin" }
   );
   const data = (await response.json()) as { items?: JellyfinItem[]; error?: string };
   if (!response.ok) throw new Error(data.error || "Could not load episodes.");

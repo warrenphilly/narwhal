@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authHeader, getSession } from "@/lib/session";
-import { resolveJellyfinPlayUrl } from "@/lib/jellyfin-play";
 import { jellyfinFetch, tunnelFromSession } from "@/lib/jellyfin-request";
 
 export const runtime = "nodejs";
@@ -20,20 +19,43 @@ const hopByHop = new Set([
   "cookie",
 ]);
 
-async function play(request: NextRequest, itemId: string) {
+function streamTarget(serverUrl: string, itemId: string, transcode: boolean) {
+  const target = new URL(`${serverUrl}/Videos/${encodeURIComponent(itemId)}/stream.mp4`);
+  if (transcode) {
+    target.searchParams.set("Container", "mp4");
+    target.searchParams.set("VideoCodec", "h264");
+    target.searchParams.set("AudioCodec", "aac");
+    target.searchParams.set("AudioBitrate", "192000");
+    target.searchParams.set("VideoBitrate", "8000000");
+    target.searchParams.set("MaxStreamingBitrate", "12000000");
+    target.searchParams.set("TranscodingProtocol", "http");
+  } else {
+    target.searchParams.set("static", "true");
+    target.searchParams.set("Static", "true");
+  }
+  return target;
+}
+
+export async function HEAD() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Accept-Ranges": "bytes",
+      "Content-Type": "video/mp4",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+export async function GET(request: NextRequest, context: { params: Promise<{ itemId: string }> }) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   }
 
-  const preferTranscode = request.nextUrl.searchParams.get("transcode") === "1";
-  let target: string;
-  try {
-    target = await resolveJellyfinPlayUrl(session, itemId, preferTranscode);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not prepare playback.";
-    return NextResponse.json({ error: message }, { status: 502 });
-  }
+  const { itemId } = await context.params;
+  const transcode = request.nextUrl.searchParams.get("transcode") === "1";
+  const target = streamTarget(session.serverUrl, itemId, transcode);
 
   const headers = new Headers();
   const range = request.headers.get("range");
@@ -41,8 +63,8 @@ async function play(request: NextRequest, itemId: string) {
   headers.set("Authorization", authHeader(session));
 
   const upstream = await jellyfinFetch(
-    target,
-    { method: request.method, headers, redirect: "follow" },
+    target.toString(),
+    { method: "GET", headers, redirect: "follow" },
     { ...tunnelFromSession(session) }
   );
 
@@ -60,22 +82,11 @@ async function play(request: NextRequest, itemId: string) {
       out.set(key, value);
     }
   });
+  if (!out.has("Content-Type")) out.set("Content-Type", "video/mp4");
   out.set("Cache-Control", "no-store");
 
   return new NextResponse(upstream.body, {
     status: upstream.status,
     headers: out,
   });
-}
-
-type RouteContext = { params: Promise<{ itemId: string }> };
-
-export async function GET(request: NextRequest, context: RouteContext) {
-  const { itemId } = await context.params;
-  return play(request, itemId);
-}
-
-export async function HEAD(request: NextRequest, context: RouteContext) {
-  const { itemId } = await context.params;
-  return play(request, itemId);
 }

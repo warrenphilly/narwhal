@@ -35,7 +35,7 @@ export function asItemList(data: unknown): JellyfinItem[] {
   return [];
 }
 
-async function jfJson(session: JellyfinSession, path: string) {
+async function jfJson(session: JellyfinSession, path: string, timeoutMs = 30_000) {
   const url = `${session.serverUrl}/${path}`;
   const response = await jellyfinFetch(
     url,
@@ -43,7 +43,7 @@ async function jfJson(session: JellyfinSession, path: string) {
       method: "GET",
       headers: { Authorization: authHeader(session) },
     },
-    { ...tunnelFromSession(session), timeoutMs: 30_000 }
+    { ...tunnelFromSession(session), timeoutMs }
   );
   const text = await response.text();
   if (!response.ok) {
@@ -138,10 +138,11 @@ export async function loadSeasons(session: JellyfinSession, seriesId: string) {
     `Users/${user}/Items?ParentId=${id}&Recursive=false&Fields=${FIELDS}&Limit=50`,
   ];
   for (const path of paths) {
-    const { data } = await jfJson(session, path).catch(() => ({ data: null }));
+    const { data } = await jfJson(session, path, 8_000).catch(() => ({ data: null }));
     const items = asItemList(data).filter((item) => {
+      if (item.Id === seriesId) return false;
       const type = (item.Type || "Season").toLowerCase();
-      return type === "season" || type === "folder";
+      return type === "season" || type === "folder" || type === "seasonfolder";
     });
     if (items.length) return items.sort(byIndex);
   }
@@ -156,7 +157,7 @@ export async function loadEpisodes(session: JellyfinSession, seriesId: string, s
     const season = encodeURIComponent(seasonId);
     paths.push(
       `Shows/${series}/Episodes?UserId=${user}&SeasonId=${season}&Fields=${FIELDS}&Limit=200`,
-      `Users/${user}/Items?ParentId=${season}&IncludeItemTypes=Episode&Recursive=true&Fields=${FIELDS}&Limit=200`
+      `Users/${user}/Items?ParentId=${season}&Recursive=true&Fields=${FIELDS}&Limit=200`
     );
   }
   paths.push(
@@ -164,8 +165,11 @@ export async function loadEpisodes(session: JellyfinSession, seriesId: string, s
     `Users/${user}/Items?ParentId=${series}&IncludeItemTypes=Episode&Recursive=true&Fields=${FIELDS}&Limit=200`
   );
   for (const path of paths) {
-    const { data } = await jfJson(session, path).catch(() => ({ data: null }));
-    const items = asItemList(data).filter((item) => (item.Type || "Episode").toLowerCase() === "episode");
+    const { data } = await jfJson(session, path, 8_000).catch(() => ({ data: null }));
+    const items = asItemList(data).filter((item) => {
+      const type = (item.Type || "Episode").toLowerCase();
+      return type === "episode" || type === "video" || Boolean(item.IndexNumber && type !== "season");
+    });
     if (items.length) return items.sort(byIndex);
   }
   return [];

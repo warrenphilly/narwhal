@@ -38,6 +38,7 @@ export function VideoPlayer({
   const [logoOk, setLogoOk] = useState(true);
   const [playError, setPlayError] = useState<string | null>(null);
   const [forceTranscode, setForceTranscode] = useState(false);
+  const [waiting, setWaiting] = useState(true);
   const src = streamUrl(item.Id, info, forceTranscode);
   const tracks = useMemo(() => subtitleTracks(item.Id, info), [item.Id, info]);
   const headline = item.SeriesName || item.Name;
@@ -53,6 +54,7 @@ export function VideoPlayer({
   useEffect(() => {
     setForceTranscode(false);
     setPlayError(null);
+    setWaiting(true);
     if (!userId) return;
     fetchPlaybackInfo(item.Id, userId)
       .then((data) => {
@@ -151,12 +153,20 @@ export function VideoPlayer({
         autoPlay
         playsInline
         preload="auto"
+        onWaiting={() => setWaiting(true)}
+        onPlaying={() => {
+          setWaiting(false);
+          setPlayError(null);
+        }}
+        onLoadedData={() => setWaiting(false)}
         onError={() => {
           if (!forceTranscode) {
             setForceTranscode(true);
-            setPlayError("Original file is not browser-friendly. Asking Jellyfin to convert it…");
+            setWaiting(true);
+            setPlayError("This file needs converting. Jellyfin is making a browser copy…");
             return;
           }
+          setWaiting(false);
           setPlayError("This file could not start. Confirm it plays in the Jellyfin web app.");
         }}
       >
@@ -171,6 +181,11 @@ export function VideoPlayer({
           />
         ))}
       </video>
+      {waiting && !playError && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+          <p className="rounded-2xl bg-black/70 px-4 py-3 text-sm text-white/85">Loading video…</p>
+        </div>
+      )}
       {playError && (
         <div className="pointer-events-none absolute inset-x-0 bottom-24 z-10 flex justify-center px-4">
           <p className="max-w-lg rounded-2xl bg-black/70 px-4 py-3 text-center text-sm text-white/85">

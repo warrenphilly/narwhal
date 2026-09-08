@@ -76,12 +76,8 @@ export default function ShowPage() {
     const userId = session?.userId;
     if (!id || isDemoId(id) || !userId) return;
     let cancelled = false;
-    Promise.all([
-      fetchMovie(userId, id),
-      fetchSeasons(userId, id),
-      fetchNextUp(userId, id).catch(() => null),
-    ])
-      .then(([item, nextSeasons, upcoming]) => {
+    Promise.all([fetchMovie(userId, id)])
+      .then(([item]) => {
         if (cancelled) return;
         if (item.Type === "Movie") {
           router.replace(`/movie/${item.Id}`);
@@ -93,10 +89,25 @@ export default function ShowPage() {
         }
         setShow(item);
         setPlayedState(Boolean(item.UserData?.Played));
-        setSeasons(nextSeasons);
-        setNextUp(upcoming);
-        setSeasonId(nextSeasons[0]?.Id ?? "__all__");
+        setSeasonId("__all__");
         setError(null);
+        fetchSeasons(userId, id)
+          .then((nextSeasons) => {
+            if (cancelled) return;
+            setSeasons(nextSeasons);
+            if (nextSeasons[0]?.Id) setSeasonId(nextSeasons[0].Id);
+          })
+          .catch((err: unknown) => {
+            if (!cancelled) {
+              setSeasons([]);
+              setError(err instanceof Error ? err.message : "Could not load seasons.");
+            }
+          });
+        fetchNextUp(userId, id)
+          .then((upcoming) => {
+            if (!cancelled) setNextUp(upcoming);
+          })
+          .catch(() => undefined);
         fetchLocalTrailers(userId, id)
           .then(setTrailers)
           .catch(() => setTrailers([]));
@@ -118,7 +129,10 @@ export default function ShowPage() {
     const requestSeason = seasonId === "__all__" ? undefined : seasonId;
     fetchEpisodes(userId, show.Id, requestSeason)
       .then((items) => {
-        if (!cancelled) setEpisodes(items);
+        if (!cancelled) {
+          setEpisodes(items);
+          if (items.length) setError(null);
+        }
         const sample = items[0];
         if (!sample) return;
         fetchPlaybackInfo(sample.Id, userId)
@@ -127,8 +141,11 @@ export default function ShowPage() {
           })
           .catch(() => undefined);
       })
-      .catch(() => {
-        if (!cancelled) setEpisodes([]);
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setEpisodes([]);
+          setError(err instanceof Error ? err.message : "Could not load episodes.");
+        }
       });
     return () => {
       cancelled = true;
