@@ -4,6 +4,22 @@ import { authHeader, getConnection } from "@/lib/jellyfin-connection";
 const ITEM_FIELDS =
   "Overview,Genres,PrimaryImageAspectRatio,MediaSources,CanDownload,ProductionYear,DateCreated,PremiereDate,CommunityRating,CriticRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,People,Studios,RemoteTrailers,Taglines,Status,ProductionLocations,ChildCount,MediaStreams";
 
+const LIST_FIELDS =
+  "Overview,Genres,ProductionYear,DateCreated,PremiereDate,CommunityRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,ChildCount";
+
+function asItemList(data: unknown): JellyfinItem[] {
+  if (Array.isArray(data)) {
+    return data.filter((row): row is JellyfinItem => Boolean(row && (row as JellyfinItem).Id));
+  }
+  if (data && typeof data === "object") {
+    const items = (data as JellyfinItemsResult).Items;
+    if (Array.isArray(items)) {
+      return items.filter((row): row is JellyfinItem => Boolean(row && row.Id));
+    }
+  }
+  return [];
+}
+
 async function parseBody<T>(response: Response): Promise<T> {
   const text = await response.text();
   if (!text) return {} as T;
@@ -53,11 +69,6 @@ export function imageUrl(itemId: string, options?: { type?: string; maxWidth?: n
   if (options?.maxHeight) params.set("maxHeight", String(options.maxHeight));
   if (options?.tag) params.set("tag", options.tag);
   params.set("quality", "90");
-  const direct = getConnection();
-  if (direct) {
-    params.set("api_key", direct.token);
-    return `${direct.serverUrl}/Items/${encodeURIComponent(itemId)}/Images/${type}?${params.toString()}`;
-  }
   return `/api/jf/Items/${encodeURIComponent(itemId)}/Images/${type}?${params.toString()}`;
 }
 
@@ -83,23 +94,28 @@ async function fetchLibrary(userId: string, itemType: "Movie" | "Series") {
     Recursive: "true",
     SortBy: "SortName",
     SortOrder: "Ascending",
-    Fields: ITEM_FIELDS,
-    Limit: "1000",
-    EnableUserData: "true",
+    Fields: LIST_FIELDS,
+    Limit: "500",
+    EnableImageTypes: "Primary,Backdrop,Thumb,Logo",
   });
-  const data = await jf<JellyfinItemsResult>(
-    `Users/${encodeURIComponent(userId)}/Items?${params.toString()}`
+  const first = asItemList(
+    await jf<JellyfinItemsResult | JellyfinItem[]>(
+      `Users/${encodeURIComponent(userId)}/Items?${params.toString()}`
+    )
   );
-  if (data.Items?.length) return data.Items;
-  const views = await jf<JellyfinItemsResult>(`Users/${encodeURIComponent(userId)}/Views`).catch(
-    () => ({ Items: [] as JellyfinItem[] })
+  if (first.length) return first;
+
+  const views = asItemList(
+    await jf<JellyfinItemsResult | JellyfinItem[]>(`Users/${encodeURIComponent(userId)}/Views`).catch(() => [])
   );
   const collected: JellyfinItem[] = [];
-  for (const view of views.Items ?? []) {
-    const page = await jf<JellyfinItemsResult>(
-      `Users/${encodeURIComponent(userId)}/Items?ParentId=${encodeURIComponent(view.Id)}&IncludeItemTypes=${itemType}&Recursive=true&SortBy=SortName&Fields=${ITEM_FIELDS}&Limit=1000`
-    ).catch(() => ({ Items: [] as JellyfinItem[] }));
-    collected.push(...(page.Items ?? []));
+  for (const view of views) {
+    const page = asItemList(
+      await jf<JellyfinItemsResult | JellyfinItem[]>(
+        `Users/${encodeURIComponent(userId)}/Items?ParentId=${encodeURIComponent(view.Id)}&Recursive=true&IncludeItemTypes=${itemType}&SortBy=SortName&Fields=${LIST_FIELDS}&Limit=500`
+      ).catch(() => [])
+    );
+    collected.push(...page);
   }
   return uniqueItems(collected);
 }
@@ -113,27 +129,30 @@ export async function fetchShows(userId: string) {
 }
 
 export async function fetchResume(userId: string) {
-  const data = await jf<JellyfinItemsResult>(
-    `Users/${encodeURIComponent(userId)}/Items/Resume?MediaTypes=Video&Fields=${ITEM_FIELDS}&Limit=40`
+  return asItemList(
+    await jf<JellyfinItemsResult | JellyfinItem[]>(
+      `Users/${encodeURIComponent(userId)}/Items/Resume?MediaTypes=Video&Fields=${LIST_FIELDS}&Limit=40`
+    )
   );
-  return data.Items ?? [];
 }
 
 export async function fetchLatest(userId: string, itemType: "Movie" | "Series" | "Episode" = "Movie") {
-  const items = await jf<JellyfinItem[]>(
-    `Users/${encodeURIComponent(userId)}/Items/Latest?IncludeItemTypes=${itemType}&Limit=24&Fields=${ITEM_FIELDS}`
+  return asItemList(
+    await jf<JellyfinItem[] | JellyfinItemsResult>(
+      `Users/${encodeURIComponent(userId)}/Items/Latest?IncludeItemTypes=${itemType}&Limit=24&Fields=${LIST_FIELDS}`
+    )
   );
-  return Array.isArray(items) ? items : [];
 }
 
 export async function fetchUnplayedRecent(
   userId: string,
   itemType: "Movie" | "Series" | "Episode"
 ) {
-  const data = await jf<JellyfinItemsResult>(
-    `Users/${encodeURIComponent(userId)}/Items?IncludeItemTypes=${itemType}&Recursive=true&SortBy=DateCreated&SortOrder=Descending&Filters=IsUnplayed&Fields=${ITEM_FIELDS}&Limit=24`
+  return asItemList(
+    await jf<JellyfinItemsResult | JellyfinItem[]>(
+      `Users/${encodeURIComponent(userId)}/Items?IncludeItemTypes=${itemType}&Recursive=true&SortBy=DateCreated&SortOrder=Descending&Filters=IsUnplayed&Fields=${LIST_FIELDS}&Limit=24`
+    )
   );
-  return data.Items ?? [];
 }
 
 const NEW_MS = 21 * 24 * 60 * 60 * 1000;

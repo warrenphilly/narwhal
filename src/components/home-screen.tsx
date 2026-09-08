@@ -67,8 +67,8 @@ export function HomeScreen() {
       fetchUnplayedRecent(session.userId, "Movie").catch(() => [] as JellyfinItem[]),
       fetchUnplayedRecent(session.userId, "Episode").catch(() => [] as JellyfinItem[]),
       fetchUnplayedRecent(session.userId, "Series").catch(() => [] as JellyfinItem[]),
-      fetchMovies(session.userId).catch(() => [] as JellyfinItem[]),
-      fetchShows(session.userId).catch(() => [] as JellyfinItem[]),
+      fetchMovies(session.userId),
+      fetchShows(session.userId),
     ])
       .then(
         ([
@@ -160,6 +160,12 @@ export function HomeScreen() {
       </div>
       <div className="page-gutter -mt-6 space-y-10">
         {error && <p className="text-sm text-red-600">{error}</p>}
+        {signedIn && loaded && catalog.length === 0 && !error && (
+          <p className="text-sm text-zinc-500">
+            Jellyfin answered, but this profile has no {tab === "movies" ? "movies" : "TV shows"} yet. Check that
+            those libraries are enabled for your Jellyfin user.
+          </p>
+        )}
         {!signedIn && (
           <p className="text-sm text-zinc-500">
             Sample library. Sign in at the top right to load titles from your Jellyfin server.
