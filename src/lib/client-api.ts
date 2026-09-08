@@ -139,12 +139,30 @@ async function fetchLibrary(userId: string, itemType: "Movie" | "Series") {
   return uniqueItems(collected);
 }
 
-export async function fetchMovies(userId: string) {
-  return fetchLibrary(userId, "Movie");
+export async function fetchLibraryPage(itemType: "Movie" | "Series") {
+  const response = await fetch(`/api/library?type=${itemType}`, { cache: "no-store" });
+  const data = (await response.json()) as {
+    items?: JellyfinItem[];
+    views?: { id: string; name: string; collectionType?: string }[];
+    serverUrl?: string;
+    totalRecordCount?: number;
+    error?: string;
+  };
+  if (!response.ok) throw new Error(data.error || "Could not load the library.");
+  return {
+    items: data.items ?? [],
+    views: data.views ?? [],
+    serverUrl: data.serverUrl ?? "",
+    totalRecordCount: data.totalRecordCount,
+  };
 }
 
-export async function fetchShows(userId: string) {
-  return fetchLibrary(userId, "Series");
+export async function fetchMovies(_userId?: string) {
+  return (await fetchLibraryPage("Movie")).items;
+}
+
+export async function fetchShows(_userId?: string) {
+  return (await fetchLibraryPage("Series")).items;
 }
 
 export async function fetchResume(userId: string) {

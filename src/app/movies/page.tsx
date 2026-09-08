@@ -6,7 +6,7 @@ import { PageBack } from "@/components/back-button";
 import { LoginScreen } from "@/components/login-screen";
 import { PosterCard } from "@/components/poster-card";
 import { useSession } from "@/components/session-provider";
-import { fetchMovies } from "@/lib/client-api";
+import { fetchLibraryPage } from "@/lib/client-api";
 import { DEMO_MOVIES } from "@/lib/demo-library";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 
@@ -14,11 +14,23 @@ export default function MoviesPage() {
   const { session, loading, preview } = useSession();
   const [remoteMovies, setRemoteMovies] = useState<JellyfinItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [hint, setHint] = useState("");
 
   useEffect(() => {
     if (!session?.signedIn || !session.userId) return;
-    fetchMovies(session.userId)
-      .then(setRemoteMovies)
+    fetchLibraryPage("Movie")
+      .then((page) => {
+        setRemoteMovies(page.items);
+        setHint(
+          page.items.length
+            ? ""
+            : `Connected to ${page.serverUrl}. ${
+                page.views.length
+                  ? `Libraries: ${page.views.map((view) => view.name).join(", ")}.`
+                  : "This Jellyfin user has no libraries enabled."
+              }`
+        );
+      })
       .catch((err: unknown) =>
         setError(err instanceof Error ? err.message : "Could not load movies.")
       );
@@ -42,7 +54,10 @@ export default function MoviesPage() {
           ))}
         </div>
         {movies.length === 0 && !error && (
-          <p className="mt-16 text-center text-zinc-500">No movies found on this server.</p>
+          <p className="mt-16 text-center text-zinc-500">
+            No movies found on this server.
+            {hint ? ` ${hint}` : ""}
+          </p>
         )}
       </div>
     </AppShell>

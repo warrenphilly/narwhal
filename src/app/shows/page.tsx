@@ -6,7 +6,7 @@ import { PageBack } from "@/components/back-button";
 import { LoginScreen } from "@/components/login-screen";
 import { PosterCard } from "@/components/poster-card";
 import { useSession } from "@/components/session-provider";
-import { fetchShows } from "@/lib/client-api";
+import { fetchLibraryPage } from "@/lib/client-api";
 import { DEMO_SHOWS } from "@/lib/demo-library";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 
@@ -14,11 +14,23 @@ export default function ShowsPage() {
   const { session, loading, preview } = useSession();
   const [remoteShows, setRemoteShows] = useState<JellyfinItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [hint, setHint] = useState("");
 
   useEffect(() => {
     if (!session?.signedIn || !session.userId) return;
-    fetchShows(session.userId)
-      .then(setRemoteShows)
+    fetchLibraryPage("Series")
+      .then((page) => {
+        setRemoteShows(page.items);
+        setHint(
+          page.items.length
+            ? ""
+            : `Connected to ${page.serverUrl}. ${
+                page.views.length
+                  ? `Libraries: ${page.views.map((view) => view.name).join(", ")}.`
+                  : "This Jellyfin user has no libraries enabled."
+              }`
+        );
+      })
       .catch((err: unknown) =>
         setError(err instanceof Error ? err.message : "Could not load TV shows.")
       );
@@ -42,7 +54,10 @@ export default function ShowsPage() {
           ))}
         </div>
         {shows.length === 0 && !error && (
-          <p className="mt-16 text-center text-zinc-500">No TV shows found on this server.</p>
+          <p className="mt-16 text-center text-zinc-500">
+            No TV shows found on this server.
+            {hint ? ` ${hint}` : ""}
+          </p>
         )}
       </div>
     </AppShell>
