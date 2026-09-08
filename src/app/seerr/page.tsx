@@ -299,7 +299,7 @@ export default function SeerrPage() {
     return true;
   }
 
-  async function requestTitle(body: Record<string, unknown>) {
+  async function submitRequest(body: Record<string, unknown>) {
     if (!pick) return;
     setRequesting(pick.id);
     await seerr("v1/request", {
@@ -474,7 +474,7 @@ export default function SeerrPage() {
         </div>
       </div>
 
-      <SeerrRequestDialog item={pick} open={Boolean(pick)} onOpenChange={(open) => !open && setPick(null)} onSubmit={requestTitle} />
+      <SeerrRequestDialog item={pick} open={Boolean(pick)} onOpenChange={(open) => !open && setPick(null)} onSubmit={submitRequest} />
     </AppShell>
   );
 }
