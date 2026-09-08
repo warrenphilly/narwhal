@@ -8,6 +8,7 @@ import { LoginScreen } from "@/components/login-screen";
 import { PageSpinner } from "@/components/narwhal-spinner";
 import { SeerrRequestDialog } from "@/components/seerr-request-dialog";
 import { PageHero } from "@/components/page-hero";
+import { Button } from "@/components/ui/button";
 import { useSession } from "@/components/session-provider";
 import {
   backdropUrl,
