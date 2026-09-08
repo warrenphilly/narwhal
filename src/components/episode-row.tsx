@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Download } from "lucide-react";
 import { continueImageUrl } from "@/lib/client-api";
 import { episodeLabel } from "@/lib/clock";
@@ -20,16 +20,14 @@ export function EpisodeRow({
   onDownload?: () => void;
   downloading?: boolean;
 }) {
-  const router = useRouter();
   const demo = isDemoId(item.Id);
   const [from, to] = demoPosterGradient(item.Id);
   const progress = item.UserData?.PlayedPercentage;
 
   return (
     <div className="flex min-w-0 gap-3 py-4 sm:gap-4">
-      <button
-        type="button"
-        onClick={() => router.push(`/watch/${item.Id}`)}
+      <Link
+        href={`/watch/${item.Id}`}
         className="relative aspect-video w-[168px] shrink-0 overflow-hidden rounded-xl bg-zinc-200 text-left sm:w-[220px] dark:bg-zinc-800"
       >
         {demo ? (
@@ -47,19 +45,18 @@ export function EpisodeRow({
             <div className="h-full bg-white" style={{ width: `${progress}%` }} />
           </div>
         )}
-      </button>
+      </Link>
       <div className="min-w-0 flex-1 py-1">
         <p className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
           {eyebrow || episodeLabel(item)}
         </p>
         <div className="mt-1 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => router.push(`/watch/${item.Id}`)}
+          <Link
+            href={`/watch/${item.Id}`}
             className="text-left text-lg font-semibold text-zinc-900 hover:underline dark:text-zinc-50"
           >
             {item.Name}
-          </button>
+          </Link>
           {onDownload && (
             <Button
               variant="ghost"

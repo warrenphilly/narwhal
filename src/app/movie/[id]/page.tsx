@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Download, Play } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -8,7 +9,8 @@ import { PageBack } from "@/components/back-button";
 import { LoginScreen } from "@/components/login-screen";
 import { EpisodeRow } from "@/components/episode-row";
 import { TitleCast, TitleGenres, TitleMeta, TitlePoster } from "@/components/title-facts";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { LibraryButtons } from "@/components/library-buttons";
 import { WatchedButton } from "@/components/watched-button";
 import { useDownloads } from "@/components/downloads-provider";
@@ -146,14 +148,13 @@ export default function MoviePage() {
               )}
               {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
               <div className="mt-4 flex flex-wrap gap-3">
-                <Button
-                  size="lg"
-                  className="h-11 rounded-full px-6 text-base"
-                  onClick={() => router.push(`/watch/${resolved.Id}`)}
+                <Link
+                  href={`/watch/${resolved.Id}`}
+                  className={cn(buttonVariants({ size: "lg" }), "h-11 rounded-full px-6 text-base")}
                 >
                   <Play data-icon="inline-start" className="fill-current" />
                   Play
-                </Button>
+                </Link>
                 <Button
                   size="lg"
                   variant="secondary"

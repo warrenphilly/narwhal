@@ -46,7 +46,7 @@ export function HeroBanner({ items }: { items: JellyfinItem[] }) {
       router.push(titlePageHref(item));
       return;
     }
-    router.push(`/watch/${item.Id}`);
+    window.location.assign(`/watch/${item.Id}`);
   }
 
   return (

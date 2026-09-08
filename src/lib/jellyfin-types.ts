@@ -29,6 +29,8 @@ export type MediaSource = {
   SupportsDirectPlay?: boolean;
   SupportsDirectStream?: boolean;
   SupportsTranscoding?: boolean;
+  DirectStreamUrl?: string;
+  TranscodingUrl?: string;
   DefaultSubtitleStreamIndex?: number;
   MediaStreams?: MediaStream[];
 };
