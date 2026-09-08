@@ -261,20 +261,20 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
             Sample library. Sign in at the top right to load titles from your Jellyfin server.
           </p>
         )}
-        <div className="glass-panel glass-edge flex flex-wrap items-center gap-2 rounded-2xl p-2 sm:p-3">
-          <Button type="button" variant={organize ? "default" : "outline"} size="sm" className="rounded-full" onClick={() => setOrganize((value) => !value)}>
+        <div className="glass-panel glass-edge flex w-full min-w-0 flex-col gap-1.5 rounded-2xl p-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 sm:p-2.5">
+          <Button type="button" variant={organize ? "default" : "outline"} size="sm" className="h-8 w-full shrink-0 rounded-full px-3 text-xs sm:h-9 sm:w-auto sm:text-sm" onClick={() => setOrganize((value) => !value)}>
             {organize ? "Done organizing" : "Organize shelves"}
           </Button>
-          <label className="relative min-w-[12rem] flex-1">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted" />
+          <label className="relative min-w-0 w-full flex-1">
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted sm:left-3 sm:size-4" />
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search this library"
-              className="h-8 pl-9"
+              className="h-8 w-full min-w-0 pl-8 text-sm sm:h-9 sm:pl-9"
             />
           </label>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex w-full min-w-0 gap-1 sm:w-auto">
             {(
               [
                 ["all", "All"],
@@ -287,7 +287,7 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
                 type="button"
                 size="sm"
                 variant={filter === id ? "default" : "outline"}
-                className="rounded-full"
+                className="h-8 min-w-0 flex-1 rounded-full px-2 text-xs sm:h-9 sm:flex-none sm:px-3 sm:text-sm"
                 onClick={() => setFilter(id)}
               >
                 {label}
@@ -296,7 +296,7 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
           </div>
           {organize && (
             <form
-              className="flex gap-2"
+              className="flex w-full min-w-0 flex-col gap-2 sm:flex-row"
               onSubmit={(event) => {
                 event.preventDefault();
                 persist(addGroup(groups, newGroup));
@@ -307,7 +307,7 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
                 value={newGroup}
                 onChange={(event) => setNewGroup(event.target.value)}
                 placeholder="New group name"
-                className="h-8 w-44"
+                className="h-9 min-w-0 flex-1"
               />
               <Button type="submit" size="sm" className="rounded-full" disabled={!newGroup.trim()}>
                 Add group

@@ -38,7 +38,9 @@ function localDevOrigins() {
 }
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Standalone is for Electron/desktop packaging. Vercel injects an adapter that
+  // conflicts with standalone on Next 16.3 (missing next-server.js.nft.json).
+  output: process.env.VERCEL ? undefined : "standalone",
   allowedDevOrigins: localDevOrigins(),
   async headers() {
     return [

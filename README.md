@@ -62,23 +62,52 @@ That writes something like `dist/Narwhal-0.2.0-arm64.dmg`.
 
 ## Windows app
 
-On a Windows machine (or via GitHub Actions):
+On a **Windows** PC with Node.js installed:
 
 ```bash
+git clone https://github.com/warrenphilly/narwhal.git
+cd narwhal
 npm install
 npm run win
 ```
 
-Installer lands in `dist/` as an `.exe` (NSIS).
+Installer: `dist/Narwhal Setup 0.2.0.exe` (or similar). Run it to install.
 
-## Web version
+> Building the Windows installer from a Mac usually fails. Use a Windows machine, or GitHub Actions once the release workflow is pushed.
+
+## Browser / web version
+
+Local:
 
 ```bash
-npm run dist:web   # or npm run build
+npm install
+npm run dist:web   # production build
 npm start          # http://127.0.0.1:3000
 ```
 
-The standalone folder is `.next/standalone` after build.
+Dev (hot reload): `npm run dev` → **http://127.0.0.1:3000**
+
+### Deploy on Vercel
+
+1. Push this repo to GitHub (already at `warrenphilly/narwhal`).
+2. Go to [vercel.com/new](https://vercel.com/new) and import the **narwhal** repo.
+3. Framework preset: **Next.js** (auto). Leave build settings default.
+4. Click **Deploy**.
+5. Open the `.vercel.app` URL Vercel gives you.
+
+Or from this folder (after `npm i -g vercel`):
+
+```bash
+npx vercel
+```
+
+Use production: `npx vercel --prod`
+
+**Notes for the hosted web app**
+
+- Sign in with a Jellyfin URL your phone/browser can reach (Tailscale, public HTTPS, or LAN if you’re home).
+- “Download to laptop” is best in the desktop app; the browser build still streams and browses fine.
+- Cookies/sessions need HTTPS (Vercel provides that).
 
 ## GitHub releases
 

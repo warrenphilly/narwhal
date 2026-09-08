@@ -2,8 +2,23 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Suspense, useRef } from "react";
-import { Compass, Download, Film, Home, LogIn, LogOut, Moon, Radio, Search, Settings, Sun, Tv } from "lucide-react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import {
+  Compass,
+  Download,
+  Film,
+  Home,
+  LogIn,
+  LogOut,
+  Menu,
+  Moon,
+  Radio,
+  Search,
+  Settings,
+  Sun,
+  Tv,
+  X,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useSession } from "@/components/session-provider";
 import { useDownloads } from "@/components/downloads-provider";
@@ -36,25 +51,18 @@ function railItemClass(active?: boolean) {
   );
 }
 
-function dockItemClass(active?: boolean) {
+function menuItemClass(active?: boolean) {
   return cn(
-    "flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 text-center text-[10px] font-normal text-zinc-500 transition active:scale-[0.97]",
+    "flex min-h-11 w-full items-center gap-3 rounded-2xl px-3 py-2 text-left text-[15px] text-zinc-700 transition active:scale-[0.99]",
+    "hover:bg-white/25 dark:text-zinc-200 dark:hover:bg-white/10",
     active &&
-      "rounded-xl bg-gradient-to-br from-[#00A4DC]/30 to-[#AA5CC3]/30 text-zinc-950 shadow-[inset_0_0_0_1.5px_rgba(170,92,195,0.5)] dark:text-white"
+      "bg-gradient-to-br from-[#00A4DC]/30 to-[#AA5CC3]/30 font-medium text-zinc-950 shadow-[inset_0_0_0_1.5px_rgba(170,92,195,0.45)] dark:text-white"
   );
 }
 
 function RailIcon({ children }: { children: React.ReactNode }) {
   return (
     <span className="flex size-10 shrink-0 items-center justify-center [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:stroke-[1.75]">
-      {children}
-    </span>
-  );
-}
-
-function DockIcon({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="flex size-6 items-center justify-center [&>svg]:size-[1.125rem] [&>svg]:shrink-0 [&>svg]:stroke-[1.75]">
       {children}
     </span>
   );
@@ -68,28 +76,33 @@ function NavItems({
   className,
   itemClass,
   showIcons = false,
-  dock = false,
+  onNavigate,
 }: {
   className?: string;
   itemClass: (active: boolean) => string;
   showIcons?: boolean;
-  dock?: boolean;
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
-  const IconWrap = dock ? DockIcon : RailIcon;
   return (
     <nav className={className}>
       {navLinks().map((link) => {
         const Icon = link.icon;
         const active = link.active(pathname);
         return (
-          <Link key={link.label} href={link.href} className={itemClass(active)} aria-label={showIcons ? link.label : undefined}>
+          <Link
+            key={link.label}
+            href={link.href}
+            className={itemClass(active)}
+            aria-label={showIcons ? link.label : undefined}
+            onClick={() => onNavigate?.()}
+          >
             {showIcons ? (
-              <IconWrap>
+              <RailIcon>
                 <Icon />
-              </IconWrap>
+              </RailIcon>
             ) : null}
-            {showIcons ? dock ? <span>{link.label}</span> : <RailLabel>{link.label}</RailLabel> : <span>{link.label}</span>}
+            {showIcons ? <RailLabel>{link.label}</RailLabel> : <span>{link.label}</span>}
           </Link>
         );
       })}
@@ -97,7 +110,15 @@ function NavItems({
   );
 }
 
-function ShellActions({ compact }: { compact?: boolean }) {
+function ShellActions({
+  compact,
+  drawer,
+  onNavigate,
+}: {
+  compact?: boolean;
+  drawer?: boolean;
+  onNavigate?: () => void;
+}) {
   const router = useRouter();
   const { session, signOut } = useSession();
   const { profile, setPicking } = useProfiles();
@@ -106,70 +127,127 @@ function ShellActions({ compact }: { compact?: boolean }) {
   const { openSettings } = useSettings();
   const active = downloads.filter((item) => item.status === "saving").length;
 
-  return (
-    <div className={cn("flex gap-1", compact ? "flex-row items-center" : "w-full flex-col items-stretch")}>
-      {compact ? (
-        <>
-          <Button variant="ghost" size="icon" onClick={() => openSettings()} aria-label="Settings">
-            <Settings />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggle}
-            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {theme === "dark" ? <Sun /> : <Moon />}
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => router.push("/search")} aria-label="Search">
-            <Search />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative"
-            onClick={() => router.push("/downloads")}
-            aria-label="Downloads"
-          >
-            <Download />
-            {active > 0 && <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-sky-500" />}
-          </Button>
-        </>
-      ) : (
-        <>
-          <button type="button" className={railItemClass()} onClick={() => openSettings()}>
-            <RailIcon>
-              <Settings />
-            </RailIcon>
-            <RailLabel>Settings</RailLabel>
-          </button>
-          <button type="button" className={railItemClass()} onClick={toggle}>
-            <RailIcon>{theme === "dark" ? <Sun /> : <Moon />}</RailIcon>
-            <RailLabel>{theme === "dark" ? "Light mode" : "Dark mode"}</RailLabel>
-          </button>
-          <button type="button" className={railItemClass()} onClick={() => router.push("/search")}>
-            <RailIcon>
-              <Search />
-            </RailIcon>
-            <RailLabel>Search</RailLabel>
-          </button>
-          <button type="button" className={cn(railItemClass(), "relative")} onClick={() => router.push("/downloads")}>
-            <RailIcon>
-              <Download />
-            </RailIcon>
-            <RailLabel>Downloads</RailLabel>
-            {active > 0 && <span className="absolute top-2 right-2 size-2 rounded-full bg-sky-500 group-hover:top-2.5 group-hover:right-auto group-hover:left-[2.15rem]" />}
-          </button>
-        </>
-      )}
-      {session?.signedIn ? (
-        <div className={cn("flex items-start gap-1", compact ? "flex-row pl-1" : "mt-1 w-full flex-col")}>
-          {profile && (
+  if (drawer) {
+    return (
+      <div className="flex w-full flex-col gap-1">
+        <button
+          type="button"
+          className={menuItemClass()}
+          onClick={() => {
+            openSettings();
+            onNavigate?.();
+          }}
+        >
+          <Settings className="size-5 shrink-0" />
+          Settings
+        </button>
+        <button type="button" className={menuItemClass()} onClick={toggle}>
+          {theme === "dark" ? <Sun className="size-5 shrink-0" /> : <Moon className="size-5 shrink-0" />}
+          {theme === "dark" ? "Light mode" : "Dark mode"}
+        </button>
+        <button
+          type="button"
+          className={menuItemClass()}
+          onClick={() => {
+            router.push("/search");
+            onNavigate?.();
+          }}
+        >
+          <Search className="size-5 shrink-0" />
+          Search
+        </button>
+        <button
+          type="button"
+          className={cn(menuItemClass(), "relative")}
+          onClick={() => {
+            router.push("/downloads");
+            onNavigate?.();
+          }}
+        >
+          <Download className="size-5 shrink-0" />
+          Downloads
+          {active > 0 && <span className="ml-auto size-2 rounded-full bg-sky-500" />}
+        </button>
+        {session?.signedIn ? (
+          <>
+            {profile && (
+              <button
+                type="button"
+                className={menuItemClass()}
+                onClick={() => {
+                  setPicking(true);
+                  onNavigate?.();
+                }}
+              >
+                <span
+                  className="flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-semibold text-white"
+                  style={{ background: profile.color }}
+                >
+                  {profile.name.slice(0, 1).toUpperCase()}
+                </span>
+                {profile.name}
+              </button>
+            )}
             <button
               type="button"
-              className={compact ? "flex items-center gap-2 rounded-2xl px-1.5 py-1 hover:bg-black/5 dark:hover:bg-white/10" : railItemClass()}
-              onClick={() => setPicking(true)}
+              className={menuItemClass()}
+              onClick={() => {
+                signOut();
+                onNavigate?.();
+              }}
             >
+              <LogOut className="size-5 shrink-0" />
+              Sign out
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className={menuItemClass()}
+            onClick={() => {
+              signOut();
+              onNavigate?.();
+            }}
+          >
+            <LogIn className="size-5 shrink-0" />
+            Sign in
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("flex gap-1", compact ? "flex-row items-center" : "w-full flex-col items-stretch")}>
+      <>
+        <button type="button" className={railItemClass()} onClick={() => openSettings()}>
+          <RailIcon>
+            <Settings />
+          </RailIcon>
+          <RailLabel>Settings</RailLabel>
+        </button>
+        <button type="button" className={railItemClass()} onClick={toggle}>
+          <RailIcon>{theme === "dark" ? <Sun /> : <Moon />}</RailIcon>
+          <RailLabel>{theme === "dark" ? "Light mode" : "Dark mode"}</RailLabel>
+        </button>
+        <button type="button" className={railItemClass()} onClick={() => router.push("/search")}>
+          <RailIcon>
+            <Search />
+          </RailIcon>
+          <RailLabel>Search</RailLabel>
+        </button>
+        <button type="button" className={cn(railItemClass(), "relative")} onClick={() => router.push("/downloads")}>
+          <RailIcon>
+            <Download />
+          </RailIcon>
+          <RailLabel>Downloads</RailLabel>
+          {active > 0 && <span className="absolute top-2 right-2 size-2 rounded-full bg-sky-500 group-hover:top-2.5 group-hover:right-auto group-hover:left-[2.15rem]" />}
+        </button>
+      </>
+      {session?.signedIn ? (
+        <div className="mt-1 flex w-full flex-col">
+          {profile && (
+            <button type="button" className={railItemClass()} onClick={() => setPicking(true)}>
               <RailIcon>
                 <span
                   className="flex size-7 items-center justify-center rounded-lg text-xs font-semibold text-white"
@@ -178,26 +256,16 @@ function ShellActions({ compact }: { compact?: boolean }) {
                   {profile.name.slice(0, 1).toUpperCase()}
                 </span>
               </RailIcon>
-              {!compact && <RailLabel>{profile.name}</RailLabel>}
+              <RailLabel>{profile.name}</RailLabel>
             </button>
           )}
-          {compact ? (
-            <Button variant="ghost" size="icon" onClick={() => signOut()} aria-label="Sign out">
+          <button type="button" className={railItemClass()} onClick={() => signOut()}>
+            <RailIcon>
               <LogOut />
-            </Button>
-          ) : (
-            <button type="button" className={railItemClass()} onClick={() => signOut()}>
-              <RailIcon>
-                <LogOut />
-              </RailIcon>
-              <RailLabel>Sign out</RailLabel>
-            </button>
-          )}
+            </RailIcon>
+            <RailLabel>Sign out</RailLabel>
+          </button>
         </div>
-      ) : compact ? (
-        <Button variant="ghost" size="sm" onClick={() => signOut()}>
-          Sign in
-        </Button>
       ) : (
         <button type="button" className={railItemClass()} onClick={() => signOut()}>
           <RailIcon>
@@ -207,6 +275,90 @@ function ShellActions({ compact }: { compact?: boolean }) {
         </button>
       )}
     </div>
+  );
+}
+
+function MobileMenu() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  return (
+    <>
+      <div className="page-gutter sticky top-0 z-40 pt-[max(0.5rem,env(safe-area-inset-top,0px))] pb-2 lg:hidden">
+        <header className="mobile-topbar glass-panel flex h-11 w-full items-center gap-1.5 rounded-2xl px-1.5">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-9 shrink-0 rounded-xl"
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            onClick={() => setOpen((value) => !value)}
+          >
+            {open ? <X className="size-5" /> : <Menu className="size-5" />}
+          </Button>
+          <Link
+            href="/"
+            className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden text-zinc-900 dark:text-zinc-50"
+            onClick={() => setOpen(false)}
+          >
+            <NarwhalMark className="size-5 shrink-0" />
+            <span className="truncate text-sm font-semibold tracking-tight">Narwhal</span>
+          </Link>
+        </header>
+      </div>
+
+      {open && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="Close menu"
+            className="absolute inset-0 bg-black/45"
+            onClick={() => setOpen(false)}
+          />
+          <div className="mobile-drawer glass-panel absolute top-[calc(0.5rem+2.75rem+env(safe-area-inset-top,0px))] bottom-[max(0.5rem,env(safe-area-inset-bottom,0px))] flex max-h-[calc(100dvh-3.75rem)] flex-col overflow-hidden rounded-3xl p-2 sm:p-3">
+            <Suspense fallback={<p className="p-3 text-sm text-muted">Loading…</p>}>
+              <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain">
+                {navLinks().map((link) => {
+                  const Icon = link.icon;
+                  const active = link.active(pathname);
+                  return (
+                    <Link
+                      key={link.label}
+                      href={link.href}
+                      className={menuItemClass(active)}
+                      onClick={() => setOpen(false)}
+                    >
+                      <Icon className="size-5 shrink-0" />
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+              <div className="mt-2 shrink-0 border-t border-black/8 pt-2 dark:border-white/10">
+                <ShellActions drawer onNavigate={() => setOpen(false)} />
+              </div>
+            </Suspense>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -228,18 +380,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="tv-root shell-frame">
-      <header className="mobile-topbar glass-panel fixed inset-x-3 z-40 flex h-14 items-center gap-2 rounded-2xl px-2 md:hidden">
-        <Link href="/" className="flex shrink-0 items-center text-zinc-900 dark:text-zinc-50">
-          <NarwhalMark className="size-7" />
-        </Link>
-        <div className="ml-auto min-w-0 overflow-x-auto touch-pan-x">
-          <ShellActions compact />
-        </div>
-      </header>
-
       <aside
         ref={navRef}
-        className="shell-nav group glass-panel hidden flex-col overflow-hidden p-2 md:flex"
+        className="shell-nav group glass-panel hidden flex-col overflow-hidden p-2 lg:flex"
         onMouseLeave={collapseNav}
       >
         <Link
@@ -258,11 +401,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </nav>
           }
         >
-          <NavItems
-            showIcons
-            className="mt-3 flex flex-col gap-1"
-            itemClass={(isActive) => railItemClass(isActive)}
-          />
+          <NavItems showIcons className="mt-3 flex flex-col gap-1" itemClass={(isActive) => railItemClass(isActive)} />
         </Suspense>
         <div className="mt-auto flex w-full flex-col items-stretch gap-1">
           <ShellActions />
@@ -270,20 +409,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <main className="shell-main">
+        <MobileMenu />
         <div className="page-gutter">
           <HomeBrandHeader />
         </div>
         {children}
       </main>
-
-      <Suspense fallback={<nav className="fixed inset-x-0 bottom-0 z-40 md:hidden" />}>
-        <NavItems
-          showIcons
-          dock
-          className="mobile-dock glass-panel fixed inset-x-3 bottom-3 z-40 flex rounded-2xl md:hidden"
-          itemClass={(isActive) => dockItemClass(isActive)}
-        />
-      </Suspense>
     </div>
   );
 }
