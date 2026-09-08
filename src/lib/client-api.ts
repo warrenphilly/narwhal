@@ -1,5 +1,5 @@
 import type { JellyfinItem, JellyfinItemsResult, MediaStream, PlaybackInfo } from "@/lib/jellyfin-types";
-import { authHeader, getConnection } from "@/lib/jellyfin-connection";
+import { getConnection } from "@/lib/jellyfin-connection";
 import { BROWSER_DEVICE_PROFILE } from "@/lib/device-profile";
 
 const ITEM_FIELDS =
@@ -29,28 +29,19 @@ async function parseBody<T>(response: Response): Promise<T> {
 }
 
 async function jf<T>(path: string, init?: RequestInit): Promise<T> {
-  const direct = getConnection();
   const headers = new Headers(init?.headers);
-  const proxy = await fetch(`/api/jf/${path}`, {
-    ...init,
-    headers,
-    cache: "no-store",
-    credentials: "same-origin",
-  });
-  if (proxy.ok) return parseBody<T>(proxy);
-  if (direct && (proxy.status === 401 || proxy.status === 502)) {
-    headers.set("Authorization", authHeader(direct.deviceId, direct.token));
-    const response = await fetch(`${direct.serverUrl}/${path}`, {
+  let proxy: Response;
+  try {
+    proxy = await fetch(`/api/jf/${path}`, {
       ...init,
       headers,
       cache: "no-store",
+      credentials: "same-origin",
     });
-    if (!response.ok) {
-      const data = (await response.json().catch(() => null)) as { error?: string } | null;
-      throw new Error(data?.error || `Jellyfin request failed (${response.status})`);
-    }
-    return parseBody<T>(response);
+  } catch {
+    throw new Error("Could not reach the Jellyfin proxy. Refresh and sign in again.");
   }
+  if (proxy.ok) return parseBody<T>(proxy);
   const data = (await proxy.json().catch(() => null)) as { error?: string } | null;
   throw new Error(data?.error || `Jellyfin request failed (${proxy.status})`);
 }
@@ -255,33 +246,53 @@ export async function fetchPlayableId(userId: string, item: JellyfinItem) {
   return episodes.Items?.[0]?.Id ?? item.Id;
 }
 
-export async function fetchMovie(userId: string, id: string) {
-  return jf<JellyfinItem>(
-    `Users/${encodeURIComponent(userId)}/Items/${encodeURIComponent(id)}?Fields=${ITEM_FIELDS}`
-  );
+export async function fetchMovie(_userId: string, id: string) {
+  let response: Response;
+  try {
+    response = await fetch(`/api/item/${encodeURIComponent(id)}`, {
+      cache: "no-store",
+      credentials: "same-origin",
+    });
+  } catch {
+    throw new Error("Could not open this title. Check that Narwhal can reach Jellyfin.");
+  }
+  const data = (await response.json().catch(() => null)) as (JellyfinItem & { error?: string }) | null;
+  if (!response.ok) throw new Error(data?.error || "Could not open this title.");
+  if (!data?.Id) throw new Error("Could not open this title.");
+  return data;
 }
 
 export async function fetchSeasons(_userId: string, seriesId: string) {
-  const response = await fetch(`/api/series/${encodeURIComponent(seriesId)}/seasons`, {
-    cache: "no-store",
-    credentials: "same-origin",
-  });
-  const data = (await response.json()) as { items?: JellyfinItem[]; error?: string };
-  if (!response.ok) throw new Error(data.error || "Could not load seasons.");
-  return asItemList(data.items ?? data);
+  let response: Response;
+  try {
+    response = await fetch(`/api/series/${encodeURIComponent(seriesId)}/seasons`, {
+      cache: "no-store",
+      credentials: "same-origin",
+    });
+  } catch {
+    throw new Error("Could not load seasons. Check that Narwhal can reach Jellyfin.");
+  }
+  const data = (await response.json().catch(() => null)) as { items?: JellyfinItem[]; error?: string } | null;
+  if (!response.ok) throw new Error(data?.error || "Could not load seasons.");
+  return asItemList(data?.items ?? data);
 }
 
 export async function fetchEpisodes(_userId: string, seriesId: string, seasonId?: string) {
   const params = new URLSearchParams();
   if (seasonId) params.set("seasonId", seasonId);
   const query = params.toString();
-  const response = await fetch(
-    `/api/series/${encodeURIComponent(seriesId)}/episodes${query ? `?${query}` : ""}`,
-    { cache: "no-store", credentials: "same-origin" }
-  );
-  const data = (await response.json()) as { items?: JellyfinItem[]; error?: string };
-  if (!response.ok) throw new Error(data.error || "Could not load episodes.");
-  return asItemList(data.items ?? data);
+  let response: Response;
+  try {
+    response = await fetch(
+      `/api/series/${encodeURIComponent(seriesId)}/episodes${query ? `?${query}` : ""}`,
+      { cache: "no-store", credentials: "same-origin" }
+    );
+  } catch {
+    throw new Error("Could not load episodes. Check that Narwhal can reach Jellyfin.");
+  }
+  const data = (await response.json().catch(() => null)) as { items?: JellyfinItem[]; error?: string } | null;
+  if (!response.ok) throw new Error(data?.error || "Could not load episodes.");
+  return asItemList(data?.items ?? data);
 }
 
 export async function fetchNextUp(userId: string, seriesId: string) {
@@ -319,11 +330,7 @@ export async function fetchPlaybackInfo(itemId: string, userId: string) {
 }
 
 export function subtitleUrl(itemId: string, mediaSourceId: string, index: number) {
-  const direct = getConnection();
   const path = `Videos/${encodeURIComponent(itemId)}/${encodeURIComponent(mediaSourceId)}/Subtitles/${index}/Stream.vtt`;
-  if (direct) {
-    return `${direct.serverUrl}/${path}?api_key=${encodeURIComponent(direct.token)}`;
-  }
   return `/api/jf/${path}`;
 }
 
@@ -349,29 +356,19 @@ export async function setPlayed(userId: string, itemId: string, played: boolean)
 }
 
 export async function reportPlaybackStopped(itemId: string, positionTicks?: number) {
-  const direct = getConnection();
-  const url = direct ? `${direct.serverUrl}/Sessions/Playing/Stopped` : "/api/jf/Sessions/Playing/Stopped";
-  const headers: HeadersInit = { "Content-Type": "application/json" };
-  if (direct) {
-    headers.Authorization = authHeader(direct.deviceId, direct.token);
-  }
-  await fetch(url, {
+  await fetch("/api/jf/Sessions/Playing/Stopped", {
     method: "POST",
-    headers,
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ItemId: itemId, PositionTicks: positionTicks ?? 0 }),
   }).catch(() => undefined);
 }
 
 export async function reportPlaybackStart(itemId: string) {
-  const direct = getConnection();
-  const url = direct ? `${direct.serverUrl}/Sessions/Playing` : "/api/jf/Sessions/Playing";
-  const headers: HeadersInit = { "Content-Type": "application/json" };
-  if (direct) {
-    headers.Authorization = authHeader(direct.deviceId, direct.token);
-  }
-  await fetch(url, {
+  await fetch("/api/jf/Sessions/Playing", {
     method: "POST",
-    headers,
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ItemId: itemId, PlayMethod: "DirectPlay" }),
   }).catch(() => undefined);
 }

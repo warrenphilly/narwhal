@@ -15,9 +15,11 @@ export async function GET(
   }
   const { id } = await context.params;
   const url = `${session.serverUrl}/Users/${encodeURIComponent(session.userId)}/Items/${encodeURIComponent(id)}`;
+  const fields =
+    "Overview,Genres,PrimaryImageAspectRatio,MediaSources,CanDownload,ProductionYear,DateCreated,PremiereDate,CommunityRating,CriticRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,People,Studios,RemoteTrailers,Taglines,Status,ProductionLocations,ChildCount,MediaStreams,Type,Name";
   try {
     const upstream = await jellyfinFetch(
-      `${url}?Fields=Overview,Genres,MediaSources,ProductionYear,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,Type,Name`,
+      `${url}?Fields=${fields}`,
       { headers: { Authorization: authHeader(session) } },
       { ...tunnelFromSession(session), timeoutMs: 20_000 }
     );

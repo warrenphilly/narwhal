@@ -27,25 +27,30 @@ export async function resolveJellyfinPlayUrl(
     { ...tunnelFromSession(session), timeoutMs: 20_000 }
   );
 
-  if (!response.ok) {
-    throw new Error(`PlaybackInfo failed (${response.status})`);
+  let sourceId: string | undefined;
+  let playSessionId: string | undefined;
+  if (response.ok) {
+    const info = (await response.json()) as PlaybackInfo;
+    sourceId = info.MediaSources?.[0]?.Id;
+    playSessionId = info.PlaySessionId;
   }
 
-  const info = (await response.json()) as PlaybackInfo;
-  const source = info.MediaSources?.[0];
-  const relative = source?.TranscodingUrl || (preferTranscode ? undefined : source?.DirectStreamUrl);
+  const stream = new URL(`${session.serverUrl}/Videos/${encodeURIComponent(itemId)}/stream`);
+  stream.searchParams.set("api_key", session.token);
+  if (sourceId) stream.searchParams.set("MediaSourceId", sourceId);
+  if (playSessionId) stream.searchParams.set("PlaySessionId", playSessionId);
 
-  if (relative) {
-    return new URL(relative, `${session.serverUrl}/`).toString();
+  if (!preferTranscode) {
+    stream.searchParams.set("static", "true");
+    stream.searchParams.set("Static", "true");
+    return stream.toString();
   }
 
-  const fallback = new URL(`${session.serverUrl}/Videos/${encodeURIComponent(itemId)}/stream.mp4`);
-  fallback.searchParams.set("Container", "mp4");
-  fallback.searchParams.set("VideoCodec", "h264");
-  fallback.searchParams.set("AudioCodec", "aac");
-  fallback.searchParams.set("TranscodingProtocol", "http");
-  fallback.searchParams.set("MaxStreamingBitrate", "12000000");
-  if (source?.Id) fallback.searchParams.set("MediaSourceId", source.Id);
-  if (info.PlaySessionId) fallback.searchParams.set("PlaySessionId", info.PlaySessionId);
-  return fallback.toString();
+  stream.pathname = `/Videos/${encodeURIComponent(itemId)}/stream.mp4`;
+  stream.searchParams.set("Container", "mp4");
+  stream.searchParams.set("VideoCodec", "h264");
+  stream.searchParams.set("AudioCodec", "aac");
+  stream.searchParams.set("TranscodingProtocol", "http");
+  stream.searchParams.set("MaxStreamingBitrate", "12000000");
+  return stream.toString();
 }

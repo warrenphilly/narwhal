@@ -5,7 +5,7 @@ import { jellyfinFetch, tunnelFromSession } from "@/lib/jellyfin-request";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const hopByHop = new Set([
+const skipRequest = new Set([
   "connection",
   "keep-alive",
   "proxy-authenticate",
@@ -16,6 +16,16 @@ const hopByHop = new Set([
   "upgrade",
   "host",
   "cookie",
+  "content-length",
+  "accept-encoding",
+  "origin",
+  "referer",
+]);
+
+const skipResponse = new Set([
+  ...skipRequest,
+  "set-cookie",
+  "content-encoding",
 ]);
 
 async function proxy(request: NextRequest, path: string[]) {
@@ -29,38 +39,47 @@ async function proxy(request: NextRequest, path: string[]) {
   target.search = request.nextUrl.search;
 
   const headers = new Headers();
-  request.headers.forEach((value, key) => {
-    if (!hopByHop.has(key.toLowerCase())) {
-      headers.set(key, value);
-    }
-  });
+  const accept = request.headers.get("accept");
+  if (accept) headers.set("Accept", accept);
+  const contentType = request.headers.get("content-type");
+  if (contentType) headers.set("Content-Type", contentType);
+  const range = request.headers.get("range");
+  if (range) headers.set("Range", range);
   headers.set("Authorization", authHeader(session));
-  headers.delete("content-length");
+  headers.set("Accept-Encoding", "identity");
 
-  const method = request.method;
-  const hasBody = method !== "GET" && method !== "HEAD";
-  const upstream = await jellyfinFetch(
-    target.toString(),
-    {
-      method,
-      headers,
-      body: hasBody ? await request.arrayBuffer() : undefined,
-      redirect: "follow",
-    },
-    { ...tunnelFromSession(session), timeoutMs: 120_000 }
-  );
+  try {
+    const method = request.method;
+    const hasBody = method !== "GET" && method !== "HEAD";
+    const upstream = await jellyfinFetch(
+      target.toString(),
+      {
+        method,
+        headers,
+        body: hasBody ? await request.arrayBuffer() : undefined,
+        redirect: "follow",
+      },
+      { ...tunnelFromSession(session), timeoutMs: 120_000 }
+    );
 
-  const out = new Headers();
-  upstream.headers.forEach((value, key) => {
-    if (!hopByHop.has(key.toLowerCase()) && key.toLowerCase() !== "set-cookie") {
-      out.set(key, value);
-    }
-  });
+    const out = new Headers();
+    upstream.headers.forEach((value, key) => {
+      if (!skipResponse.has(key.toLowerCase())) {
+        out.set(key, value);
+      }
+    });
 
-  return new NextResponse(upstream.body, {
-    status: upstream.status,
-    headers: out,
-  });
+    const body = await upstream.arrayBuffer();
+    return new NextResponse(body, {
+      status: upstream.status,
+      headers: out,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Jellyfin request failed." },
+      { status: 502 }
+    );
+  }
 }
 
 type RouteContext = { params: Promise<{ path: string[] }> };
