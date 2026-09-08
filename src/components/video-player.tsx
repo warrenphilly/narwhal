@@ -3,10 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NarwhalMark } from "@/components/narwhal-mark";
+import { useProfiles } from "@/components/profile-provider";
 import {
   fetchPlaybackInfo,
+  imageUrl,
   reportPlaybackStart,
   reportPlaybackStopped,
   setPlayed,
@@ -14,6 +17,7 @@ import {
   subtitleTracks,
 } from "@/lib/client-api";
 import { formatFinishTime, ticksToSeconds } from "@/lib/clock";
+import { formatRuntime } from "@/lib/jellyfin-types";
 import { playerTitleHref } from "@/lib/item-href";
 import type { JellyfinItem, PlaybackInfo } from "@/lib/jellyfin-types";
 
@@ -25,10 +29,13 @@ export function VideoPlayer({
   userId?: string;
 }) {
   const router = useRouter();
+  const { rememberProgress } = useProfiles();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [info, setInfo] = useState<PlaybackInfo | null>(null);
   const [track, setTrack] = useState("off");
   const [finishAt, setFinishAt] = useState("");
+  const [paused, setPaused] = useState(false);
+  const [logoOk, setLogoOk] = useState(true);
   const tracks = useMemo(() => subtitleTracks(item.Id, info), [item.Id, info]);
   const headline = item.SeriesName || item.Name;
   const detail =
@@ -90,8 +97,15 @@ export function VideoPlayer({
       setFinishAt(formatFinishTime(remaining));
     };
     const onPlay = () => {
+      setPaused(false);
       reportPlaybackStart(item.Id);
       onTime();
+    };
+    const onPause = () => {
+      setPaused(true);
+      const ticks = Math.round(video.currentTime * 10_000_000);
+      rememberProgress(item.Id, ticks, false);
+      reportPlaybackStopped(item.Id, ticks);
     };
     const markDone = () => {
       if (marked) return;
@@ -109,14 +123,16 @@ export function VideoPlayer({
     video.addEventListener("loadedmetadata", onLoaded);
     video.addEventListener("timeupdate", onTimeWatch);
     video.addEventListener("play", onPlay);
+    video.addEventListener("pause", onPause);
     video.addEventListener("ended", onEnded);
     return () => {
       video.removeEventListener("loadedmetadata", onLoaded);
       video.removeEventListener("timeupdate", onTimeWatch);
       video.removeEventListener("play", onPlay);
+      video.removeEventListener("pause", onPause);
       video.removeEventListener("ended", onEnded);
     };
-  }, [item.Id, item.RunTimeTicks, item.UserData?.PlaybackPositionTicks, userId]);
+  }, [item.Id, item.RunTimeTicks, item.UserData?.PlaybackPositionTicks, rememberProgress, userId]);
 
   return (
     <div className="relative size-full">
@@ -190,6 +206,51 @@ export function VideoPlayer({
           </p>
         )}
       </div>
+      {paused && (
+        <div className="absolute inset-0 z-20 flex items-end bg-gradient-to-t from-black via-black/70 to-black/20 px-8 py-16 sm:px-16">
+          <div className="max-w-2xl">
+            <div className="flex items-center gap-3">
+              <NarwhalMark className="size-10" />
+              {logoOk && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imageUrl(item.Id, { type: "Logo", maxWidth: 480 })}
+                  alt=""
+                  className="h-16 max-w-[280px] object-contain"
+                  onError={() => setLogoOk(false)}
+                />
+              )}
+            </div>
+            <p className="mt-6 text-4xl font-semibold tracking-tight text-white sm:text-5xl">{headline}</p>
+            {detail && <p className="mt-2 text-lg text-white/70">{detail}</p>}
+            <div className="mt-3 flex flex-wrap gap-2 text-sm text-white/80">
+              {item.ProductionYear && (
+                <span className="rounded-full bg-white/12 px-3 py-1">{item.ProductionYear}</span>
+              )}
+              {item.OfficialRating && (
+                <span className="rounded-full bg-white/12 px-3 py-1">{item.OfficialRating}</span>
+              )}
+              {formatRuntime(item.RunTimeTicks) && (
+                <span className="rounded-full bg-white/12 px-3 py-1">{formatRuntime(item.RunTimeTicks)}</span>
+              )}
+              {item.CommunityRating && (
+                <span className="rounded-full bg-white/12 px-3 py-1">{item.CommunityRating.toFixed(1)} ★</span>
+              )}
+            </div>
+            {item.Overview && (
+              <p className="mt-4 line-clamp-3 text-base leading-relaxed text-white/80">{item.Overview}</p>
+            )}
+            <Button
+              size="lg"
+              className="mt-6 h-12 rounded-full px-6"
+              onClick={() => videoRef.current?.play()}
+            >
+              <Play data-icon="inline-start" className="fill-current" />
+              Resume
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

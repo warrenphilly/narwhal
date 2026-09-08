@@ -7,6 +7,7 @@ import { AppShell } from "@/components/app-shell";
 import { PageBack } from "@/components/back-button";
 import { LoginScreen } from "@/components/login-screen";
 import { Button } from "@/components/ui/button";
+import { LibraryButtons } from "@/components/library-buttons";
 import { WatchedButton } from "@/components/watched-button";
 import { useDownloads } from "@/components/downloads-provider";
 import { useSession } from "@/components/session-provider";
@@ -303,6 +304,7 @@ export default function ShowPage() {
                   Shuffle
                 </Button>
                 <WatchedButton played={played} onToggle={() => togglePlayed()} disabled={demo} />
+                <LibraryButtons itemId={resolved.Id} disabled={demo} />
               </div>
             </div>
           </div>

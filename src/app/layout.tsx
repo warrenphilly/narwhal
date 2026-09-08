@@ -9,12 +9,12 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Cinema — Jellyfin for your laptop",
+  title: "Narwhal — Jellyfin for your laptop",
   description:
-    "An Apple TV-style Jellyfin client that streams your library and downloads movies to this computer.",
+    "An Apple TV-style Jellyfin client that streams your library and downloads titles to this computer.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${geist.variable} h-full antialiased`} suppressHydrationWarning>
       <head>

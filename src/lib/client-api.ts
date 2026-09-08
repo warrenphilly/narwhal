@@ -4,27 +4,36 @@ import { authHeader, getConnection } from "@/lib/jellyfin-connection";
 const ITEM_FIELDS =
   "Overview,Genres,PrimaryImageAspectRatio,MediaSources,CanDownload,ProductionYear,DateCreated,PremiereDate,CommunityRating,CriticRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,People,Studios,RemoteTrailers,Taglines,Status,ProductionLocations,ChildCount,MediaStreams";
 
+async function parseBody<T>(response: Response): Promise<T> {
+  const text = await response.text();
+  if (!text) return {} as T;
+  return JSON.parse(text) as T;
+}
+
 async function jf<T>(path: string, init?: RequestInit): Promise<T> {
   const direct = getConnection();
-  const url = direct
-    ? `${direct.serverUrl}/${path}`
-    : `/api/jf/${path}`;
   const headers = new Headers(init?.headers);
-  if (direct) {
-    headers.set("Authorization", authHeader(direct.deviceId, direct.token));
-  }
-  const response = await fetch(url, {
+  const proxy = await fetch(`/api/jf/${path}`, {
     ...init,
     headers,
     cache: "no-store",
   });
-  if (!response.ok) {
-    const data = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(data?.error || `Jellyfin request failed (${response.status})`);
+  if (proxy.ok) return parseBody<T>(proxy);
+  if (direct && (proxy.status === 401 || proxy.status === 502)) {
+    headers.set("Authorization", authHeader(direct.deviceId, direct.token));
+    const response = await fetch(`${direct.serverUrl}/${path}`, {
+      ...init,
+      headers,
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(data?.error || `Jellyfin request failed (${response.status})`);
+    }
+    return parseBody<T>(response);
   }
-  const text = await response.text();
-  if (!text) return {} as T;
-  return JSON.parse(text) as T;
+  const data = (await proxy.json().catch(() => null)) as { error?: string } | null;
+  throw new Error(data?.error || `Jellyfin request failed (${proxy.status})`);
 }
 
 export function continueImageUrl(item: JellyfinItem) {
@@ -68,18 +77,39 @@ export function downloadUrl(itemId: string, filename: string) {
   return `/api/download/${encodeURIComponent(itemId)}?filename=${encodeURIComponent(filename)}`;
 }
 
-export async function fetchMovies(userId: string) {
+async function fetchLibrary(userId: string, itemType: "Movie" | "Series") {
+  const params = new URLSearchParams({
+    IncludeItemTypes: itemType,
+    Recursive: "true",
+    SortBy: "SortName",
+    SortOrder: "Ascending",
+    Fields: ITEM_FIELDS,
+    Limit: "1000",
+    EnableUserData: "true",
+  });
   const data = await jf<JellyfinItemsResult>(
-    `Users/${encodeURIComponent(userId)}/Items?IncludeItemTypes=Movie&Recursive=true&SortBy=SortName&SortOrder=Ascending&Fields=${ITEM_FIELDS}&Limit=200`
+    `Users/${encodeURIComponent(userId)}/Items?${params.toString()}`
   );
-  return data.Items ?? [];
+  if (data.Items?.length) return data.Items;
+  const views = await jf<JellyfinItemsResult>(`Users/${encodeURIComponent(userId)}/Views`).catch(
+    () => ({ Items: [] as JellyfinItem[] })
+  );
+  const collected: JellyfinItem[] = [];
+  for (const view of views.Items ?? []) {
+    const page = await jf<JellyfinItemsResult>(
+      `Users/${encodeURIComponent(userId)}/Items?ParentId=${encodeURIComponent(view.Id)}&IncludeItemTypes=${itemType}&Recursive=true&SortBy=SortName&Fields=${ITEM_FIELDS}&Limit=1000`
+    ).catch(() => ({ Items: [] as JellyfinItem[] }));
+    collected.push(...(page.Items ?? []));
+  }
+  return uniqueItems(collected);
+}
+
+export async function fetchMovies(userId: string) {
+  return fetchLibrary(userId, "Movie");
 }
 
 export async function fetchShows(userId: string) {
-  const data = await jf<JellyfinItemsResult>(
-    `Users/${encodeURIComponent(userId)}/Items?IncludeItemTypes=Series&Recursive=true&SortBy=SortName&SortOrder=Ascending&Fields=${ITEM_FIELDS}&Limit=200`
-  );
-  return data.Items ?? [];
+  return fetchLibrary(userId, "Series");
 }
 
 export async function fetchResume(userId: string) {

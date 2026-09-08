@@ -1,4 +1,4 @@
-# Cinema / Narwhal
+# Narwhal
 
 A laptop Jellyfin client with an Apple TV-style home screen. Browse your library, play titles, and download the original files to this computer.
 

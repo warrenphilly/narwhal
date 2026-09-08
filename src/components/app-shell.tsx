@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { Download, LogOut, Moon, Search, Sun, Tv } from "lucide-react";
+import { Download, LogOut, Moon, Search, Sun } from "lucide-react";
 import { useSession } from "@/components/session-provider";
 import { useDownloads } from "@/components/downloads-provider";
+import { useProfiles } from "@/components/profile-provider";
+import { ProfilePicker } from "@/components/profile-picker";
+import { NarwhalMark } from "@/components/narwhal-mark";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { homeHref, lastTab } from "@/lib/media-tab";
@@ -34,11 +37,7 @@ function NavItems({ className, itemClass }: { className?: string; itemClass: (ac
 }
 
 function DesktopBrand() {
-  const [name, setName] = useState("Cinema");
-  useEffect(() => {
-    if (window.narwhal?.isDesktop) setName("Narwhal");
-  }, []);
-  return <span className="text-[15px] font-semibold tracking-tight">{name}</span>;
+  return <span className="text-[15px] font-semibold tracking-tight">Narwhal</span>;
 }
 
 function ScrollHeader({ children }: { children: React.ReactNode }) {
@@ -75,18 +74,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { session, signOut } = useSession();
+  const { profile, picking, setPicking } = useProfiles();
   const { theme, toggle } = useTheme();
   const { downloads } = useDownloads();
   const active = downloads.filter((item) => item.status === "saving").length;
+
+  if (session?.signedIn && picking) {
+    return <ProfilePicker />;
+  }
 
   return (
     <div className="tv-root flex min-h-full flex-col">
       <ScrollHeader key={pathname}>
         <div className="page-gutter mx-auto flex h-20 items-center gap-6">
           <Link href={homeHref(lastTab())} className="flex items-center gap-2 text-zinc-900 dark:text-zinc-50">
-            <span className="flex size-8 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
-              <Tv className="size-4" />
-            </span>
+            <NarwhalMark className="size-8" />
             <DesktopBrand />
           </Link>
           <Suspense
@@ -137,7 +139,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Button>
             {session?.signedIn ? (
               <div className="hidden items-center gap-3 pl-2 text-sm text-zinc-500 sm:flex dark:text-zinc-400">
-                <span className="max-w-[180px] truncate">{session.userName}</span>
+                {profile && (
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 rounded-full px-2 py-1 hover:bg-black/5 dark:hover:bg-white/10"
+                    onClick={() => setPicking(true)}
+                  >
+                    <span
+                      className="flex size-7 items-center justify-center rounded-lg text-xs font-semibold text-white"
+                      style={{ background: profile.color }}
+                    >
+                      {profile.name.slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className="max-w-[120px] truncate">{profile.name}</span>
+                  </button>
+                )}
                 <Button variant="ghost" size="sm" onClick={() => signOut()}>
                   <LogOut data-icon="inline-start" />
                   Sign out

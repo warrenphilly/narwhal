@@ -6,6 +6,7 @@ import { HeroBanner } from "@/components/hero-banner";
 import { MediaPills } from "@/components/media-pills";
 import { Shelf } from "@/components/shelf";
 import { useSession } from "@/components/session-provider";
+import { useProfiles } from "@/components/profile-provider";
 import {
   featuredWithNewReleases,
   fetchLatest,
@@ -66,7 +67,7 @@ export function HomeScreen() {
       fetchUnplayedRecent(session.userId, "Movie").catch(() => [] as JellyfinItem[]),
       fetchUnplayedRecent(session.userId, "Episode").catch(() => [] as JellyfinItem[]),
       fetchUnplayedRecent(session.userId, "Series").catch(() => [] as JellyfinItem[]),
-      fetchMovies(session.userId),
+      fetchMovies(session.userId).catch(() => [] as JellyfinItem[]),
       fetchShows(session.userId).catch(() => [] as JellyfinItem[]),
     ])
       .then(
@@ -107,16 +108,21 @@ export function HomeScreen() {
     };
   }, [signedIn, session?.userId]);
 
-  const movieResume = signedIn
+  const { applyProfile, listedItems } = useProfiles();
+  const movieResume = (signedIn
     ? resume.filter((item) => item.Type === "Movie" || !item.Type)
-    : DEMO_MOVIES.slice(0, 4);
-  const showResume = signedIn
+    : DEMO_MOVIES.slice(0, 4)
+  ).map(applyProfile);
+  const showResume = (signedIn
     ? resume.filter((item) => item.Type === "Episode" || item.Type === "Series")
-    : DEMO_SHOWS.slice(0, 2);
-  const movieLatest = signedIn ? latestMovies : DEMO_MOVIES;
-  const showLatest = signedIn ? latestShows : DEMO_SHOWS;
-  const allMovies = signedIn ? movies : DEMO_MOVIES;
-  const allShows = signedIn ? shows : DEMO_SHOWS;
+    : DEMO_SHOWS.slice(0, 2)
+  ).map(applyProfile);
+  const movieLatest = (signedIn ? latestMovies : DEMO_MOVIES).map(applyProfile);
+  const showLatest = (signedIn ? latestShows : DEMO_SHOWS).map(applyProfile);
+  const allMovies = (signedIn ? movies : DEMO_MOVIES).map(applyProfile);
+  const allShows = (signedIn ? shows : DEMO_SHOWS).map(applyProfile);
+  const myList = listedItems(tab === "movies" ? allMovies : allShows, "watchlist");
+  const favorites = listedItems(tab === "movies" ? allMovies : allShows, "favorites");
 
   const featuredMovies = featuredWithNewReleases(
     movieLatest,
@@ -160,6 +166,8 @@ export function HomeScreen() {
           </p>
         )}
         <Shelf title="Currently watching" items={watching} variant="continue" />
+        <Shelf title="My list" items={myList} />
+        <Shelf title="Favorites" items={favorites} />
         {tab === "shows" && <Shelf title="Featured" items={featuredShows} />}
         {tab === "movies" && <Shelf title="Recently added" items={featuredMovies} />}
         {genres.map(([genre, items]) => (

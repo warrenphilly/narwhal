@@ -9,6 +9,7 @@ import { LoginScreen } from "@/components/login-screen";
 import { EpisodeRow } from "@/components/episode-row";
 import { TitleCast, TitleGenres, TitleMeta, TitlePoster } from "@/components/title-facts";
 import { Button } from "@/components/ui/button";
+import { LibraryButtons } from "@/components/library-buttons";
 import { WatchedButton } from "@/components/watched-button";
 import { useDownloads } from "@/components/downloads-provider";
 import { useSession } from "@/components/session-provider";
@@ -164,6 +165,7 @@ export default function MoviePage() {
                   {demo ? "Connect to download" : saving ? "Saving…" : "Download to laptop"}
                 </Button>
                 <WatchedButton played={played} onToggle={() => togglePlayed()} disabled={demo} />
+                <LibraryButtons itemId={resolved.Id} disabled={demo} />
               </div>
             </div>
           </div>

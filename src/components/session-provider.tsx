@@ -64,6 +64,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         const stored = getConnection();
         if (stored) {
+          await fetch("/api/auth/adopt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(stored),
+          }).catch(() => undefined);
           setSession({
             signedIn: true,
             userName: stored.userName,
@@ -119,6 +124,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           password: input.password,
         });
         setConnection(direct);
+        await fetch("/api/auth/adopt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(direct),
+        }).catch(() => undefined);
         window.sessionStorage.removeItem("cinema-preview");
         setPreview(false);
         setSession({
