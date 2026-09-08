@@ -217,7 +217,7 @@
 }
 
 .shell-frame {
-  --content-max: 1920px;
+  --content-max: 1600px;
   --shell-outer: max(0px, calc((100vw - var(--content-max)) / 2));
 }
 
@@ -355,13 +355,20 @@
     --shell-gutter: 1.25rem;
     --shell-nav-collapsed: 3.75rem;
     --shell-nav-expanded: 13.5rem;
+    --shell-nav-width: var(--shell-nav-collapsed);
+    --shell-nav-space: calc(var(--shell-gutter) + var(--shell-nav-width) + var(--shell-gutter));
+    --shell-remain-extra: max(
+      0px,
+      calc((100vw - var(--shell-nav-space) - var(--shell-gutter) - var(--content-max)) / 2)
+    );
   }
 
+  /* Menu docks to the viewport edge — not the 1600px content box */
   .shell-nav {
     position: fixed !important;
     top: 1.35rem;
     bottom: 1.35rem;
-    left: calc(var(--shell-outer) + var(--shell-gutter));
+    left: var(--shell-gutter);
     z-index: 30;
     display: flex !important;
     width: var(--shell-nav-collapsed);
@@ -370,7 +377,7 @@
     overflow: hidden;
     margin: 0;
     border-radius: 1.75rem;
-    transition: width 0.28s ease-out, padding 0.28s ease-out, left 0.28s ease-out;
+    transition: width 0.28s ease-out, padding 0.28s ease-out;
   }
 
   .shell-nav:hover {
@@ -379,15 +386,16 @@
   }
 
   .shell-main {
-    margin-left: calc(var(--shell-outer) + var(--shell-gutter) + var(--shell-nav-collapsed) + var(--shell-gutter));
-    margin-right: calc(var(--shell-outer) + var(--shell-gutter));
+    max-width: var(--content-max);
+    margin-left: calc(var(--shell-nav-space) + var(--shell-remain-extra));
+    margin-right: calc(var(--shell-gutter) + var(--shell-remain-extra));
     padding-right: 0;
     padding-left: 0 !important;
     transition: margin-left 0.28s ease-out, margin-right 0.28s ease-out;
   }
 
-  .shell-frame:has(.shell-nav:hover) .shell-main {
-    margin-left: calc(var(--shell-outer) + var(--shell-gutter) + var(--shell-nav-expanded) + var(--shell-gutter));
+  .shell-frame:has(.shell-nav:hover) {
+    --shell-nav-width: var(--shell-nav-expanded);
   }
 
   .shell-main > :first-child {
@@ -407,11 +415,35 @@
   }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1280px) and (max-width: 1600px) {
   .shell-frame {
     --shell-gutter: 1.75rem;
     --shell-nav-collapsed: 4.5rem;
     --shell-nav-expanded: 14.5rem;
+  }
+}
+
+/* Wide screens: menu always fully open, not collapsible */
+@media (min-width: 1601px) {
+  .shell-frame {
+    --shell-gutter: 1.75rem;
+    --shell-nav-collapsed: 14.5rem;
+    --shell-nav-expanded: 14.5rem;
+    --shell-nav-width: 14.5rem;
+  }
+
+  .shell-nav {
+    width: var(--shell-nav-expanded);
+    padding: 0.75rem;
+  }
+
+  .shell-nav:hover {
+    width: var(--shell-nav-expanded);
+    padding: 0.75rem;
+  }
+
+  .shell-frame:has(.shell-nav:hover) {
+    --shell-nav-width: 14.5rem;
   }
 }
 

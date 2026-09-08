@@ -43,8 +43,9 @@ function navLinks(): { href: string; label: string; icon: LucideIcon; active: (p
 
 function railItemClass(active?: boolean) {
   return cn(
-    "flex w-full min-h-[2.75rem] items-center justify-center gap-0 rounded-2xl px-0 py-0 text-sm text-zinc-700 transition",
+    "rail-item flex w-full min-h-[2.75rem] items-center justify-center gap-0 rounded-2xl px-0 py-0 text-sm text-zinc-700 transition",
     "hover:bg-white/25 hover:text-zinc-950 group-hover:justify-start group-hover:gap-3 group-hover:px-2.5 group-hover:py-0.5",
+    "min-[1601px]:justify-start min-[1601px]:gap-3 min-[1601px]:px-2.5 min-[1601px]:py-0.5",
     "dark:text-zinc-200 dark:hover:bg-white/10 dark:hover:text-white",
     active &&
       "bg-gradient-to-br from-[#00A4DC]/35 via-white/50 to-[#AA5CC3]/35 text-zinc-950 shadow-[inset_0_0_0_2px_rgba(170,92,195,0.55)] dark:from-[#00A4DC]/30 dark:via-white/12 dark:to-[#AA5CC3]/30 dark:text-white"
@@ -69,7 +70,7 @@ function RailIcon({ children }: { children: React.ReactNode }) {
 }
 
 function RailLabel({ children }: { children: React.ReactNode }) {
-  return <span className="hidden whitespace-nowrap group-hover:inline">{children}</span>;
+  return <span className="hidden whitespace-nowrap group-hover:inline min-[1601px]:inline">{children}</span>;
 }
 
 function NavItems({
@@ -241,7 +242,7 @@ function ShellActions({
             <Download />
           </RailIcon>
           <RailLabel>Downloads</RailLabel>
-          {active > 0 && <span className="absolute top-2 right-2 size-2 rounded-full bg-sky-500 group-hover:top-2.5 group-hover:right-auto group-hover:left-[2.15rem]" />}
+          {active > 0 && <span className="absolute top-2 right-2 size-2 rounded-full bg-sky-500 group-hover:top-2.5 group-hover:right-auto group-hover:left-[2.15rem] min-[1601px]:top-2.5 min-[1601px]:right-auto min-[1601px]:left-[2.15rem]" />}
         </button>
       </>
       {session?.signedIn ? (
@@ -414,12 +415,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         <Link
           href="/"
-          className="flex min-h-[2.75rem] items-center justify-center gap-0 rounded-2xl px-0 py-0 text-zinc-900 group-hover:justify-start group-hover:gap-2 group-hover:px-2 group-hover:py-1 dark:text-zinc-50"
+          className="flex min-h-[2.75rem] items-center justify-center gap-0 rounded-2xl px-0 py-0 text-zinc-900 group-hover:justify-start group-hover:gap-2 group-hover:px-2 group-hover:py-1 min-[1601px]:justify-start min-[1601px]:gap-2 min-[1601px]:px-2 min-[1601px]:py-1 dark:text-zinc-50"
         >
           <span className="flex size-10 shrink-0 items-center justify-center">
             <NarwhalMark className="size-8" />
           </span>
-          <span className="hidden whitespace-nowrap text-[15px] font-semibold tracking-tight group-hover:inline">Narwhal</span>
+          <span className="hidden whitespace-nowrap text-[15px] font-semibold tracking-tight group-hover:inline min-[1601px]:inline">Narwhal</span>
         </Link>
         <Suspense
           fallback={

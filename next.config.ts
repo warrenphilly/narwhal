@@ -1,5 +1,9 @@
 import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 function localDevOrigins() {
   const origins = new Set(["localhost", "127.0.0.1", "[::1]", "0.0.0.0"]);
@@ -41,6 +45,11 @@ const nextConfig: NextConfig = {
   // Standalone is for Electron packaging only. On Vercel, Next 16.3 + adapter
   // fails looking for next-server.js.nft.json if standalone is enabled.
   ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
+  // Keep Turbopack rooted on this app (avoids parent folder lockfile confusion).
+  turbopack: {
+    root: projectRoot,
+  },
+  outputFileTracingRoot: projectRoot,
   allowedDevOrigins: localDevOrigins(),
   async headers() {
     return [

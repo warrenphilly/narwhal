@@ -10,8 +10,8 @@
     "desktop:dev": "NARWHAL_DEV=1 node scripts/desktop.mjs",
     "mac": "node scripts/mac.mjs",
     "win": "node scripts/win.mjs",
-    "dist:web": "next build",
-    "build": "next build",
+    "dist:web": "next build --webpack",
+    "build": "next build --webpack",
     "start": "next start --port 3000 --hostname 0.0.0.0",
     "lint": "eslint"
   },
