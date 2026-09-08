@@ -110,6 +110,7 @@ export function VideoPlayer({
     const markDone = () => {
       if (marked) return;
       marked = true;
+      rememberProgress(item.Id, item.RunTimeTicks ?? 0, true);
       reportPlaybackStopped(item.Id, item.RunTimeTicks);
       if (userId) setPlayed(userId, item.Id, true).catch(() => undefined);
     };
