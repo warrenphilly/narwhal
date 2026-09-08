@@ -19,6 +19,14 @@ Desktop window (Narwhal):
 npm run desktop
 ```
 
+If you see `EADDRINUSE` / port 43147 already in use, an old Next process is still running. `npm run desktop` now picks a free port automatically. To clear the old one:
+
+```bash
+lsof -ti :43147 | xargs kill
+```
+
+Do **not** run `npm run dev` and `npm run desktop` at the same time unless you want two copies. Desktop starts its own web server.
+
 Wait until the terminal says **Ready**. Then open this **exact** address:
 
 **http://127.0.0.1:3000**
