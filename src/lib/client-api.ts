@@ -554,34 +554,88 @@ export async function fetchPlayableId(userId: string, item: JellyfinItem) {
   return episodes.Items?.[0]?.Id ?? item.Id;
 }
 
-export async function fetchMovie(_userId: string, id: string) {
+export async function fetchMovie(userId: string, id: string) {
+  try {
+    const data = await jf<JellyfinItem>(
+      `Users/${encodeURIComponent(userId)}/Items/${encodeURIComponent(id)}?Fields=${ITEM_FIELDS}`
+    );
+    if (data?.Id) return { ...data, Id: String(data.Id || id), Name: data.Name || "Untitled" };
+  } catch {
+    /* fall through to Narwhal proxy */
+  }
+
   const { apiFetch } = await import("@/lib/api-session");
   let response: Response;
   try {
     response = await apiFetch(`/api/item/${encodeURIComponent(id)}`);
   } catch {
-    throw new Error("Could not open this title. Check that Narwhal can reach Jellyfin.");
+    throw new Error(unreachableTitleHint());
   }
   const data = (await response.json().catch(() => null)) as (JellyfinItem & { error?: string }) | null;
-  if (!response.ok) throw new Error(data?.error || "Could not open this title.");
-  if (!data?.Id) throw new Error("Could not open this title.");
+  if (!response.ok) throw new Error(data?.error || unreachableTitleHint());
+  if (!data?.Id) throw new Error(unreachableTitleHint());
   return data;
 }
 
-export async function fetchSeasons(_userId: string, seriesId: string) {
+function unreachableTitleHint() {
+  const direct = getConnection();
+  const httpsPage = typeof window !== "undefined" && window.location.protocol === "https:";
+  const httpJellyfin = Boolean(direct?.serverUrl?.startsWith("http://"));
+  if (httpsPage && httpJellyfin) {
+    return "This secure website cannot reach your home http:// Jellyfin. Use the Narwhal desktop app on Wi‑Fi, or sign in with a Tailscale / HTTPS Jellyfin address.";
+  }
+  return "Could not open this title. Check that this device can reach Jellyfin.";
+}
+
+export async function fetchSeasons(userId: string, seriesId: string) {
+  try {
+    const data = await jf<JellyfinItemsResult | JellyfinItem[]>(
+      `Shows/${encodeURIComponent(seriesId)}/Seasons?UserId=${encodeURIComponent(userId)}&Fields=${ITEM_FIELDS}`
+    );
+    const items = asItemList(data).filter((item) => {
+      const type = (item.Type || "Season").toLowerCase();
+      return type === "season" || type === "folder";
+    });
+    if (items.length) return items;
+  } catch {
+    /* fall through */
+  }
+
   const { apiFetch } = await import("@/lib/api-session");
   let response: Response;
   try {
     response = await apiFetch(`/api/series/${encodeURIComponent(seriesId)}/seasons`);
   } catch {
-    throw new Error("Could not load seasons. Check that Narwhal can reach Jellyfin.");
+    throw new Error("Could not load seasons. Check that this device can reach Jellyfin.");
   }
   const data = (await response.json().catch(() => null)) as { items?: JellyfinItem[]; error?: string } | null;
   if (!response.ok) throw new Error(data?.error || "Could not load seasons.");
   return asItemList(data?.items ?? data);
 }
 
-export async function fetchEpisodes(_userId: string, seriesId: string, seasonId?: string) {
+export async function fetchEpisodes(userId: string, seriesId: string, seasonId?: string) {
+  const paths = [
+    seasonId
+      ? `Shows/${encodeURIComponent(seriesId)}/Episodes?UserId=${encodeURIComponent(userId)}&SeasonId=${encodeURIComponent(seasonId)}&Fields=${ITEM_FIELDS}&Limit=200`
+      : null,
+    `Shows/${encodeURIComponent(seriesId)}/Episodes?UserId=${encodeURIComponent(userId)}&Fields=${ITEM_FIELDS}&Limit=200`,
+    seasonId
+      ? `Users/${encodeURIComponent(userId)}/Items?ParentId=${encodeURIComponent(seasonId)}&Recursive=true&Fields=${ITEM_FIELDS}&Limit=200`
+      : `Users/${encodeURIComponent(userId)}/Items?ParentId=${encodeURIComponent(seriesId)}&IncludeItemTypes=Episode&Recursive=true&Fields=${ITEM_FIELDS}&Limit=200`,
+  ].filter(Boolean) as string[];
+
+  for (const path of paths) {
+    try {
+      const items = asItemList(await jf<JellyfinItemsResult | JellyfinItem[]>(path)).filter((item) => {
+        const type = (item.Type || "Episode").toLowerCase();
+        return type === "episode" || type === "video";
+      });
+      if (items.length) return items;
+    } catch {
+      /* try next */
+    }
+  }
+
   const params = new URLSearchParams();
   if (seasonId) params.set("seasonId", seasonId);
   const query = params.toString();
@@ -593,7 +647,7 @@ export async function fetchEpisodes(_userId: string, seriesId: string, seasonId?
       `/api/series/${encodeURIComponent(seriesId)}/episodes${query ? `?${query}` : ""}`
     );
   } catch {
-    throw new Error("Could not load episodes. Check that Narwhal can reach Jellyfin.");
+    throw new Error("Could not load episodes. Check that this device can reach Jellyfin.");
   }
   const data = (await response.json().catch(() => null)) as { items?: JellyfinItem[]; error?: string } | null;
   if (!response.ok) throw new Error(data?.error || "Could not load episodes.");
@@ -636,6 +690,10 @@ export async function fetchPlaybackInfo(itemId: string, userId: string) {
 
 export function subtitleUrl(itemId: string, mediaSourceId: string, index: number) {
   const path = `Videos/${encodeURIComponent(itemId)}/${encodeURIComponent(mediaSourceId)}/Subtitles/${index}/Stream.vtt`;
+  const direct = getConnection();
+  if (direct?.serverUrl && direct.token) {
+    return `${direct.serverUrl}/${path}?api_key=${encodeURIComponent(direct.token)}`;
+  }
   return `/api/jf/${path}`;
 }
 

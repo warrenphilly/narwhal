@@ -7,6 +7,7 @@ import { LoginScreen } from "@/components/login-screen";
 import { VideoPlayer } from "@/components/video-player";
 import { NarwhalSpinner } from "@/components/narwhal-spinner";
 import { useSession } from "@/components/session-provider";
+import { fetchMovie } from "@/lib/client-api";
 import { isDemoId } from "@/lib/demo-library";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
 
@@ -22,28 +23,24 @@ export default function WatchPage() {
     let cancelled = false;
     setError(null);
     setItem(null);
-    (async () => {
-      const { apiFetch, ensureServerSession } = await import("@/lib/api-session");
-      await ensureServerSession();
-      const response = await apiFetch(`/api/item/${encodeURIComponent(id)}`);
-      const data = (await response.json().catch(() => null)) as (JellyfinItem & { error?: string }) | null;
-      if (cancelled) return;
-      if (!response.ok || !data?.Id) {
-        setError(data?.error || "Could not load this title.");
-        return;
-      }
-      if (data.Type === "Series") {
-        window.location.replace(`/show/${data.Id}`);
-        return;
-      }
-      if (data.Type === "Season" && data.SeriesId) {
-        window.location.replace(`/show/${data.SeriesId}`);
-        return;
-      }
-      setItem({ ...data, Id: data.Id || id });
-    })().catch(() => {
-      if (!cancelled) setError("Could not load this title.");
-    });
+    fetchMovie(session.userId, id)
+      .then((data) => {
+        if (cancelled) return;
+        if (data.Type === "Series") {
+          window.location.replace(`/show/${data.Id}`);
+          return;
+        }
+        if (data.Type === "Season" && data.SeriesId) {
+          window.location.replace(`/show/${data.SeriesId}`);
+          return;
+        }
+        setItem({ ...data, Id: data.Id || id });
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Could not load this title.");
+        }
+      });
     return () => {
       cancelled = true;
     };
