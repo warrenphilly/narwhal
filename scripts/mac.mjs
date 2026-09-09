@@ -60,7 +60,9 @@ if (process.arch !== "arm64") {
   console.log("");
 }
 await freeMacInstallLocks();
-await run("npx", ["next", "build"]);
+// Must use webpack — Turbopack standalone omits app-route-turbo.runtime.prod.js,
+// so every /api/* route crashes with Internal Server Error in the .app.
+await run("npx", ["next", "build", "--webpack"]);
 await run("npx", ["electron-builder", "--mac", "dmg"]);
 
 const dist = path.join(process.cwd(), "dist");

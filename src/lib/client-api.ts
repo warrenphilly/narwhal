@@ -67,19 +67,22 @@ async function jfDirect<T>(path: string, init?: RequestInit): Promise<T | null> 
 }
 
 async function jf<T>(path: string, init?: RequestInit): Promise<T> {
-  // Prefer Narwhal’s cookie/header proxy (same path as play/episodes).
-  // Fall back to a direct Jellyfin call from this device when the proxy has no session.
-  try {
-    return await jfViaProxy<T>(path, init);
-  } catch (proxyError) {
+  // Prefer this device → Jellyfin when signed in locally. Desktop/mobile stay usable
+  // even if Narwhal’s /api proxy is down (broken package, cloud, missing cookie).
+  const direct = getConnection();
+  if (direct?.serverUrl && direct.token) {
     try {
-      const direct = await jfDirect<T>(path, init);
-      if (direct !== null) return direct;
-    } catch {
-      /* keep proxy error */
+      const data = await jfDirect<T>(path, init);
+      if (data !== null) return data;
+    } catch (directError) {
+      try {
+        return await jfViaProxy<T>(path, init);
+      } catch {
+        throw directError;
+      }
     }
-    throw proxyError;
   }
+  return jfViaProxy<T>(path, init);
 }
 
 async function jfViaProxy<T>(path: string, init?: RequestInit): Promise<T> {

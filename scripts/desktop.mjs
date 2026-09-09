@@ -127,7 +127,7 @@ if (useDev) {
 } else {
   if (buildIsStale()) {
     console.log("  Source is newer than the last production build — compiling…");
-    await run("npx", ["next", "build"]);
+    await run("npx", ["next", "build", "--webpack"]);
   }
   console.log("  Mode: production (fast). Set NARWHAL_DEV=1 for live-reload dev mode.");
   next = runDetached("npx", ["next", "start", "--hostname", "127.0.0.1", "--port", String(port)], {
