@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authHeader, getSession } from "@/lib/session";
+import { authHeader, getRequestSession } from "@/lib/session";
 import { jellyfinFetch, tunnelFromSession } from "@/lib/jellyfin-request";
 import { resolveJellyfinHlsUrl } from "@/lib/jellyfin-play";
 
@@ -30,7 +30,7 @@ type RouteContext = { params: Promise<{ itemId: string; path: string[] }> };
 
 export async function GET(request: NextRequest, context: RouteContext) {
   const { itemId, path } = await context.params;
-  const session = await getSession();
+  const session = await getRequestSession(request);
   if (!session) {
     return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   }

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+import { getRequestSession } from "@/lib/session";
 
-export async function GET() {
-  const session = await getSession();
+export async function GET(request: Request) {
+  const session = await getRequestSession(request);
   if (!session) {
     return NextResponse.json({ signedIn: false });
   }

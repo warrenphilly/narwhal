@@ -102,17 +102,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         const stored = getConnection();
         if (stored) {
-          await fetch("/api/auth/adopt", {
+          const adopt = await fetch("/api/auth/adopt", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
             body: JSON.stringify(stored),
-          }).catch(() => undefined);
+          }).catch(() => null);
           if (cancelled) return;
+          if (adopt && !adopt.ok) {
+            // Keep UI signed in from localStorage; play/episodes send a header backup.
+          }
           setSession({
             signedIn: true,
             userName: stored.userName,
             userId: stored.userId,
             serverUrl: stored.serverUrl,
+            token: stored.token,
+            deviceId: stored.deviceId,
           });
           return;
         }

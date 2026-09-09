@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { loadSeasons } from "@/lib/jellyfin-library";
-import { getSession } from "@/lib/session";
+import { getRequestSession } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
-  const session = await getSession();
+  const session = await getRequestSession(request);
   if (!session) {
     return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   }

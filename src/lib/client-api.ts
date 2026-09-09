@@ -67,31 +67,26 @@ async function jfDirect<T>(path: string, init?: RequestInit): Promise<T | null> 
 }
 
 async function jf<T>(path: string, init?: RequestInit): Promise<T> {
-  // Prefer the browser’s stored Jellyfin token (works even when the cookie adopt step fails).
+  // Prefer Narwhal’s cookie/header proxy (same path as play/episodes).
+  // Fall back to a direct Jellyfin call from this device when the proxy has no session.
   try {
-    const direct = await jfDirect<T>(path, init);
-    if (direct !== null) return direct;
-  } catch (directError) {
-    // Fall through to Narwhal proxy; keep the direct error if proxy also fails.
+    return await jfViaProxy<T>(path, init);
+  } catch (proxyError) {
     try {
-      return await jfViaProxy<T>(path, init);
+      const direct = await jfDirect<T>(path, init);
+      if (direct !== null) return direct;
     } catch {
-      throw directError;
+      /* keep proxy error */
     }
+    throw proxyError;
   }
-  return jfViaProxy<T>(path, init);
 }
 
 async function jfViaProxy<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers);
+  const { apiFetch } = await import("@/lib/api-session");
   let proxy: Response;
   try {
-    proxy = await fetch(`/api/jf/${path}`, {
-      ...init,
-      headers,
-      cache: "no-store",
-      credentials: "same-origin",
-    });
+    proxy = await apiFetch(`/api/jf/${path}`, init);
   } catch {
     throw new Error("Could not reach the Jellyfin proxy. Refresh and sign in again.");
   }
@@ -160,6 +155,23 @@ export function heroImage(item: JellyfinItem) {
   };
 }
 
+function connectionSid() {
+  const direct = getConnection();
+  if (!direct?.token) return "";
+  return btoa(
+    JSON.stringify({
+      serverUrl: direct.serverUrl,
+      token: direct.token,
+      userId: direct.userId,
+      userName: direct.userName,
+      deviceId: direct.deviceId,
+    })
+  )
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
 export function streamUrl(
   itemId: string,
   _info?: PlaybackInfo | null,
@@ -173,6 +185,8 @@ export function streamUrl(
   if (hardTranscode) params.set("hard", "1");
   if (typeof audioIndex === "number") params.set("audio", String(audioIndex));
   if (startTicks > 0) params.set("startTicks", String(Math.round(startTicks)));
+  const jf = connectionSid();
+  if (jf) params.set("jf", jf);
   const query = params.toString();
   return `/api/play/${encodeURIComponent(itemId)}${query ? `?${query}` : ""}`;
 }
@@ -181,7 +195,9 @@ export function hlsUrl(itemId: string, audioIndex?: number, startTicks = 0, sess
   const params = new URLSearchParams();
   if (typeof audioIndex === "number") params.set("audio", String(audioIndex));
   if (startTicks > 0) params.set("startTicks", String(Math.round(startTicks)));
-  if (sessionKey > 0) params.set("sid", String(sessionKey));
+  if (sessionKey > 0) params.set("sk", String(sessionKey));
+  const jf = connectionSid();
+  if (jf) params.set("jf", jf);
   const query = params.toString();
   return `/api/play/${encodeURIComponent(itemId)}/master.m3u8${query ? `?${query}` : ""}`;
 }
@@ -231,7 +247,8 @@ export async function fetchViews(userId: string) {
 }
 
 export async function fetchLibraryStatus() {
-  const response = await fetch("/api/library/status", { cache: "no-store", credentials: "same-origin" });
+  const { apiFetch } = await import("@/lib/api-session");
+  const response = await apiFetch("/api/library/status");
   const data = (await response.json().catch(() => null)) as {
     error?: string;
     serverUrl?: string;
@@ -302,7 +319,8 @@ async function fetchLibrary(userId: string, itemType: "Movie" | "Series") {
 }
 
 export async function fetchLibraryPage(itemType: "Movie" | "Series") {
-  const response = await fetch(`/api/library?type=${itemType}`, { cache: "no-store" });
+  const { apiFetch } = await import("@/lib/api-session");
+  const response = await apiFetch(`/api/library?type=${itemType}`);
   const data = (await response.json()) as {
     items?: JellyfinItem[];
     views?: { id: string; name: string; collectionType?: string }[];
@@ -525,12 +543,10 @@ export async function fetchPlayableId(userId: string, item: JellyfinItem) {
 }
 
 export async function fetchMovie(_userId: string, id: string) {
+  const { apiFetch } = await import("@/lib/api-session");
   let response: Response;
   try {
-    response = await fetch(`/api/item/${encodeURIComponent(id)}`, {
-      cache: "no-store",
-      credentials: "same-origin",
-    });
+    response = await apiFetch(`/api/item/${encodeURIComponent(id)}`);
   } catch {
     throw new Error("Could not open this title. Check that Narwhal can reach Jellyfin.");
   }
@@ -541,12 +557,10 @@ export async function fetchMovie(_userId: string, id: string) {
 }
 
 export async function fetchSeasons(_userId: string, seriesId: string) {
+  const { apiFetch } = await import("@/lib/api-session");
   let response: Response;
   try {
-    response = await fetch(`/api/series/${encodeURIComponent(seriesId)}/seasons`, {
-      cache: "no-store",
-      credentials: "same-origin",
-    });
+    response = await apiFetch(`/api/series/${encodeURIComponent(seriesId)}/seasons`);
   } catch {
     throw new Error("Could not load seasons. Check that Narwhal can reach Jellyfin.");
   }
@@ -559,11 +573,12 @@ export async function fetchEpisodes(_userId: string, seriesId: string, seasonId?
   const params = new URLSearchParams();
   if (seasonId) params.set("seasonId", seasonId);
   const query = params.toString();
+  const { apiFetch, ensureServerSession } = await import("@/lib/api-session");
+  await ensureServerSession();
   let response: Response;
   try {
-    response = await fetch(
-      `/api/series/${encodeURIComponent(seriesId)}/episodes${query ? `?${query}` : ""}`,
-      { cache: "no-store", credentials: "same-origin" }
+    response = await apiFetch(
+      `/api/series/${encodeURIComponent(seriesId)}/episodes${query ? `?${query}` : ""}`
     );
   } catch {
     throw new Error("Could not load episodes. Check that Narwhal can reach Jellyfin.");

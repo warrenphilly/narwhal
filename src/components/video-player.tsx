@@ -444,10 +444,38 @@ export function VideoPlayer({
     let hls: Hls | null = null;
     if (usingHls) {
       if (Hls.isSupported()) {
+        void import("@/lib/api-session").then(({ apiHeaders, ensureServerSession }) => ensureServerSession());
         hls = new Hls({
           maxBufferLength: 20,
           maxMaxBufferLength: 40,
           startFragPrefetch: true,
+          xhrSetup(xhr) {
+            try {
+              // Dynamic import may not be ready; set from localStorage directly.
+              const raw = window.localStorage.getItem("cinema-direct");
+              if (!raw) return;
+              const direct = JSON.parse(raw) as {
+                serverUrl?: string;
+                token?: string;
+                userId?: string;
+                userName?: string;
+                deviceId?: string;
+              };
+              if (!direct.token || !direct.serverUrl || !direct.userId) return;
+              xhr.setRequestHeader(
+                "x-narwhal-jf",
+                JSON.stringify({
+                  serverUrl: direct.serverUrl,
+                  token: direct.token,
+                  userId: direct.userId,
+                  userName: direct.userName,
+                  deviceId: direct.deviceId,
+                })
+              );
+            } catch {
+              /* ignore */
+            }
+          },
         });
         hlsRef.current = hls;
         hls.on(Hls.Events.ERROR, (_event, data) => {
@@ -463,6 +491,7 @@ export function VideoPlayer({
         };
       }
     } else {
+      void import("@/lib/api-session").then(({ ensureServerSession }) => ensureServerSession());
       video.src = src;
     }
 

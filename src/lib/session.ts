@@ -1,17 +1,18 @@
 import { cookies } from "next/headers";
+import {
+  SESSION_COOKIE,
+  SESSION_HEADER,
+  parseSessionCookie,
+  sessionFromUnknown,
+  type JellyfinSession,
+} from "@/lib/session-shared";
 
-export const SESSION_COOKIE = "jf_session";
-
-export type JellyfinSession = {
-  serverUrl: string;
-  token: string;
-  userId: string;
-  userName: string;
-  deviceId: string;
-  allowInsecure?: boolean;
-  cfAccessClientId?: string;
-  cfAccessClientSecret?: string;
-  cfAccessJwt?: string;
+export {
+  SESSION_COOKIE,
+  SESSION_HEADER,
+  parseSessionCookie,
+  sessionFromUnknown,
+  type JellyfinSession,
 };
 
 export function normalizeServerUrl(input: string) {
@@ -54,21 +55,40 @@ export function authHeader(session: Pick<JellyfinSession, "token" | "deviceId">,
   return `MediaBrowser ${parts.join(", ")}`;
 }
 
+/** Prefer base64url so commas in JSON cannot break Set-Cookie parsing. */
+export function sessionCookieValue(session: JellyfinSession) {
+  return Buffer.from(JSON.stringify(session), "utf8").toString("base64url");
+}
+
 export async function getSession(): Promise<JellyfinSession | null> {
   const store = await cookies();
   const raw = store.get(SESSION_COOKIE)?.value;
   if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as JellyfinSession;
-    if (!parsed.serverUrl || !parsed.token || !parsed.userId) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
+  return parseSessionCookie(raw);
 }
 
-export function sessionCookieValue(session: JellyfinSession) {
-  return JSON.stringify(session);
+export async function getRequestSession(request?: Request): Promise<JellyfinSession | null> {
+  const fromCookie = await getSession();
+  if (fromCookie) return fromCookie;
+  if (!request) return null;
+  const header = request.headers.get(SESSION_HEADER);
+  if (header) {
+    try {
+      const fromHeader = sessionFromUnknown(JSON.parse(header) as unknown);
+      if (fromHeader) return fromHeader;
+    } catch {
+      const fromHeader = parseSessionCookie(header);
+      if (fromHeader) return fromHeader;
+    }
+  }
+  try {
+    const url = new URL(request.url);
+    const jf = url.searchParams.get("jf") || url.searchParams.get("nfsid");
+    if (jf) return parseSessionCookie(jf);
+  } catch {
+    /* ignore */
+  }
+  return null;
 }
 
 /** Narwhal desktop always runs on http://127.0.0.1 — Secure cookies would never stick. */

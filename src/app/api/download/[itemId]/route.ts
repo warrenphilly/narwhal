@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authHeader, getSession } from "@/lib/session";
+import { authHeader, getRequestSession } from "@/lib/session";
 import { isDemoId } from "@/lib/demo-library";
 import { jellyfinFetch, tunnelFromSession } from "@/lib/jellyfin-request";
 
@@ -18,7 +18,7 @@ export async function GET(
     );
   }
 
-  const session = await getSession();
+  const session = await getRequestSession(request);
   if (!session) {
     return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   }
