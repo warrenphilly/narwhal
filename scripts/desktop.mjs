@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
@@ -17,7 +17,32 @@ function portFree(port) {
   });
 }
 
+function freePort(port) {
+  try {
+    if (process.platform === "darwin" || process.platform === "linux") {
+      const pids = execSync(`lsof -tiTCP:${port} -sTCP:LISTEN`, { encoding: "utf8" })
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+      for (const pid of pids) {
+        try {
+          process.kill(Number(pid), "SIGTERM");
+        } catch {
+          /* already gone */
+        }
+      }
+    }
+  } catch {
+    /* nothing listening */
+  }
+}
+
 async function pickPort(start) {
+  if (!(await portFree(start))) {
+    console.log(`  Freeing busy port ${start}…`);
+    freePort(start);
+    await new Promise((resolve) => setTimeout(resolve, 600));
+  }
   for (let port = start; port < start + 20; port += 1) {
     if (await portFree(port)) return port;
   }
@@ -47,7 +72,7 @@ function runDetached(command, args, extraEnv = {}) {
 }
 
 async function waitForServer(url) {
-  for (let i = 0; i < 80; i += 1) {
+  for (let i = 0; i < 120; i += 1) {
     try {
       const response = await fetch(url);
       if (response.ok || response.status === 307 || response.status === 404) return;
@@ -84,7 +109,7 @@ function buildIsStale() {
 console.log("");
 console.log("  Narwhal is Cinema in a desktop window.");
 if (port !== preferred) {
-  console.log(`  Port ${preferred} is already in use (old Next/Narwhal).`);
+  console.log(`  Port ${preferred} is still busy after cleanup.`);
   console.log(`  Using a fresh server at ${url}`);
 } else {
   console.log(`  Starting the web app at ${url}`);
@@ -92,10 +117,13 @@ if (port !== preferred) {
 
 let next;
 if (useDev) {
-  console.log("  Mode: development (slow — use only while editing code).");
-  next = runDetached("npx", ["next", "dev", "--hostname", "127.0.0.1", "--port", String(port)], {
-    PORT: String(port),
-  });
+  console.log("  Mode: development (webpack — more stable with Tailwind/PostCSS).");
+  // Turbopack + @tailwindcss/postcss has been crashing loaders ("failed to receive message").
+  next = runDetached(
+    "npx",
+    ["next", "dev", "--webpack", "--hostname", "127.0.0.1", "--port", String(port)],
+    { PORT: String(port) }
+  );
 } else {
   if (buildIsStale()) {
     console.log("  Source is newer than the last production build — compiling…");

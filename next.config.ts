@@ -1,7 +1,10 @@
 import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 
 const onVercel = Boolean(process.env.VERCEL);
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 function localDevOrigins() {
   const origins = new Set(["localhost", "127.0.0.1", "[::1]", "0.0.0.0"]);
@@ -40,6 +43,10 @@ function localDevOrigins() {
 }
 
 const nextConfig: NextConfig = {
+  // Parent folder (_DEV) has its own package-lock; pin Turbopack to this app.
+  turbopack: {
+    root: projectRoot,
+  },
   // Standalone is only for Electron packaging — never on Vercel.
   ...(onVercel ? {} : { output: "standalone" as const }),
   // Keep desktop tooling out of serverless traces / deploy payloads.

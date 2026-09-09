@@ -15,7 +15,7 @@ console.log("");
 
 const child = spawn(
   "npx",
-  ["next", "dev", "--hostname", host, "--port", String(port)],
+  ["next", "dev", "--webpack", "--hostname", host, "--port", String(port)],
   { stdio: "inherit", shell: process.platform === "win32" }
 );
 
