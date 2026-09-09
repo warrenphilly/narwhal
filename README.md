@@ -91,14 +91,40 @@ Dev (hot reload): `npm run dev` → **http://127.0.0.1:3000**
 
 Run Narwhal on the **same LAN as Jellyfin** so phones and browsers can play.
 
-1. Open Dockge → **Compose** → create a stack named `narwhal`.
-2. Paste the contents of [`compose.yaml`](./compose.yaml) from this repo (or clone the repo into the stack folder and use `build: .`).
-3. Click **Deploy** / **Update**. First build takes a few minutes (downloads Node + compiles the app).
-4. On your phone (home Wi‑Fi), open `http://YOUR-SERVER-IP:3000`.
-5. Sign in with Jellyfin, e.g. `http://10.88.111.25:8096`.
+**TrueNAS / Dockge (recommended):** clone into your stack folder, then build locally.
+Remote `https://github.com/...` builds often fail on Dockge.
 
-If Jellyfin runs on the **same Docker host**, you can also try `http://host.docker.internal:8096`.  
-If Jellyfin is another Dockge stack, put both on one Docker network and use `http://jellyfin:8096` (match the real service name).
+```bash
+# SSH into your NAS (or use Shell)
+cd /mnt/tank/stacks/arr
+git clone https://github.com/warrenphilly/narwhal.git narwhal
+```
+
+Then under your existing `services:` (same indent as `jellyfin:`), add:
+
+```yaml
+  narwhal:
+    build:
+      context: ./narwhal
+      dockerfile: Dockerfile
+    image: narwhal:local
+    container_name: narwhal
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+    environment:
+      - NODE_ENV=production
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
+```
+
+Click **Update** / **Deploy**. First build takes several minutes.
+
+1. Open `http://YOUR-SERVER-IP:3000` on your phone (home Wi‑Fi).
+2. Sign in with Jellyfin as `http://jellyfin:8096` (same stack) or `http://10.88.111.25:8096`.
+
+**Check logs if it won’t start:** in Dockge → `narwhal` → Logs.  
+Or: `docker logs narwhal` and `docker compose -f /mnt/tank/stacks/arr/compose.yaml logs narwhal --tail 100`.
 
 **Do not use the Vercel URL for home-LAN playback** — the cloud cannot reach `10.x` / `192.168.x` addresses.
 
