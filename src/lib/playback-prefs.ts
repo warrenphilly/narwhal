@@ -12,7 +12,8 @@ const KEY = "narwhal-playback-prefs";
 export const DEFAULT_PLAYBACK_PREFS: PlaybackPrefs = {
   subtitlePadTop: 5,
   subtitlePadBottom: 12,
-  showsStartFullscreen: true,
+  // Fullscreen is a manual toggle; opt-in via player settings if you want auto for episodes.
+  showsStartFullscreen: false,
 };
 
 function clampPad(value: number) {

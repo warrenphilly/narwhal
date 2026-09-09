@@ -558,13 +558,28 @@ export async function fetchPlayableId(userId: string, item: JellyfinItem) {
 }
 
 export async function fetchMovie(userId: string, id: string) {
+  // Direct browser → Jellyfin first (works on desktop / same Wi‑Fi).
   try {
-    const data = await jf<JellyfinItem>(
+    const direct = await jfDirect<JellyfinItem>(
+      `Users/${encodeURIComponent(userId)}/Items/${encodeURIComponent(id)}?Fields=${ITEM_FIELDS}`
+    );
+    if (direct?.Id) return { ...direct, Id: String(direct.Id || id), Name: direct.Name || "Untitled" };
+  } catch {
+    /* try other paths */
+  }
+
+  // Cloud https:// pages cannot usefully proxy home LAN Jellyfin — skip the 500.
+  if (cloudCannotReachHomeJellyfin()) {
+    throw new Error(unreachableTitleHint());
+  }
+
+  try {
+    const data = await jfViaProxy<JellyfinItem>(
       `Users/${encodeURIComponent(userId)}/Items/${encodeURIComponent(id)}?Fields=${ITEM_FIELDS}`
     );
     if (data?.Id) return { ...data, Id: String(data.Id || id), Name: data.Name || "Untitled" };
   } catch {
-    /* fall through to Narwhal proxy */
+    /* fall through */
   }
 
   const { apiFetch } = await import("@/lib/api-session");
@@ -580,12 +595,31 @@ export async function fetchMovie(userId: string, id: string) {
   return data;
 }
 
-function unreachableTitleHint() {
+function cloudCannotReachHomeJellyfin() {
+  if (typeof window === "undefined") return false;
+  const httpsPage = window.location.protocol === "https:";
+  const host = window.location.hostname;
+  const onVercel = host.endsWith(".vercel.app") || host.includes("narwhal");
   const direct = getConnection();
-  const httpsPage = typeof window !== "undefined" && window.location.protocol === "https:";
-  const httpJellyfin = Boolean(direct?.serverUrl?.startsWith("http://"));
-  if (httpsPage && httpJellyfin) {
-    return "This secure website cannot reach your home http:// Jellyfin. Use the Narwhal desktop app on Wi‑Fi, or sign in with a Tailscale / HTTPS Jellyfin address.";
+  if (!direct?.serverUrl) return httpsPage && onVercel;
+  try {
+    const jellyHost = new URL(direct.serverUrl).hostname;
+    const lan =
+      jellyHost === "localhost" ||
+      jellyHost === "127.0.0.1" ||
+      jellyHost.startsWith("10.") ||
+      jellyHost.startsWith("192.168.") ||
+      jellyHost.startsWith("100.") ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(jellyHost);
+    return httpsPage && lan;
+  } catch {
+    return httpsPage;
+  }
+}
+
+function unreachableTitleHint() {
+  if (cloudCannotReachHomeJellyfin()) {
+    return "This website cannot reach your home Jellyfin from the cloud. Use the Narwhal desktop app on Wi‑Fi, or sign in with a public / HTTPS Jellyfin address.";
   }
   return "Could not open this title. Check that this device can reach Jellyfin.";
 }

@@ -153,7 +153,6 @@ export function VideoPlayer({
   const [fullscreen, setFullscreen] = useState(false);
   const [playbackPrefs, setPlaybackPrefs] = useState<PlaybackPrefs>(() => loadPlaybackPrefs());
   const rootRef = useRef<HTMLDivElement>(null);
-  const didAutoFullscreen = useRef(false);
   const isShow = item.Type === "Episode";
   const resume = startFresh ? 0 : applyProfile(item).UserData?.PlaybackPositionTicks ?? 0;
   const resumeSeconds =
@@ -616,21 +615,6 @@ export function VideoPlayer({
     };
   }, []);
 
-  useEffect(() => {
-    didAutoFullscreen.current = false;
-  }, [item.Id]);
-
-  useEffect(() => {
-    if (!isShow || !playbackPrefs.showsStartFullscreen || didAutoFullscreen.current) return;
-    const node = rootRef.current;
-    if (!node || document.fullscreenElement) return;
-    didAutoFullscreen.current = true;
-    const timer = window.setTimeout(() => {
-      void node.requestFullscreen().catch(() => undefined);
-    }, 250);
-    return () => window.clearTimeout(timer);
-  }, [isShow, playbackPrefs.showsStartFullscreen, item.Id, synced]);
-
   function updatePlaybackPrefs(patch: Partial<PlaybackPrefs>) {
     setPlaybackPrefs((current) => savePlaybackPrefs({ ...current, ...patch }));
   }
@@ -898,17 +882,6 @@ export function VideoPlayer({
                           }
                           className="mt-2 h-2 w-full accent-[#00A4DC]"
                         />
-                      </label>
-                      <label className="flex items-start gap-2 text-sm text-white/75">
-                        <input
-                          type="checkbox"
-                          className="mt-1"
-                          checked={playbackPrefs.showsStartFullscreen}
-                          onChange={(event) =>
-                            updatePlaybackPrefs({ showsStartFullscreen: event.target.checked })
-                          }
-                        />
-                        Start episodes in fullscreen
                       </label>
                     </div>
                   )}

@@ -28,7 +28,30 @@ export function applyTunnelHeaders(headers: Headers, auth?: TunnelAuth) {
   }
 }
 
+/** Home/LAN addresses the Vercel cloud host cannot dial (causes platform 500s). */
+export function isLanOnlyHost(hostname: string) {
+  const host = hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
+  if (host.startsWith("10.") || host.startsWith("192.168.") || host.startsWith("100.")) return true;
+  return /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
+}
+
+export function assertCloudCanReachJellyfin(url: string) {
+  if (!process.env.VERCEL) return;
+  let host = "";
+  try {
+    host = new URL(url).hostname;
+  } catch {
+    return;
+  }
+  if (!isLanOnlyHost(host)) return;
+  throw new Error(
+    "This cloud website cannot reach your home Jellyfin. Use the Narwhal desktop app on Wi‑Fi, or sign in with a public / HTTPS Jellyfin address (for example Tailscale Serve)."
+  );
+}
+
 export function jellyfinFetch(url: string, init: RequestInit, options?: TunnelAuth) {
+  assertCloudCanReachJellyfin(url);
   const timeoutMs = options?.timeoutMs;
   let signal = init.signal;
   if (timeoutMs && timeoutMs > 0) {

@@ -185,16 +185,7 @@ function AppSettingsDialog({
         </form>
 
         <div className="space-y-3 border-t border-zinc-200 pt-4 dark:border-white/10">
-          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Shows & subtitles</p>
-          <label className="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-            <input
-              type="checkbox"
-              className="mt-0.5"
-              checked={playback.showsStartFullscreen}
-              onChange={(event) => updatePlayback({ showsStartFullscreen: event.target.checked })}
-            />
-            Start TV episodes in fullscreen
-          </label>
+          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Subtitles</p>
           <div className="space-y-1.5">
             <Label htmlFor="sub-pad-top">
               Subtitle top padding ({playback.subtitlePadTop}vh)
