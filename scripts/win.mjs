@@ -36,8 +36,9 @@ function findFile(root, match) {
 }
 
 console.log("Building Narwhal for Windows…");
-// Must use webpack — Turbopack standalone breaks /api routes in the packaged app.
-await run("npx", ["next", "build", "--webpack"]);
+// Turbopack standalone needs app-route runtimes patched in before packaging.
+await run("npx", ["next", "build"]);
+await run("node", ["scripts/fix-standalone.mjs"]);
 await run("npx", ["electron-builder", "--win", "nsis"]);
 
 const dist = path.join(process.cwd(), "dist");
