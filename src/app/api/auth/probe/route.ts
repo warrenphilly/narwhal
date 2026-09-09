@@ -7,6 +7,8 @@ import {
   looksLikeCloudflareAccess,
 } from "@/lib/jellyfin-request";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   let serverUrl = "";
   try {

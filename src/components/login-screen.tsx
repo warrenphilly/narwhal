@@ -33,8 +33,14 @@ export function LoginScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(tunnelFields),
       });
-      const data = (await response.json()) as { ok?: boolean; message?: string };
-      if (data.ok) {
+      const raw = await response.text();
+      let data: { ok?: boolean; message?: string } | null = null;
+      try {
+        data = raw ? (JSON.parse(raw) as { ok?: boolean; message?: string }) : null;
+      } catch {
+        data = null;
+      }
+      if (data?.ok) {
         setProbeMessage(data.message || "Reached Jellyfin.");
         return;
       }
@@ -42,7 +48,10 @@ export function LoginScreen() {
       setProbeMessage(
         fromBrowser
           ? "This browser can see Jellyfin, but Narwhal’s server cannot. Use http://127.0.0.1:3000 on this computer."
-          : data.message || "Nothing answered on that address."
+          : data?.message ||
+              (response.status >= 500
+                ? "Probe API crashed (Internal Server Error)."
+                : "Nothing answered on that address.")
       );
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : "Probe failed.");

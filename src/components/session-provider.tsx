@@ -62,6 +62,15 @@ function isLocalJellyfinHost(serverUrl: string) {
   }
 }
 
+function nonJsonLoginMessage(status: number, localHost: boolean) {
+  if (status >= 500) {
+    return localHost
+      ? "Narwhal’s login API crashed. On the desktop app this usually means a rebuild is needed; on the website, use Tailscale or the desktop app on home Wi‑Fi."
+      : "Narwhal’s login API crashed. Try again, or use the desktop app.";
+  }
+  return `Sign-in failed (${status || "network"}). The server returned a web page instead of JSON.`;
+}
+
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -163,22 +172,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }) => {
       setError(null);
       const localHost = isLocalJellyfinHost(input.serverUrl);
-
-      // Home Wi‑Fi / Tailscale: talk to Jellyfin from this device first.
-      // Cloud servers often cannot reach those private addresses.
-      if (localHost) {
-        try {
-          await signInWithBrowser(input);
-          return;
-        } catch (browserError) {
-          // Fall through to app-server login (Electron can still proxy LAN).
-          if (!(browserError instanceof Error)) {
-            /* continue */
-          }
-        }
-      }
-
       let serverError = "Could not sign in.";
+
+      // Desktop / local Narwhal can reach home LAN directly — try that first.
       try {
         const response = await fetch("/api/auth/login", {
           method: "POST",
@@ -186,19 +182,28 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           body: JSON.stringify(input),
         });
         const data = await readJsonSafe<SessionInfo & { error?: string }>(response);
-        if (!data) {
-          serverError =
-            response.status >= 500
-              ? "Narwhal’s login API is not responding. Try the desktop app on your home network."
-              : `Sign-in failed (${response.status}). The server returned a web page instead of JSON.`;
-        } else if (response.ok) {
+        if (data && response.ok) {
           finishSignIn({ ...data, signedIn: true });
           return;
-        } else {
-          serverError = data.error || serverError;
         }
-      } catch {
-        serverError = "Could not reach Narwhal’s login API.";
+        if (data?.error) {
+          serverError = data.error;
+          // Wrong password from the API — don't mask it with a browser retry.
+          if (response.status === 401 && /wrong username or password/i.test(data.error)) {
+            setError(serverError);
+            throw new Error(serverError);
+          }
+        } else {
+          serverError = nonJsonLoginMessage(response.status, localHost);
+        }
+      } catch (err) {
+        if (err instanceof Error && /wrong username or password/i.test(err.message)) {
+          throw err;
+        }
+        // Only replace the message for real network failures, not our own throws.
+        if (err instanceof TypeError || (err instanceof Error && /fetch|network/i.test(err.message))) {
+          serverError = "Could not reach Narwhal’s login API.";
+        }
       }
 
       try {
@@ -208,8 +213,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           browserError instanceof Error && browserError.message
             ? browserError.message
             : serverError;
-        setError(message);
-        throw new Error(message);
+        // Prefer the clearer server hint when browser is blocked from LAN http.
+        const combined =
+          localHost && /could not reach|blocked|Failed to fetch/i.test(message)
+            ? `${serverError} ${message}`
+            : message || serverError;
+        setError(combined);
+        throw new Error(combined);
       }
     },
     [finishSignIn, signInWithBrowser]

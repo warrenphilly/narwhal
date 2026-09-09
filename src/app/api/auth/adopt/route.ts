@@ -9,6 +9,8 @@ import {
 } from "@/lib/session";
 import { jellyfinFetch } from "@/lib/jellyfin-request";
 
+export const runtime = "nodejs";
+
 type Body = {
   serverUrl?: string;
   token?: string;

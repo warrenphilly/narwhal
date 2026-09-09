@@ -16,6 +16,8 @@ import {
 } from "@/lib/jellyfin-request";
 import type { JellyfinAuthResult } from "@/lib/jellyfin-types";
 
+export const runtime = "nodejs";
+
 type LoginBody = {
   serverUrl?: string;
   username?: string;
