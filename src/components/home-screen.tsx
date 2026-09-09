@@ -86,9 +86,9 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
       movieOnly || mixed ? fetchUnplayedRecent(userId, "Movie").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
       !movieOnly ? fetchUnplayedRecent(userId, "Episode").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
       !movieOnly ? fetchUnplayedRecent(userId, "Series").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
-      movieOnly || mixed ? fetchMovies(userId).catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
-      !movieOnly ? fetchShows(userId).catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
-      fetchViews(userId).catch(() => [] as JellyfinItem[]),
+      movieOnly || mixed ? fetchMovies(userId) : Promise.resolve([] as JellyfinItem[]),
+      !movieOnly ? fetchShows(userId) : Promise.resolve([] as JellyfinItem[]),
+      fetchViews(userId),
     ])
       .then(([
         resume,

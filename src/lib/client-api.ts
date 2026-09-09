@@ -1,5 +1,5 @@
 import type { JellyfinItem, JellyfinItemsResult, MediaStream, PlaybackInfo } from "@/lib/jellyfin-types";
-import { getConnection } from "@/lib/jellyfin-connection";
+import { authHeader, getConnection } from "@/lib/jellyfin-connection";
 import { BROWSER_DEVICE_PROFILE } from "@/lib/device-profile";
 
 const ITEM_FIELDS =
@@ -9,14 +9,26 @@ const LIST_FIELDS =
   "Overview,Genres,ProductionYear,DateCreated,PremiereDate,CommunityRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,ChildCount";
 
 function asItemList(data: unknown): JellyfinItem[] {
+  const normalize = (row: unknown): JellyfinItem | null => {
+    if (!row || typeof row !== "object") return null;
+    const item = row as JellyfinItem & { id?: string; name?: string };
+    const id = item.Id || item.id;
+    if (!id) return null;
+    return {
+      ...item,
+      Id: String(id),
+      Name: String(item.Name ?? item.name ?? "Untitled"),
+    };
+  };
+
   if (Array.isArray(data)) {
-    return data.filter((row): row is JellyfinItem => Boolean(row && ((row as JellyfinItem).Id || (row as { id?: string }).id)));
+    return data.map(normalize).filter((row): row is JellyfinItem => Boolean(row));
   }
   if (data && typeof data === "object") {
-    const obj = data as { Items?: JellyfinItem[]; items?: JellyfinItem[] };
+    const obj = data as { Items?: unknown[]; items?: unknown[] };
     const items = obj.Items ?? obj.items;
     if (Array.isArray(items)) {
-      return items.filter((row) => Boolean(row && (row.Id || (row as { id?: string }).id)));
+      return items.map(normalize).filter((row): row is JellyfinItem => Boolean(row));
     }
   }
   return [];
@@ -25,10 +37,52 @@ function asItemList(data: unknown): JellyfinItem[] {
 async function parseBody<T>(response: Response): Promise<T> {
   const text = await response.text();
   if (!text) return {} as T;
-  return JSON.parse(text) as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error("Jellyfin returned a non-JSON reply.");
+  }
+}
+
+async function jfDirect<T>(path: string, init?: RequestInit): Promise<T | null> {
+  const direct = getConnection();
+  if (!direct?.serverUrl || !direct.token) return null;
+  const [pathname, query = ""] = path.split("?");
+  const url = `${direct.serverUrl}/${pathname}${query ? `?${query}` : ""}`;
+  const headers = new Headers(init?.headers);
+  headers.set("Authorization", authHeader(direct.deviceId, direct.token));
+  headers.set("X-Emby-Token", direct.token);
+  if (!headers.has("Content-Type") && init?.body) {
+    headers.set("Content-Type", "application/json");
+  }
+  const response = await fetch(url, { ...init, headers, cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(
+      response.status === 401 || response.status === 403
+        ? "Jellyfin session expired. Sign out and sign in again."
+        : `Jellyfin returned ${response.status}.`
+    );
+  }
+  return parseBody<T>(response);
 }
 
 async function jf<T>(path: string, init?: RequestInit): Promise<T> {
+  // Prefer the browser’s stored Jellyfin token (works even when the cookie adopt step fails).
+  try {
+    const direct = await jfDirect<T>(path, init);
+    if (direct !== null) return direct;
+  } catch (directError) {
+    // Fall through to Narwhal proxy; keep the direct error if proxy also fails.
+    try {
+      return await jfViaProxy<T>(path, init);
+    } catch {
+      throw directError;
+    }
+  }
+  return jfViaProxy<T>(path, init);
+}
+
+async function jfViaProxy<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   let proxy: Response;
   try {
@@ -43,6 +97,9 @@ async function jf<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (proxy.ok) return parseBody<T>(proxy);
   const data = (await proxy.json().catch(() => null)) as { error?: string } | null;
+  if (proxy.status === 401 || proxy.status === 403) {
+    throw new Error(data?.error || "Sign in expired. Sign out and sign in again.");
+  }
   throw new Error(data?.error || `Jellyfin request failed (${proxy.status})`);
 }
 
@@ -153,9 +210,15 @@ function libraryParams(userId: string, itemType: "Movie" | "Series", parentId?: 
 }
 
 export async function fetchViews(userId: string) {
-  return asItemList(
-    await jf<JellyfinItemsResult | JellyfinItem[]>(`Users/${encodeURIComponent(userId)}/Views`).catch(() => [])
-  );
+  const paths = [
+    `Users/${encodeURIComponent(userId)}/Views`,
+    `Users/${encodeURIComponent(userId)}/Items?Recursive=false&Limit=50&Fields=CollectionType,ChildCount`,
+  ];
+  for (const path of paths) {
+    const items = asItemList(await jf<JellyfinItemsResult | JellyfinItem[]>(path));
+    if (items.length) return items;
+  }
+  return [];
 }
 
 function viewMatches(view: JellyfinItem, itemType: "Movie" | "Series") {
@@ -170,22 +233,35 @@ async function fetchLibrary(userId: string, itemType: "Movie" | "Series") {
     `Users/${encodeURIComponent(userId)}/Items?${libraryParams(userId, itemType).toString()}`,
     `Items?${libraryParams(userId, itemType).toString()}`,
   ];
+  let lastError: unknown = null;
   for (const path of paths) {
-    const items = asItemList(await jf<JellyfinItemsResult | JellyfinItem[]>(path).catch(() => []));
-    if (items.length) return items;
+    try {
+      const items = asItemList(await jf<JellyfinItemsResult | JellyfinItem[]>(path));
+      if (items.length) return items;
+    } catch (error) {
+      lastError = error;
+    }
   }
 
   const views = await fetchViews(userId);
   const collected: JellyfinItem[] = [];
   for (const view of views.filter((row) => viewMatches(row, itemType))) {
-    const page = asItemList(
-      await jf<JellyfinItemsResult | JellyfinItem[]>(
-        `Users/${encodeURIComponent(userId)}/Items?${libraryParams(userId, itemType, view.Id).toString()}`
-      ).catch(() => [])
-    );
-    collected.push(...page);
+    try {
+      const page = asItemList(
+        await jf<JellyfinItemsResult | JellyfinItem[]>(
+          `Users/${encodeURIComponent(userId)}/Items?${libraryParams(userId, itemType, view.Id).toString()}`
+        )
+      );
+      collected.push(...page);
+    } catch (error) {
+      lastError = error;
+    }
   }
-  return uniqueItems(collected);
+  if (collected.length) return uniqueItems(collected);
+  if (lastError instanceof Error && /sign in|session expired|401|403/i.test(lastError.message)) {
+    throw lastError;
+  }
+  return [];
 }
 
 export async function fetchLibraryPage(itemType: "Movie" | "Series") {

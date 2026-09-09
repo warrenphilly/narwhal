@@ -60,16 +60,18 @@ export async function POST(request: Request) {
         `${session.serverUrl}/Users/${encodeURIComponent(session.userId)}`,
         {
           method: "GET",
-          headers: { Authorization: authHeader(session) },
+          headers: {
+            Authorization: authHeader(session),
+            "X-Emby-Token": session.token,
+          },
         },
         { timeoutMs: 12000 }
       );
-      if (probe.status === 401 || probe.status === 403) {
-        return NextResponse.json({ error: "Jellyfin rejected this session." }, { status: 401 });
-      }
+      // Never block adopt on probe — cookie is required for /api/jf library calls.
+      // A false 401 here was leaving the UI “signed in” with an empty library.
+      void probe;
     } catch {
-      // Narwhal cloud often cannot reach home LAN / Tailscale. Keep the
-      // browser-authenticated session anyway for desktop / local use.
+      // Narwhal cloud often cannot reach home LAN / Tailscale.
     }
 
     return adoptResponse(session);

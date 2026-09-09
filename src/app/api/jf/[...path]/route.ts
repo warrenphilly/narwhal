@@ -46,6 +46,7 @@ async function proxy(request: NextRequest, path: string[]) {
   const range = request.headers.get("range");
   if (range) headers.set("Range", range);
   headers.set("Authorization", authHeader(session));
+  headers.set("X-Emby-Token", session.token);
   headers.set("Accept-Encoding", "identity");
 
   try {
