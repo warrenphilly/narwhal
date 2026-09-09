@@ -46,15 +46,35 @@ export default function ChannelsPage() {
   const [alwaysOn, setAlwaysOn] = useState(true);
   const [hours, setHours] = useState(6);
   const [editing, setEditing] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    function onRefresh() {
+      setReady(false);
+      setReloadKey((value) => value + 1);
+    }
+    window.addEventListener("narwhal-refresh", onRefresh);
+    return () => window.removeEventListener("narwhal-refresh", onRefresh);
+  }, []);
 
   useEffect(() => {
     if (!session?.userId) return;
+    let cancelled = false;
     setChannels(loadChannels(session.userId));
     Promise.all([fetchMovies(session.userId), fetchShows(session.userId)])
-      .then(([movies, shows]) => setCatalog([...movies, ...shows]))
-      .catch(() => setCatalog([]))
-      .finally(() => setReady(true));
-  }, [session?.userId]);
+      .then(([movies, shows]) => {
+        if (!cancelled) setCatalog([...movies, ...shows]);
+      })
+      .catch(() => {
+        if (!cancelled) setCatalog([]);
+      })
+      .finally(() => {
+        if (!cancelled) setReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.userId, reloadKey]);
 
   const active = channels.find((row) => row.id === editing) ?? null;
 

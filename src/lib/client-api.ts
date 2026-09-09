@@ -172,6 +172,7 @@ function connectionSid() {
     .replace(/=+$/, "");
 }
 
+/** Progressive MP4/direct play — prefer Jellyfin itself so desktop doesn’t depend on the cookie proxy. */
 export function streamUrl(
   itemId: string,
   _info?: PlaybackInfo | null,
@@ -180,6 +181,17 @@ export function streamUrl(
   startTicks = 0,
   hardTranscode = false
 ) {
+  const direct = getConnection();
+  if (direct?.serverUrl && direct.token && !forceTranscode && !hardTranscode) {
+    const stream = new URL(`${direct.serverUrl}/Videos/${encodeURIComponent(itemId)}/stream`);
+    stream.searchParams.set("api_key", direct.token);
+    stream.searchParams.set("static", "true");
+    stream.searchParams.set("Static", "true");
+    if (typeof audioIndex === "number") stream.searchParams.set("AudioStreamIndex", String(audioIndex));
+    if (startTicks > 0) stream.searchParams.set("StartTimeTicks", String(Math.round(startTicks)));
+    return stream.toString();
+  }
+
   const params = new URLSearchParams();
   if (forceTranscode || hardTranscode) params.set("transcode", "1");
   if (hardTranscode) params.set("hard", "1");

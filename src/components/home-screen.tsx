@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { HeroBanner } from "@/components/hero-banner";
 import { NarwhalSpinner } from "@/components/narwhal-spinner";
+import { PageRefreshButton, REFRESH_EVENT } from "@/components/page-refresh";
 import { Shelf } from "@/components/shelf";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -59,6 +60,7 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
   const [snap, setSnap] = useState<HomeSnap | undefined>(cached);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(Boolean(cached));
+  const [reloadKey, setReloadKey] = useState(0);
   const [groups, setGroups] = useState<GroupStore>({ order: [], extra: [], assign: {} });
   const [organize, setOrganize] = useState(false);
   const [moving, setMoving] = useState<JellyfinItem | null>(null);
@@ -68,42 +70,71 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
   const [libraryHint, setLibraryHint] = useState<string | null>(null);
 
   useEffect(() => {
+    function onRefresh() {
+      setLoaded(false);
+      setReloadKey((value) => value + 1);
+    }
+    window.addEventListener(REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(REFRESH_EVENT, onRefresh);
+  }, []);
+
+  // First boot sometimes hangs on the spinner — soft-retry once after a few seconds.
+  useEffect(() => {
+    if (!signedIn || loaded) return;
+    const flag = `narwhal-auto-refresh:${tab}`;
+    if (window.sessionStorage.getItem(flag) === "1") return;
+    const timer = window.setTimeout(() => {
+      window.sessionStorage.setItem(flag, "1");
+      clearHomeCache();
+      setReloadKey((value) => value + 1);
+    }, 4500);
+    return () => window.clearTimeout(timer);
+  }, [signedIn, loaded, tab]);
+
+  useEffect(() => {
     if (!signedIn || !session?.userId) return;
     let cancelled = false;
     const userId = session.userId;
     const key = homeCacheKey(userId, tab);
-    const existing = getHomeCache(key);
+    const existing = reloadKey === 0 ? getHomeCache(key) : undefined;
     if (existing) {
       setSnap(existing);
       setLoaded(true);
+    } else {
+      setLoaded(false);
     }
 
     const mixed = tab === "home";
     const movieOnly = tab === "movies";
-    Promise.all([
-      fetchResume(userId).catch(() => [] as JellyfinItem[]),
-      movieOnly || mixed ? fetchLatest(userId, "Movie").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
-      !movieOnly ? fetchLatest(userId, "Series").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
-      !movieOnly ? fetchLatest(userId, "Episode").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
-      movieOnly || mixed ? fetchUnplayedRecent(userId, "Movie").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
-      !movieOnly ? fetchUnplayedRecent(userId, "Episode").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
-      !movieOnly ? fetchUnplayedRecent(userId, "Series").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
-      movieOnly || mixed ? fetchMovies(userId) : Promise.resolve([] as JellyfinItem[]),
-      !movieOnly ? fetchShows(userId) : Promise.resolve([] as JellyfinItem[]),
-      fetchViews(userId),
-    ])
-      .then(([
-        resume,
-        latestMovies,
-        latestShows,
-        extraLatest,
-        unplayedMovies,
-        unplayedEpisodes,
-        extraUnplayed,
-        movies,
-        shows,
-        views,
-      ]) => {
+
+    (async () => {
+      try {
+        const { ensureServerSession } = await import("@/lib/api-session");
+        await ensureServerSession();
+        if (cancelled) return;
+        const [
+          resume,
+          latestMovies,
+          latestShows,
+          extraLatest,
+          unplayedMovies,
+          unplayedEpisodes,
+          extraUnplayed,
+          movies,
+          shows,
+          views,
+        ] = await Promise.all([
+          fetchResume(userId).catch(() => [] as JellyfinItem[]),
+          movieOnly || mixed ? fetchLatest(userId, "Movie").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
+          !movieOnly ? fetchLatest(userId, "Series").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
+          !movieOnly ? fetchLatest(userId, "Episode").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
+          movieOnly || mixed ? fetchUnplayedRecent(userId, "Movie").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
+          !movieOnly ? fetchUnplayedRecent(userId, "Episode").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
+          !movieOnly ? fetchUnplayedRecent(userId, "Series").catch(() => [] as JellyfinItem[]) : Promise.resolve([] as JellyfinItem[]),
+          movieOnly || mixed ? fetchMovies(userId) : Promise.resolve([] as JellyfinItem[]),
+          !movieOnly ? fetchShows(userId) : Promise.resolve([] as JellyfinItem[]),
+          fetchViews(userId),
+        ]);
         if (cancelled) return;
         const next: HomeSnap = {
           resume,
@@ -130,7 +161,7 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
                 setLibraryHint(`Jellyfin blocked library access (HTTP ${status.views.status}). Sign out and sign in again.`);
               } else if (enableAll === false && enabled.length === 0) {
                 setLibraryHint(
-                  "Jellyfin user policy has no folders enabled. In Jellyfin Web → Dashboard → Users → warrenphilly → enable “Allow access to all libraries” (or tick Movies/TV), then Save, then sign out/in here."
+                  "Jellyfin user policy has no folders enabled. In Jellyfin Web → Dashboard → Users → enable library access → Save, then sign out/in here."
                 );
               } else if (libs.length) {
                 setLibraryHint(
@@ -148,18 +179,17 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
         } else {
           setLibraryHint(null);
         }
-      })
-      .catch((err: unknown) => {
+      } catch (err: unknown) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Could not load your library.");
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoaded(true);
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [signedIn, session?.userId, tab]);
+  }, [signedIn, session?.userId, tab, reloadKey]);
 
   useEffect(() => {
     if (!session?.userId) return;
@@ -290,6 +320,7 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
           </p>
         )}
         <div className="glass-panel glass-edge flex w-full min-w-0 flex-col gap-1.5 rounded-2xl p-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 sm:p-2.5">
+          <PageRefreshButton />
           <Button type="button" variant={organize ? "default" : "outline"} size="sm" className="h-8 w-full shrink-0 rounded-full px-3 text-xs sm:h-9 sm:w-auto sm:text-sm" onClick={() => setOrganize((value) => !value)}>
             {organize ? "Done organizing" : "Organize shelves"}
           </Button>

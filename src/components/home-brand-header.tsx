@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NarwhalMark } from "@/components/narwhal-mark";
+import { PageRefreshButton } from "@/components/page-refresh";
 
 function subtitleForPath(pathname: string) {
   if (pathname.startsWith("/movies") || pathname.startsWith("/movie/")) return "Movies";
@@ -37,6 +38,7 @@ export function HomeBrandHeader() {
           </span>
         </span>
       </Link>
+      <PageRefreshButton className="shrink-0" />
     </header>
   );
 }

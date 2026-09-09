@@ -227,8 +227,13 @@ export function VideoPlayer({
     setAudio(undefined);
     setSettingsOpen(false);
     if (!userId) return;
-    fetchPlaybackInfo(item.Id, userId)
-      .then((data) => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { ensureServerSession } = await import("@/lib/api-session");
+        await ensureServerSession();
+        const data = await fetchPlaybackInfo(item.Id, userId);
+        if (cancelled) return;
         setInfo(data);
         const audios = (data.MediaSources?.[0]?.MediaStreams ?? []).filter((stream) => stream.Type === "Audio");
         const defaultSound = audios.find((stream) => stream.IsDefault) ?? audios[0];
@@ -244,8 +249,13 @@ export function VideoPlayer({
         );
         const pick = match ?? english;
         if (pick && typeof pick.Index === "number") setTrack(String(pick.Index));
-      })
-      .catch(() => setInfo(null));
+      } catch {
+        if (!cancelled) setInfo(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [item.Id, userId]);
 
   useEffect(() => {

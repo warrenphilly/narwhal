@@ -43,7 +43,8 @@ async function play(request: NextRequest, itemId: string) {
     const range = request.headers.get("range");
     if (range && direct && start === 0) headers.set("Range", range);
     headers.set("Authorization", authHeader(auth));
-    headers.set("Accept-Encoding", "identity");
+  headers.set("X-Emby-Token", auth.token);
+  headers.set("Accept-Encoding", "identity");
     const response = await jellyfinFetch(target, { method: "GET", headers, redirect: "follow" }, { ...tunnelFromSession(auth) });
     return { response, direct };
   }

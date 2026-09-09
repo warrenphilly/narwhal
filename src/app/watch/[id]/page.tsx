@@ -15,31 +15,35 @@ export default function WatchPage() {
   const id = params.id;
   const { session, loading, preview } = useSession();
   const [item, setItem] = useState<JellyfinItem | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id || isDemoId(id) || !session?.userId) return;
     let cancelled = false;
-    fetch(`/api/item/${encodeURIComponent(id)}`, { cache: "no-store", credentials: "same-origin" })
-      .then(async (response) => {
-        const data = (await response.json()) as JellyfinItem & { error?: string };
-        if (!response.ok) throw new Error(data.error || "Could not load this title.");
-        return data;
-      })
-      .then((next) => {
-        if (cancelled) return;
-        if (next.Type === "Series") {
-          window.location.replace(`/show/${next.Id}`);
-          return;
-        }
-        if (next.Type === "Season" && next.SeriesId) {
-          window.location.replace(`/show/${next.SeriesId}`);
-          return;
-        }
-        setItem({ ...next, Id: next.Id || id });
-      })
-      .catch(() => {
-        if (!cancelled) setItem({ Id: id, Name: "" });
-      });
+    setError(null);
+    setItem(null);
+    (async () => {
+      const { apiFetch, ensureServerSession } = await import("@/lib/api-session");
+      await ensureServerSession();
+      const response = await apiFetch(`/api/item/${encodeURIComponent(id)}`);
+      const data = (await response.json().catch(() => null)) as (JellyfinItem & { error?: string }) | null;
+      if (cancelled) return;
+      if (!response.ok || !data?.Id) {
+        setError(data?.error || "Could not load this title.");
+        return;
+      }
+      if (data.Type === "Series") {
+        window.location.replace(`/show/${data.Id}`);
+        return;
+      }
+      if (data.Type === "Season" && data.SeriesId) {
+        window.location.replace(`/show/${data.SeriesId}`);
+        return;
+      }
+      setItem({ ...data, Id: data.Id || id });
+    })().catch(() => {
+      if (!cancelled) setError("Could not load this title.");
+    });
     return () => {
       cancelled = true;
     };
@@ -63,6 +67,22 @@ export default function WatchPage() {
           <div className="max-w-lg rounded-3xl border border-white/15 bg-white/5 p-8 text-center sm:p-10">
             <p className="text-2xl font-semibold text-white">Playback needs your server</p>
             <p className="mt-3 text-white/60">Sign in to stream from Jellyfin.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black">
+        <div className="absolute left-4 top-4">
+          <BackButton className="text-white hover:bg-white/10 hover:text-white" />
+        </div>
+        <div className="flex size-full items-center justify-center px-6">
+          <div className="max-w-lg rounded-3xl border border-white/15 bg-white/5 p-8 text-center sm:p-10">
+            <p className="text-2xl font-semibold text-white">Couldn’t open this title</p>
+            <p className="mt-3 text-white/60">{error}</p>
           </div>
         </div>
       </div>

@@ -63,6 +63,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const range = request.headers.get("range");
   if (range) headers.set("Range", range);
   headers.set("Authorization", authHeader(session));
+  headers.set("X-Emby-Token", session.token);
   headers.set("Accept-Encoding", "identity");
 
   let upstream: Response;
