@@ -16,7 +16,7 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function findFile(root, match) {
+function findNewestFile(root, match) {
   const matches = [];
   function walk(dir, depth) {
     if (depth > 3 || !fs.existsSync(dir)) return;
@@ -29,14 +29,15 @@ function findFile(root, match) {
         continue;
       }
       if (match(name, stat)) {
-        matches.push(full);
+        matches.push({ full, mtime: stat.mtimeMs });
         continue;
       }
       if (stat.isDirectory()) walk(full, depth + 1);
     }
   }
   walk(root, 0);
-  return matches[0];
+  matches.sort((a, b) => b.mtime - a.mtime);
+  return matches[0]?.full;
 }
 
 async function freeMacInstallLocks() {
@@ -45,6 +46,7 @@ async function freeMacInstallLocks() {
   await run("killall", ["Narwhal"], true);
   await run("hdiutil", ["detach", "/Volumes/Narwhal", "-force"], true);
   await run("hdiutil", ["detach", "/Volumes/Narwhal 0.1.0", "-force"], true);
+  await run("hdiutil", ["detach", "/Volumes/Narwhal 0.2.0", "-force"], true);
   await sleep(800);
 }
 
@@ -62,7 +64,7 @@ await run("npx", ["next", "build"]);
 await run("npx", ["electron-builder", "--mac", "dmg"]);
 
 const dist = path.join(process.cwd(), "dist");
-const dmg = findFile(dist, (name, stat) => stat.isFile() && name.endsWith(".dmg"));
+const dmg = findNewestFile(dist, (name, stat) => stat.isFile() && name.endsWith(".dmg"));
 
 if (!dmg) {
   throw new Error("The Mac app was built, but no .dmg was found in dist/.");

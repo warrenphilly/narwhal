@@ -10,6 +10,7 @@ import {
 } from "react";
 import { getConnection, rememberConnection, setConnection } from "@/lib/jellyfin-connection";
 import { browserSignIn } from "@/lib/jellyfin-browser";
+import { clearHomeCache } from "@/lib/home-cache";
 
 export type SessionInfo = {
   signedIn: boolean;
@@ -133,6 +134,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const finishSignIn = useCallback((data: SessionInfo & { token?: string; deviceId?: string }) => {
+    clearHomeCache();
     rememberConnection(data);
     window.sessionStorage.removeItem("cinema-preview");
     setPreview(false);

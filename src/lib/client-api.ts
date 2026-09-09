@@ -206,11 +206,19 @@ export async function fetchLibraryPage(itemType: "Movie" | "Series") {
   };
 }
 
-export async function fetchMovies(_userId?: string) {
+export async function fetchMovies(userId?: string) {
+  if (userId) {
+    const viaProxy = await fetchLibrary(userId, "Movie");
+    if (viaProxy.length) return viaProxy;
+  }
   return (await fetchLibraryPage("Movie")).items;
 }
 
-export async function fetchShows(_userId?: string) {
+export async function fetchShows(userId?: string) {
+  if (userId) {
+    const viaProxy = await fetchLibrary(userId, "Series");
+    if (viaProxy.length) return viaProxy;
+  }
   return (await fetchLibraryPage("Series")).items;
 }
 

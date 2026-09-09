@@ -37,24 +37,15 @@ import {
 } from "@/lib/library-groups";
 import { rememberTab, type MediaTab } from "@/lib/media-tab";
 import type { JellyfinItem } from "@/lib/jellyfin-types";
+import {
+  clearHomeCache,
+  getHomeCache,
+  homeCacheKey,
+  setHomeCache,
+  type HomeSnap,
+} from "@/lib/home-cache";
 
-type HomeSnap = {
-  resume: JellyfinItem[];
-  latest: JellyfinItem[];
-  extraLatest: JellyfinItem[];
-  unplayed: JellyfinItem[];
-  unplayedMovies: JellyfinItem[];
-  unplayedEpisodes: JellyfinItem[];
-  extraUnplayed: JellyfinItem[];
-  catalog: JellyfinItem[];
-  viewNames: string[];
-};
-
-const homeCache = new Map<string, HomeSnap>();
-
-function cacheKey(userId: string, tab: MediaTab) {
-  return `${userId}:${tab}`;
-}
+export { clearHomeCache };
 
 export function LibraryHome({ kind }: { kind: MediaTab }) {
   const { session } = useSession();
@@ -63,7 +54,7 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
     rememberTab(tab);
   }, [tab]);
   const signedIn = Boolean(session?.signedIn && session.userId);
-  const cached = signedIn && session?.userId ? homeCache.get(cacheKey(session.userId, tab)) : undefined;
+  const cached = signedIn && session?.userId ? getHomeCache(homeCacheKey(session.userId, tab)) : undefined;
   const [snap, setSnap] = useState<HomeSnap | undefined>(cached);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(Boolean(cached));
@@ -78,8 +69,8 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
     if (!signedIn || !session?.userId) return;
     let cancelled = false;
     const userId = session.userId;
-    const key = cacheKey(userId, tab);
-    const existing = homeCache.get(key);
+    const key = homeCacheKey(userId, tab);
+    const existing = getHomeCache(key);
     if (existing) {
       setSnap(existing);
       setLoaded(true);
@@ -123,7 +114,7 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
           catalog: uniqueItems([...movies, ...shows]),
           viewNames: views.map((view) => view.Name).filter(Boolean),
         };
-        homeCache.set(key, next);
+        setHomeCache(key, next);
         setSnap(next);
         setError(null);
       })
@@ -252,8 +243,8 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
             back.
             {snap?.viewNames.length
               ? ` Libraries on this user: ${snap.viewNames.join(", ")}.`
-              : " This user has no libraries enabled."}{" "}
-            Switch to Home network under Who&apos;s watching if the address is still a Tailscale 100.x URL.
+              : " Jellyfin returned no libraries for this user — in the Jellyfin dashboard open Users → this account → enable your movie/TV folders."}{" "}
+            Also confirm Home network is selected (not a dead Tailscale 100.x URL).
           </p>
         )}
         {!signedIn && (

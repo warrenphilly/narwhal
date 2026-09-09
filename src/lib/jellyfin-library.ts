@@ -3,7 +3,7 @@ import { jellyfinFetch, tunnelFromSession } from "@/lib/jellyfin-request";
 import { authHeader, type JellyfinSession } from "@/lib/session";
 
 const FIELDS =
-  "Genres,ProductionYear,DateCreated,PremiereDate,CommunityRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,ChildCount,CollectionType";
+  "Genres,ProductionYear,DateCreated,PremiereDate,CommunityRating,OfficialRating,RunTimeTicks,ImageTags,BackdropImageTags,UserData,SeriesName,SeriesId,ParentIndexNumber,IndexNumber,ChildCount,CollectionType,Path";
 
 function normalizeItem(row: unknown): JellyfinItem | null {
   if (!row || typeof row !== "object") return null;
@@ -59,8 +59,10 @@ async function jfJson(session: JellyfinSession, path: string, timeoutMs = 30_000
 
 function matchesType(item: JellyfinItem, itemType: "Movie" | "Series") {
   const type = (item.Type || "").toLowerCase();
+  // Jellyfin sometimes omits Type when Fields is set — trust IncludeItemTypes.
+  if (!type) return true;
   if (itemType === "Movie") return type === "movie" || type === "video";
-  return type === "series" || type === "season" && Boolean(item.SeriesId);
+  return type === "series" || (type === "season" && Boolean(item.SeriesId));
 }
 
 export type LibraryPayload = {
