@@ -444,14 +444,13 @@ export function VideoPlayer({
     let hls: Hls | null = null;
     if (usingHls) {
       if (Hls.isSupported()) {
-        void import("@/lib/api-session").then(({ apiHeaders, ensureServerSession }) => ensureServerSession());
+        void import("@/lib/api-session").then(({ ensureServerSession }) => ensureServerSession());
         hls = new Hls({
           maxBufferLength: 20,
           maxMaxBufferLength: 40,
           startFragPrefetch: true,
           xhrSetup(xhr) {
             try {
-              // Dynamic import may not be ready; set from localStorage directly.
               const raw = window.localStorage.getItem("cinema-direct");
               if (!raw) return;
               const direct = JSON.parse(raw) as {
