@@ -2,9 +2,31 @@
 
 A laptop Jellyfin client with an Apple TV-style home screen. Browse your library, play titles, and download the original files to this computer.
 
+## Download the app (no IDE)
+
+Installers live on the **Releases** page (GitHub does not keep huge `.dmg` / `.exe` files in the normal file list).
+
+### Mac (Apple Silicon — M1 / M2 / M3 / M4)
+
+**→ [Download Narwhal 0.2.3 for Mac (.dmg)](https://github.com/warrenphilly/narwhal/releases/download/v0.2.3/Narwhal-0.2.3-arm64.dmg)**
+
+All versions: [github.com/warrenphilly/narwhal/releases](https://github.com/warrenphilly/narwhal/releases)
+
+**Install**
+1. Open the `.dmg`
+2. Drag **Narwhal** into **Applications**
+3. Eject the disk image
+4. First launch: right-click Narwhal → **Open**
+
+### Windows
+
+Windows `.exe` is not published yet. Build on a Windows PC with `npm run win`, or wait for the next release that includes it.
+
+---
+
 **Cinema** is the web app. **Narwhal** is the same app in an Electron desktop window (native save dialogs for downloads). They share this repo — that is why a separate local Narwhal clone was missing later features. Use this folder for both.
 
-## Run it on your laptop
+## Run it on your laptop (developers)
 
 From the project folder:
 
