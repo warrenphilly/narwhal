@@ -13,6 +13,7 @@ import { useProfiles } from "@/components/profile-provider";
 import {
   buildFeaturedLineup,
   fetchLatest,
+  fetchLibraryStatus,
   fetchMovies,
   fetchResume,
   fetchShows,
@@ -64,6 +65,7 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
   const [newGroup, setNewGroup] = useState("");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "unwatched" | "new">("all");
+  const [libraryHint, setLibraryHint] = useState<string | null>(null);
 
   useEffect(() => {
     if (!signedIn || !session?.userId) return;
@@ -117,6 +119,35 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
         setHomeCache(key, next);
         setSnap(next);
         setError(null);
+        if (next.catalog.length === 0) {
+          fetchLibraryStatus()
+            .then((status) => {
+              if (cancelled) return;
+              const libs = status.views?.libraries?.map((row) => row.name || row.collectionType || "Library").filter(Boolean) ?? [];
+              const enableAll = status.policy?.enableAllFolders;
+              const enabled = status.policy?.enabledFolders ?? [];
+              if (status.views?.status === 401 || status.views?.status === 403) {
+                setLibraryHint(`Jellyfin blocked library access (HTTP ${status.views.status}). Sign out and sign in again.`);
+              } else if (enableAll === false && enabled.length === 0) {
+                setLibraryHint(
+                  "Jellyfin user policy has no folders enabled. In Jellyfin Web → Dashboard → Users → warrenphilly → enable “Allow access to all libraries” (or tick Movies/TV), then Save, then sign out/in here."
+                );
+              } else if (libs.length) {
+                setLibraryHint(
+                  `Libraries seen: ${libs.join(", ")}. Movies total ${status.movies?.total ?? 0}, shows total ${status.series?.total ?? 0}.`
+                );
+              } else {
+                setLibraryHint(
+                  `Jellyfin answered Views=${status.views?.status ?? "?"} with ${status.views?.count ?? 0} libraries, movies=${status.movies?.total ?? 0}, shows=${status.series?.total ?? 0}.`
+                );
+              }
+            })
+            .catch(() => {
+              if (!cancelled) setLibraryHint(null);
+            });
+        } else {
+          setLibraryHint(null);
+        }
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Could not load your library.");
@@ -237,15 +268,21 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
       <div className="page-gutter mt-6 space-y-6 pb-8 sm:mt-10 sm:space-y-10 sm:pb-10">
         {error && <p className="text-sm text-red-600">{error}</p>}
         {signedIn && loaded && catalog.length === 0 && !error && (
-          <p className="text-sm text-muted">
-            Connected to {session?.serverUrl || "Jellyfin"}, but no{" "}
-            {tab === "movies" ? "movies" : tab === "shows" ? "TV shows" : "movies or TV shows"} came
-            back.
-            {snap?.viewNames.length
-              ? ` Libraries on this user: ${snap.viewNames.join(", ")}.`
-              : " Jellyfin returned no libraries for this user — in the Jellyfin dashboard open Users → this account → enable your movie/TV folders."}{" "}
-            Also confirm Home network is selected (not a dead Tailscale 100.x URL).
-          </p>
+          <div className="space-y-2 text-sm text-muted">
+            <p>
+              Connected to {session?.serverUrl || "Jellyfin"}, but no{" "}
+              {tab === "movies" ? "movies" : tab === "shows" ? "TV shows" : "movies or TV shows"} came
+              back.
+              {snap?.viewNames.length
+                ? ` Libraries on this user: ${snap.viewNames.join(", ")}.`
+                : " Jellyfin returned no libraries for this user."}
+            </p>
+            {libraryHint && <p className="text-foreground">{libraryHint}</p>}
+            <p>
+              Fix in Jellyfin Web (not Narwhal): Dashboard → Users → this account → turn on library access →
+              Save. Then in Narwhal: Sign out → Sign in again on Home network.
+            </p>
+          </div>
         )}
         {!signedIn && (
           <p className="text-sm text-muted">

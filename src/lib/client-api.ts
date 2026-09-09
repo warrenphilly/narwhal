@@ -212,13 +212,43 @@ function libraryParams(userId: string, itemType: "Movie" | "Series", parentId?: 
 export async function fetchViews(userId: string) {
   const paths = [
     `Users/${encodeURIComponent(userId)}/Views`,
+    `Users/${encodeURIComponent(userId)}/Views?IncludeHidden=true`,
     `Users/${encodeURIComponent(userId)}/Items?Recursive=false&Limit=50&Fields=CollectionType,ChildCount`,
   ];
+  let lastError: unknown = null;
   for (const path of paths) {
-    const items = asItemList(await jf<JellyfinItemsResult | JellyfinItem[]>(path));
-    if (items.length) return items;
+    try {
+      const items = asItemList(await jf<JellyfinItemsResult | JellyfinItem[]>(path));
+      if (items.length) return items;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  if (lastError instanceof Error && /sign in|session expired|401|403/i.test(lastError.message)) {
+    throw lastError;
   }
   return [];
+}
+
+export async function fetchLibraryStatus() {
+  const response = await fetch("/api/library/status", { cache: "no-store", credentials: "same-origin" });
+  const data = (await response.json().catch(() => null)) as {
+    error?: string;
+    serverUrl?: string;
+    userName?: string;
+    views?: { status: number; count: number; libraries: { name?: string; collectionType?: string }[] };
+    series?: { status: number; total: number };
+    movies?: { status: number; total: number };
+    policy?: {
+      enableAllFolders?: boolean | null;
+      enabledFolders?: unknown[];
+      isAdministrator?: boolean;
+    };
+  } | null;
+  if (!response.ok) {
+    throw new Error(data?.error || `Library status failed (${response.status})`);
+  }
+  return data!;
 }
 
 function viewMatches(view: JellyfinItem, itemType: "Movie" | "Series") {
@@ -232,12 +262,19 @@ async function fetchLibrary(userId: string, itemType: "Movie" | "Series") {
   const paths = [
     `Users/${encodeURIComponent(userId)}/Items?${libraryParams(userId, itemType).toString()}`,
     `Items?${libraryParams(userId, itemType).toString()}`,
+    // Some Jellyfin setups return nothing for IncludeItemTypes but still have items.
+    `Users/${encodeURIComponent(userId)}/Items?Recursive=true&SortBy=SortName&SortOrder=Ascending&Fields=${LIST_FIELDS}&Limit=500&EnableImageTypes=Primary,Backdrop,Thumb,Logo`,
   ];
   let lastError: unknown = null;
   for (const path of paths) {
     try {
-      const items = asItemList(await jf<JellyfinItemsResult | JellyfinItem[]>(path));
-      if (items.length) return items;
+      const items = asItemList(await jf<JellyfinItemsResult | JellyfinItem[]>(path)).filter((item) => {
+        const type = (item.Type || "").toLowerCase();
+        if (!type) return path.includes(`IncludeItemTypes=${itemType}`);
+        if (itemType === "Movie") return type === "movie" || type === "video";
+        return type === "series";
+      });
+      if (items.length) return uniqueItems(items);
     } catch (error) {
       lastError = error;
     }
