@@ -14,9 +14,18 @@ import type { JellyfinItem } from "@/lib/jellyfin-types";
 export default function WatchPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
+  const [startFresh, setStartFresh] = useState(false);
   const { session, loading, preview } = useSession();
   const [item, setItem] = useState<JellyfinItem | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      setStartFresh(new URLSearchParams(window.location.search).get("fresh") === "1");
+    } catch {
+      setStartFresh(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!id || isDemoId(id) || !session?.userId) return;
@@ -80,6 +89,9 @@ export default function WatchPage() {
           <div className="max-w-lg rounded-3xl border border-white/15 bg-white/5 p-8 text-center sm:p-10">
             <p className="text-2xl font-semibold text-white">Couldn’t open this title</p>
             <p className="mt-3 text-white/60">{error}</p>
+            <p className="mt-4 text-sm text-white/45">
+              If you re-downloaded this show, open it from TV Shows and start a new episode — the old file link may be gone.
+            </p>
           </div>
         </div>
       </div>
@@ -96,7 +108,7 @@ export default function WatchPage() {
 
   return (
     <div className="fixed inset-0 z-50 bg-black">
-      <VideoPlayer item={item} userId={session.userId} />
+      <VideoPlayer item={item} userId={session.userId} startFresh={startFresh} />
     </div>
   );
 }

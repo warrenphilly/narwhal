@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { HeroBanner } from "@/components/hero-banner";
 import { NarwhalSpinner } from "@/components/narwhal-spinner";
-import { PageRefreshButton, REFRESH_EVENT } from "@/components/page-refresh";
+import { PageRefreshButton, useAppRefresh } from "@/components/page-refresh";
 import { Shelf } from "@/components/shelf";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -69,14 +69,14 @@ export function LibraryHome({ kind }: { kind: MediaTab }) {
   const [filter, setFilter] = useState<"all" | "unwatched" | "new">("all");
   const [libraryHint, setLibraryHint] = useState<string | null>(null);
 
-  useEffect(() => {
-    function onRefresh() {
+  useAppRefresh(
+    useCallback(() => {
+      setSnap(undefined);
       setLoaded(false);
+      setError(null);
       setReloadKey((value) => value + 1);
-    }
-    window.addEventListener(REFRESH_EVENT, onRefresh);
-    return () => window.removeEventListener(REFRESH_EVENT, onRefresh);
-  }, []);
+    }, [])
+  );
 
   // First boot sometimes hangs on the spinner — soft-retry once after a few seconds.
   useEffect(() => {

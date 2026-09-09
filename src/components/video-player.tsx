@@ -97,6 +97,14 @@ function viewClass(mode: ViewMode) {
   return "size-full object-contain";
 }
 
+/** Drop resume points that are past ~95% of the runtime (or past the end). Those hang seeking forever after a re-download. */
+function safeResumeTicks(ticks: number, runtimeTicks?: number | null) {
+  if (!Number.isFinite(ticks) || ticks < MIN_RESUME) return 0;
+  const runtime = runtimeTicks ?? 0;
+  if (runtime > 0 && ticks >= runtime * 0.95) return 0;
+  return ticks;
+}
+
 function canSeekTo(video: HTMLVideoElement, local: number) {
   if (!Number.isFinite(local) || local < 0 || !video.seekable.length) return false;
   for (let i = 0; i < video.seekable.length; i += 1) {
@@ -134,6 +142,7 @@ export function VideoPlayer({
   const [track, setTrack] = useState("off");
   const [audio, setAudio] = useState<number | undefined>(undefined);
   const [audioSession, setAudioSession] = useState(0);
+  const [playSession, setPlaySession] = useState(0);
   const [finishAt, setFinishAt] = useState("");
   const [paused, setPaused] = useState(false);
   const [logoOk, setLogoOk] = useState(true);
@@ -154,9 +163,10 @@ export function VideoPlayer({
   const [playbackPrefs, setPlaybackPrefs] = useState<PlaybackPrefs>(() => loadPlaybackPrefs());
   const rootRef = useRef<HTMLDivElement>(null);
   const isShow = item.Type === "Episode";
-  const resume = startFresh ? 0 : applyProfile(item).UserData?.PlaybackPositionTicks ?? 0;
-  const resumeSeconds =
-    startAtSeconds ?? ticksToSeconds(startFresh ? 0 : resume > MIN_RESUME ? resume : 0);
+  const resume = startFresh
+    ? 0
+    : safeResumeTicks(applyProfile(item).UserData?.PlaybackPositionTicks ?? 0, item.RunTimeTicks);
+  const resumeSeconds = startAtSeconds ?? ticksToSeconds(resume);
   const [startTicks, setStartTicks] = useState(() =>
     startAtSeconds != null ? Math.round(startAtSeconds * 10_000_000) : 0
   );
@@ -207,11 +217,14 @@ export function VideoPlayer({
       setNow(0);
       return;
     }
-    const next = applyProfile(item).UserData?.PlaybackPositionTicks ?? 0;
-    const seconds = ticksToSeconds(next > MIN_RESUME ? next : 0);
+    const next = safeResumeTicks(
+      applyProfile(item).UserData?.PlaybackPositionTicks ?? 0,
+      item.RunTimeTicks
+    );
+    const seconds = ticksToSeconds(next);
     resumeGoal.current = seconds;
     setNow(seconds);
-  }, [item.Id, startFresh, startAtSeconds]);
+  }, [item.Id, startFresh, startAtSeconds, item.RunTimeTicks]);
 
   useEffect(() => {
     if (length) setFinishAt(formatFinishTime(Math.max(0, length - now)));
@@ -298,14 +311,40 @@ export function VideoPlayer({
   function pickAudio(index: number) {
     const seconds = displaySeconds();
     saveAt(seconds, false);
+    // Restart at the same spot via client seek — don't force HLS. Forcing a
+    // convert mid-watch often hangs on seek (spinner forever) when audio changes.
     resumeGoal.current = seconds;
-    offsetSecondsRef.current = seconds;
+    resumeRedirect.current = false;
+    offsetSecondsRef.current = 0;
     setNow(seconds);
-    setStartTicks(Math.round(seconds * 10_000_000));
+    setStartTicks(0);
     setAudio(index);
     setAudioSession(Date.now());
-    setForceTranscode(true);
+    setPlaySession(Date.now());
+    if (!needsTranscode) {
+      setForceTranscode(false);
+      setHardTranscode(false);
+    }
+    errorStep.current = 0;
+    setPlayError(null);
+    setSynced(false);
     setWaiting(true);
+  }
+
+  function startFromBeginning() {
+    resumeGoal.current = 0;
+    resumeRedirect.current = false;
+    offsetSecondsRef.current = 0;
+    setNow(0);
+    setStartTicks(0);
+    setForceTranscode(false);
+    setHardTranscode(false);
+    errorStep.current = 0;
+    setPlayError(null);
+    setSynced(false);
+    setWaiting(true);
+    setPlaySession(Date.now());
+    saveAt(0, false);
   }
 
   function jumpTo(seconds: number) {
@@ -577,10 +616,18 @@ export function VideoPlayer({
     video.addEventListener("loadeddata", onProgress);
     video.addEventListener("seeked", onSeeked);
     const giveUp = window.setTimeout(() => {
-      if (started || seeking || cancelled) return;
+      // Seek can hang forever after audio switch / bad resume — never leave the spinner.
+      if (cancelled || started) return;
+      seeking = false;
       if (restartFromResume()) return;
       void startSynced();
-    }, 15_000);
+    }, 12_000);
+    const hardGiveUp = window.setTimeout(() => {
+      if (cancelled || started) return;
+      seeking = false;
+      setWaiting(false);
+      setPlayError("This title is taking too long to start. Try again from the beginning.");
+    }, 25_000);
     return () => {
       cancelled = true;
       video.removeEventListener("canplaythrough", onReady);
@@ -589,6 +636,7 @@ export function VideoPlayer({
       video.removeEventListener("loadeddata", onProgress);
       video.removeEventListener("seeked", onSeeked);
       window.clearTimeout(giveUp);
+      window.clearTimeout(hardGiveUp);
       if (hls) {
         hls.destroy();
         hlsRef.current = null;
@@ -665,7 +713,7 @@ export function VideoPlayer({
       <div className="pointer-events-none absolute -right-10 top-0 size-64 rounded-full bg-[#AA5CC3]/20 blur-3xl" />
       <video
         ref={videoRef}
-        key={`${item.Id}-${src}`}
+        key={`${item.Id}-${src}-${playSession}`}
         className={`absolute inset-0 m-auto bg-black ${synced ? "" : "opacity-0"} ${viewClass(view)}`}
         style={
           isShow
@@ -727,9 +775,16 @@ export function VideoPlayer({
       )}
       {playError && (
         <div className="pointer-events-none absolute inset-x-0 bottom-28 z-10 flex justify-center px-4">
-          <p className="max-w-lg rounded-2xl border border-[#00A4DC]/30 bg-black/70 px-4 py-3 text-center text-sm text-white/85">
-            {playError}
-          </p>
+          <div className="pointer-events-auto flex max-w-lg flex-col items-center gap-3 rounded-2xl border border-[#00A4DC]/30 bg-black/70 px-4 py-3 text-center">
+            <p className="text-sm text-white/85">{playError}</p>
+            <button
+              type="button"
+              className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
+              onClick={startFromBeginning}
+            >
+              Start from beginning
+            </button>
+          </div>
         </div>
       )}
       <button

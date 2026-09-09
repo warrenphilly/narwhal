@@ -130,6 +130,13 @@ export function imageUrl(
   if (options?.fillHeight) params.set("fillHeight", String(options.fillHeight));
   if (options?.tag) params.set("tag", options.tag);
   params.set("quality", "70");
+  // Bust sticky poster/backdrop caches after Refresh.
+  try {
+    const bust = typeof window !== "undefined" ? window.sessionStorage.getItem("narwhal-img-bust") : null;
+    if (bust) params.set("_", bust);
+  } catch {
+    /* ignore */
+  }
   const path = `Items/${encodeURIComponent(itemId)}/Images/${type}?${params.toString()}`;
   const direct = getConnection();
   if (direct?.serverUrl && direct.token) {
@@ -137,6 +144,15 @@ export function imageUrl(
     return `${direct.serverUrl}/Items/${encodeURIComponent(itemId)}/Images/${type}?${params.toString()}`;
   }
   return `/api/jf/${path}`;
+}
+
+/** Ask Jellyfin to rescan libraries (needs a user that can refresh the library). */
+export async function refreshJellyfinLibraries() {
+  try {
+    await jf<Record<string, never>>("Library/Refresh", { method: "POST" });
+  } catch {
+    /* non-admin accounts often can't scan — UI refresh still helps */
+  }
 }
 
 export function heroImage(item: JellyfinItem) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Play, Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -8,6 +8,7 @@ import { ChannelBuilder } from "@/components/channel-builder";
 import { ChannelGuide } from "@/components/channel-guide";
 import { LoginScreen } from "@/components/login-screen";
 import { NarwhalSpinner } from "@/components/narwhal-spinner";
+import { useAppRefresh } from "@/components/page-refresh";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -48,14 +49,12 @@ export default function ChannelsPage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  useEffect(() => {
-    function onRefresh() {
+  useAppRefresh(
+    useCallback(() => {
       setReady(false);
       setReloadKey((value) => value + 1);
-    }
-    window.addEventListener("narwhal-refresh", onRefresh);
-    return () => window.removeEventListener("narwhal-refresh", onRefresh);
-  }, []);
+    }, [])
+  );
 
   useEffect(() => {
     if (!session?.userId) return;

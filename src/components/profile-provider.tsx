@@ -214,14 +214,17 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     const runtime = item.RunTimeTicks || 0;
     const finished = Boolean(saved.played && runtime > 0 && saved.positionTicks >= runtime * 0.95);
     const ticks = Math.max(saved.positionTicks, item.UserData?.PlaybackPositionTicks ?? 0);
+    // After delete/re-download, an old near-end resume can hang the player forever.
+    const capped =
+      finished || (runtime > 0 && ticks >= runtime * 0.95) ? 0 : runtime > 0 && ticks > runtime ? 0 : ticks;
     return {
       ...item,
       UserData: {
         ...item.UserData,
-        PlaybackPositionTicks: finished ? 0 : ticks,
+        PlaybackPositionTicks: capped,
         Played: finished || Boolean(item.UserData?.Played),
         PlayedPercentage:
-          runtime > 0 ? Math.min(100, (ticks / runtime) * 100) : item.UserData?.PlayedPercentage,
+          runtime > 0 && capped > 0 ? Math.min(100, (capped / runtime) * 100) : item.UserData?.PlayedPercentage,
       },
     };
   }, []);

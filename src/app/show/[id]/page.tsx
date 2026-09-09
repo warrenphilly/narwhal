@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Download, Play, Shuffle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -20,6 +20,7 @@ import { PageHero } from "@/components/page-hero";
 import { TitleGroupControl } from "@/components/title-group";
 import { ChannelAdd } from "@/components/channel-add";
 import { PageSpinner } from "@/components/narwhal-spinner";
+import { useAppRefresh } from "@/components/page-refresh";
 import {
   fetchEpisodes,
   fetchLocalTrailers,
@@ -75,7 +76,18 @@ export default function ShowPage() {
   const [played, setPlayedState] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [playItem, setPlayItem] = useState<JellyfinItem | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const demoShow = DEMO_SHOWS.find((item) => item.Id === params.id) ?? null;
+
+  useAppRefresh(
+    useCallback(() => {
+      setShow(null);
+      setSeasons([]);
+      setEpisodes([]);
+      setError(null);
+      setReloadKey((value) => value + 1);
+    }, [])
+  );
 
   useEffect(() => {
     const id = params.id;
@@ -126,7 +138,7 @@ export default function ShowPage() {
     return () => {
       cancelled = true;
     };
-  }, [params.id, session?.userId, router]);
+  }, [params.id, session?.userId, router, reloadKey]);
 
   useEffect(() => {
     const userId = session?.userId;
@@ -156,7 +168,7 @@ export default function ShowPage() {
     return () => {
       cancelled = true;
     };
-  }, [session?.userId, show, seasonId]);
+  }, [session?.userId, show, seasonId, reloadKey]);
 
   const resolved = demoShow ?? show;
   const demo = Boolean(resolved && isDemoId(resolved.Id));
@@ -317,7 +329,7 @@ export default function ShowPage() {
                   className="h-10 rounded-full px-5 text-sm sm:h-11 sm:text-base"
                   onClick={resumeWatching}
                 >
-                  Resume from {episodeLabel(nextUp!)}
+                  {nextUp ? `Resume from ${episodeLabel(nextUp)}` : "Resume"}
                 </Button>
               )}
               <Button

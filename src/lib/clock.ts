@@ -19,7 +19,8 @@ export function formatFinishTime(remainingSeconds: number) {
   return finish.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-export function episodeLabel(item: { ParentIndexNumber?: number; IndexNumber?: number; Name?: string }) {
+export function episodeLabel(item?: { ParentIndexNumber?: number; IndexNumber?: number; Name?: string } | null) {
+  if (!item) return "";
   if (item.ParentIndexNumber && item.IndexNumber) {
     return `S${item.ParentIndexNumber} · E${item.IndexNumber}`;
   }

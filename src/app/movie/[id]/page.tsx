@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Download, Play } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -20,6 +20,7 @@ import { PageHero } from "@/components/page-hero";
 import { TitleGroupControl } from "@/components/title-group";
 import { ChannelAdd } from "@/components/channel-add";
 import { PageSpinner } from "@/components/narwhal-spinner";
+import { useAppRefresh } from "@/components/page-refresh";
 import { fetchLocalTrailers, fetchMovie, fetchPlaybackInfo, setPlayed } from "@/lib/client-api";
 import { DEMO_MOVIES, demoPosterGradient, isDemoId } from "@/lib/demo-library";
 import type { JellyfinItem, MediaStream } from "@/lib/jellyfin-types";
@@ -36,13 +37,24 @@ export default function MoviePage() {
   const [saving, setSaving] = useState(false);
   const [played, setPlayedState] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const demoItem = DEMO_MOVIES.find((movie) => movie.Id === params.id) ?? null;
+
+  useAppRefresh(
+    useCallback(() => {
+      setItem(null);
+      setError(null);
+      setReloadKey((value) => value + 1);
+    }, [])
+  );
 
   useEffect(() => {
     const id = params.id;
     if (!id || isDemoId(id) || !session?.userId) return;
+    let cancelled = false;
     fetchMovie(session.userId, id)
       .then((next) => {
+        if (cancelled) return;
         if (next.Type === "Series") {
           router.replace(`/show/${next.Id}`);
           return;
@@ -50,17 +62,27 @@ export default function MoviePage() {
         setItem(next);
         setPlayedState(Boolean(next.UserData?.Played));
         setStreams(next.MediaSources?.[0]?.MediaStreams ?? []);
+        setError(null);
       })
-      .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : "Could not open this title.")
-      );
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Could not open this title.");
+      });
     fetchLocalTrailers(session.userId, id)
-      .then(setTrailers)
-      .catch(() => setTrailers([]));
+      .then((rows) => {
+        if (!cancelled) setTrailers(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setTrailers([]);
+      });
     fetchPlaybackInfo(id, session.userId)
-      .then((info) => setStreams(info.MediaSources?.[0]?.MediaStreams ?? []))
+      .then((info) => {
+        if (!cancelled) setStreams(info.MediaSources?.[0]?.MediaStreams ?? []);
+      })
       .catch(() => undefined);
-  }, [params.id, session?.userId, router]);
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id, session?.userId, router, reloadKey]);
 
   if (loading) return <PageSpinner label="Opening your library…" />;
   if (!session?.signedIn && !preview) return <LoginScreen />;

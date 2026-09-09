@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { PageBack } from "@/components/back-button";
 import { LoginScreen } from "@/components/login-screen";
 import { PosterCard } from "@/components/poster-card";
 import { Input } from "@/components/ui/input";
 import { PageSpinner } from "@/components/narwhal-spinner";
+import { useAppRefresh } from "@/components/page-refresh";
 import { useSession } from "@/components/session-provider";
 import { searchMovies } from "@/lib/client-api";
 import { DEMO_MOVIES, DEMO_SHOWS } from "@/lib/demo-library";
@@ -17,8 +18,15 @@ export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [remoteResults, setRemoteResults] = useState<JellyfinItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const trimmed = query.trim();
+
+  useAppRefresh(
+    useCallback(() => {
+      setReloadKey((value) => value + 1);
+    }, [])
+  );
 
   useEffect(() => {
     if (!trimmed || !session?.signedIn || !session.userId) return;
@@ -33,7 +41,7 @@ export default function SearchPage() {
         );
     }, 250);
     return () => clearTimeout(handle);
-  }, [trimmed, session?.signedIn, session?.userId]);
+  }, [trimmed, session?.signedIn, session?.userId, reloadKey]);
 
   const results = useMemo(() => {
     if (!trimmed) return [];
