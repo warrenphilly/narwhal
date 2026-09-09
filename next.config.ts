@@ -43,9 +43,17 @@ function localDevOrigins() {
 }
 
 const nextConfig: NextConfig = {
-  // Parent folder (_DEV) has its own package-lock; pin Turbopack to this app.
+  // Parent folder (_DEV) has its own package-lock; pin resolution to this app.
   turbopack: {
     root: projectRoot,
+  },
+  outputFileTracingRoot: projectRoot,
+  // Vercel was shipping lambdas without Next’s app-route/app-page runtimes
+  // (every /api/* and /watch/[id] returned 500). Force those files into the trace.
+  outputFileTracingIncludes: {
+    "/*": [
+      "./node_modules/next/dist/compiled/next-server/**/*.js",
+    ],
   },
   // Standalone is only for Electron packaging — never on Vercel.
   ...(onVercel ? {} : { output: "standalone" as const }),
