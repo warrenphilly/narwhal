@@ -56,7 +56,10 @@ export async function POST(request: Request) {
     res.cookies.set(SEERR_COOKIE, seerrCookieValue(session), {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      // Narwhal often runs over plain HTTP on your LAN (Docker/desktop).
+      // Secure cookies are not sent over HTTP, so the Seerr session would be
+      // “lost” and requests wouldn't reach Jellyseerr/Jellyfin/Sonarr.
+      secure: request.url.startsWith("https://"),
       path: "/",
       maxAge: 60 * 60 * 24 * 90,
     });
