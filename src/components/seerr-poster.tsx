@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { posterUrl, statusLabel, type SeerrSearchResult } from "@/lib/seerr";
+import { MEDIA_STATUS, posterUrl, statusLabel, type SeerrSearchResult } from "@/lib/seerr";
 
 export function SeerrPoster({
   item,
@@ -16,7 +16,8 @@ export function SeerrPoster({
   const title = item.title || item.name || "Untitled";
   const year = (item.releaseDate || item.firstAirDate || "").slice(0, 4);
   const status = statusLabel(item.mediaInfo?.status);
-  const canRequest = !item.mediaInfo?.status || item.mediaInfo.status < 2;
+  const canRequest =
+    item.mediaType === "tv" || !item.mediaInfo?.status || item.mediaInfo.status < MEDIA_STATUS.pending;
   const art = posterUrl(item.posterPath, "w500");
   const href = `/discover/${item.mediaType}/${item.id}`;
 

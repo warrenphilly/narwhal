@@ -13,6 +13,7 @@ import { useSession } from "@/components/session-provider";
 import {
   backdropUrl,
   formatMinutes,
+  MEDIA_STATUS,
   posterUrl,
   releaseTypeLabel,
   statusLabel,
@@ -103,7 +104,8 @@ export default function DiscoverTitlePage() {
   const runtime = formatMinutes(detail?.runtime || detail?.episodeRunTime?.[0]);
   const kinds = detail ? releaseKinds(detail) : [];
   const reviews = detail?.reviews?.results?.slice(0, 2) ?? [];
-  const canRequest = !detail?.mediaInfo?.status || detail.mediaInfo.status < 2;
+  const canRequest =
+    kind === "tv" || !detail?.mediaInfo?.status || detail.mediaInfo.status < MEDIA_STATUS.pending;
   const art = posterUrl(detail?.posterPath, "w500");
   const hero = backdropUrl(detail?.backdropPath);
 
@@ -172,8 +174,13 @@ export default function DiscoverTitlePage() {
               {detail.overview && <p className="mt-4 max-w-2xl text-base leading-relaxed">{detail.overview}</p>}
               {canRequest && (
                 <Button className="mt-5 rounded-full" onClick={() => setOpen(true)}>
-                  Request
+                  {kind === "tv" ? "Request seasons / episodes" : "Request"}
                 </Button>
+              )}
+              {kind === "tv" && detail.mediaInfo?.status && detail.mediaInfo.status >= MEDIA_STATUS.pending && (
+                <p className="mt-2 text-xs text-zinc-500">
+                  You can still request more seasons or turn on monitoring for new episodes.
+                </p>
               )}
               {reviews.length > 0 && (
                 <div className="mt-8 space-y-4">

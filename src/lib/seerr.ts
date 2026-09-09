@@ -75,6 +75,23 @@ export type SeerrSeason = {
   episodeCount?: number;
 };
 
+export type SeerrEpisode = {
+  id?: number;
+  name?: string;
+  overview?: string;
+  airDate?: string | null;
+  episodeNumber: number;
+  seasonNumber: number;
+  stillPath?: string;
+};
+
+export type SeerrSeasonDetail = {
+  seasonNumber: number;
+  name?: string;
+  overview?: string;
+  episodes?: SeerrEpisode[];
+};
+
 export const REQUEST_STATUS = {
   pending: 1,
   approved: 2,
