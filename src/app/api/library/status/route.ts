@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { authHeader, getRequestSession } from "@/lib/session";
+import { authHeader, getRequestSession, type JellyfinSession } from "@/lib/session";
 import { jellyfinFetch, tunnelFromSession } from "@/lib/jellyfin-request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-async function readJson(session: NonNullable<Awaited<ReturnType<typeof getSession>>>, path: string) {
+async function readJson(session: JellyfinSession, path: string) {
   const response = await jellyfinFetch(
     `${session.serverUrl}/${path}`,
     {
