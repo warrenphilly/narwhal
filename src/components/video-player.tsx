@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Hls from "hls.js";
 import { ArrowLeft, Maximize, Minimize, Pause, Play, Settings, Volume2, VolumeX } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { NarwhalMark } from "@/components/narwhal-mark";
 import { NarwhalSpinner } from "@/components/narwhal-spinner";
 import { useProfiles } from "@/components/profile-provider";
@@ -24,6 +23,29 @@ import { formatRuntime } from "@/lib/jellyfin-types";
 import { playerTitleHref } from "@/lib/item-href";
 import { loadPlaybackPrefs, savePlaybackPrefs, type PlaybackPrefs } from "@/lib/playback-prefs";
 import type { JellyfinItem, PlaybackInfo } from "@/lib/jellyfin-types";
+import { cn } from "@/lib/utils";
+
+function PlayerIconButton({
+  className,
+  children,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-white/90 transition-colors",
+        "hover:bg-white/15 hover:text-white active:bg-white/20",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
+        "[&_svg]:pointer-events-none [&_svg]:size-5",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
 
 function TrackPickers({
   sounds,
@@ -802,16 +824,10 @@ export function VideoPlayer({
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-10 shrink-0 rounded-full border-[#00A4DC]/40 bg-black/40 text-white hover:bg-[#00A4DC]/20 hover:text-white"
-            onClick={() => goBack()}
-            aria-label="Back"
-          >
+        <div className="flex items-center gap-2">
+          <PlayerIconButton onClick={() => goBack()} aria-label="Back">
             <ArrowLeft />
-          </Button>
+          </PlayerIconButton>
           <div className="min-w-0 flex-1 overflow-hidden pr-2">
             <Link
               href={playerTitleHref(item)}
@@ -822,21 +838,19 @@ export function VideoPlayer({
             </Link>
             {detail && <p className="mt-0.5 truncate text-sm text-white/65">{detail}</p>}
           </div>
-          <div className="relative flex shrink-0 items-center gap-2">
+          <div className="relative flex shrink-0 items-center gap-1">
             {finishAt && (
-              <p className="hidden rounded-full border border-white/10 bg-black/55 px-3 py-1 text-sm text-white sm:block">
+              <p className="mr-1 hidden rounded-full bg-black/40 px-3 py-1 text-sm text-white/80 sm:block">
                 Ends {finishAt}
               </p>
             )}
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-10 rounded-full border-[#AA5CC3]/40 bg-black/40 text-white hover:bg-[#AA5CC3]/20 hover:text-white"
+            <PlayerIconButton
               onClick={() => setSettingsOpen((open) => !open)}
               aria-label="Playback settings"
+              aria-expanded={settingsOpen}
             >
               <Settings />
-            </Button>
+            </PlayerIconButton>
             {settingsOpen && (
               <div
                 data-no-toggle
@@ -854,14 +868,13 @@ export function VideoPlayer({
                 <div className="mt-4 space-y-3 border-t border-white/10 pt-3">
                   <p className="text-xs font-semibold tracking-wide text-[#AA5CC3] uppercase">Sound</p>
                   <label className="flex items-center gap-3 text-sm text-white/80">
-                    <button
-                      type="button"
-                      className="cursor-pointer rounded-full border border-white/15 p-2 text-white"
+                    <PlayerIconButton
+                      className="size-9"
                       onClick={() => setMuted((value) => !value)}
                       aria-label={muted ? "Unmute" : "Mute"}
                     >
-                      {muted || volume === 0 ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
-                    </button>
+                      {muted || volume === 0 ? <VolumeX /> : <Volume2 />}
+                    </PlayerIconButton>
                     <input
                       type="range"
                       min={0}
@@ -873,21 +886,22 @@ export function VideoPlayer({
                         setVolume(next);
                         setMuted(next === 0);
                       }}
-                      className="h-2 w-full cursor-pointer accent-[#00A4DC]"
+                      className="h-1.5 w-full cursor-pointer accent-white"
                     />
                   </label>
-                  <p className="text-xs font-semibold tracking-wide text-[#AA5CC3] uppercase">View</p>
+                  <p className="text-xs font-semibold tracking-wide text-white/50 uppercase">View</p>
                   <div className="grid grid-cols-2 gap-2">
                     {VIEWS.map((option) => (
                       <button
                         key={option.id}
                         type="button"
                         onClick={() => setView(option.id)}
-                        className={`h-10 cursor-pointer rounded-xl border text-sm ${
+                        className={cn(
+                          "h-9 cursor-pointer rounded-lg text-sm transition-colors",
                           view === option.id
-                            ? "border-[#00A4DC] bg-[#00A4DC]/20 text-white"
-                            : "border-white/15 text-white/70 hover:bg-white/8"
-                        }`}
+                            ? "bg-white/20 text-white"
+                            : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                        )}
                       >
                         {option.label}
                       </button>
@@ -895,11 +909,12 @@ export function VideoPlayer({
                     <button
                       type="button"
                       onClick={() => toggleFullscreen()}
-                      className={`col-span-2 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border text-sm ${
+                      className={cn(
+                        "col-span-2 flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg text-sm transition-colors",
                         fullscreen
-                          ? "border-[#AA5CC3] bg-[#AA5CC3]/20 text-white"
-                          : "border-white/15 text-white/70 hover:bg-white/8"
-                      }`}
+                          ? "bg-white/20 text-white"
+                          : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                      )}
                     >
                       {fullscreen ? <Minimize className="size-4" /> : <Maximize className="size-4" />}
                       {fullscreen ? "Exit fullscreen" : "Fullscreen"}
@@ -984,29 +999,21 @@ export function VideoPlayer({
               style={{ left: `${percent}%` }}
             />
           </div>
-          <div className="mt-2 flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-10 rounded-full border-[#00A4DC]/40 bg-black/40 text-white hover:bg-[#00A4DC]/20 hover:text-white"
-              onClick={() => togglePlay()}
-              aria-label={paused ? "Play" : "Pause"}
-            >
+          <div className="mt-1 flex items-center gap-1 sm:gap-2">
+            <PlayerIconButton onClick={() => togglePlay()} aria-label={paused ? "Play" : "Pause"}>
               {paused ? <Play className="fill-current" /> : <Pause />}
-            </Button>
-            <p className="min-w-[7.5rem] font-medium tabular-nums text-white">
+            </PlayerIconButton>
+            <p className="min-w-[7.5rem] px-1 font-medium tabular-nums text-white/90">
               {formatClock(now)}
-              <span className="text-white/45"> / {formatClock(length)}</span>
+              <span className="text-white/40"> / {formatClock(length)}</span>
             </p>
-            <label className="ml-auto flex items-center gap-2">
-              <button
-                type="button"
-                className="cursor-pointer rounded-full border border-white/15 p-2 text-white"
+            <div className="ml-auto flex items-center gap-1">
+              <PlayerIconButton
                 onClick={() => setMuted((value) => !value)}
                 aria-label={muted ? "Unmute" : "Mute"}
               >
-                {muted || volume === 0 ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
-              </button>
+                {muted || volume === 0 ? <VolumeX /> : <Volume2 />}
+              </PlayerIconButton>
               <input
                 type="range"
                 min={0}
@@ -1018,18 +1025,15 @@ export function VideoPlayer({
                   setVolume(next);
                   setMuted(next === 0);
                 }}
-                className="h-2 w-24 cursor-pointer accent-[#00A4DC] sm:w-36"
+                className="h-1.5 w-24 cursor-pointer accent-white sm:w-36"
               />
-            </label>
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-10 rounded-full border-[#AA5CC3]/40 bg-black/40 text-white hover:bg-[#AA5CC3]/20 hover:text-white"
-              onClick={() => toggleFullscreen()}
-              aria-label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
-            >
-              {fullscreen ? <Minimize /> : <Maximize />}
-            </Button>
+              <PlayerIconButton
+                onClick={() => toggleFullscreen()}
+                aria-label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+              >
+                {fullscreen ? <Minimize /> : <Maximize />}
+              </PlayerIconButton>
+            </div>
           </div>
         </div>
       </div>
