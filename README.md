@@ -4,23 +4,27 @@ A laptop Jellyfin client with an Apple TV-style home screen. Browse your library
 
 ## Download the app (no IDE)
 
-Installers live on the **Releases** page (GitHub does not keep huge `.dmg` / `.exe` files in the normal file list).
+Pick your computer. No coding required.
 
 ### Mac (Apple Silicon — M1 / M2 / M3 / M4)
 
-**→ [Download Narwhal 0.2.3 for Mac (.dmg)](https://github.com/warrenphilly/narwhal/releases/download/v0.2.3/Narwhal-0.2.3-arm64.dmg)**
+**→ [Download Narwhal for Mac](https://github.com/warrenphilly/narwhal/releases/download/v0.2.3/Narwhal-0.2.3-arm64.dmg)**
 
-All versions: [github.com/warrenphilly/narwhal/releases](https://github.com/warrenphilly/narwhal/releases)
-
-**Install**
-1. Open the `.dmg`
+1. Open the downloaded `.dmg`
 2. Drag **Narwhal** into **Applications**
 3. Eject the disk image
-4. First launch: right-click Narwhal → **Open**
+4. First launch: right-click Narwhal → **Open** → **Open**
 
-### Windows
+### Windows (64-bit)
 
-Windows `.exe` is not published yet. Build on a Windows PC with `npm run win`, or wait for the next release that includes it.
+**→ [Download Narwhal for Windows](https://github.com/warrenphilly/narwhal/releases/download/v0.2.3/Narwhal-Setup-0.2.3.exe)**
+
+1. Open the downloaded `.exe`
+2. Click through the installer (Next → Install)
+3. Open **Narwhal** from the Start menu or desktop shortcut
+4. If Windows SmartScreen warns you: **More info** → **Run anyway** (the app is unsigned)
+
+All versions: [github.com/warrenphilly/narwhal/releases](https://github.com/warrenphilly/narwhal/releases)
 
 ---
 
@@ -82,7 +86,9 @@ That writes something like `dist/Narwhal-0.2.0-arm64.dmg`.
 4. Eject the disk image.
 5. Open **Applications → Narwhal** (first time: right-click → Open).
 
-## Windows app
+## Windows app (developers)
+
+Prefer the [download link above](#windows-64-bit) unless you are rebuilding.
 
 On a **Windows** PC with Node.js installed:
 
@@ -93,9 +99,9 @@ npm install
 npm run win
 ```
 
-Installer: `dist/Narwhal Setup 0.2.0.exe` (or similar). Run it to install.
+Installer: `dist/Narwhal Setup 0.2.3.exe` (or similar). Run it to install.
 
-> Building the Windows installer from a Mac usually fails. Use a Windows machine, or GitHub Actions once the release workflow is pushed.
+> Building the Windows installer from a Mac usually fails. Use a Windows machine, or tag a `v*` release so GitHub Actions publishes both Mac and Windows.
 
 ## Browser / web version
 
