@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { PageBack } from "@/components/back-button";
 import { Carousel } from "@/components/carousel";
 import { LoginScreen } from "@/components/login-screen";
 import { SeerrPoster } from "@/components/seerr-poster";
@@ -321,6 +322,7 @@ export default function SeerrPage() {
   return (
     <AppShell>
       <div className="page-gutter py-6">
+        <PageBack />
         <div className={cn("grid gap-6", wide ? "lg:grid-cols-[320px_minmax(0,1fr)]" : "lg:grid-cols-[56px_minmax(0,1fr)]")}>
           <aside className="space-y-3">
             <Button variant="outline" size="icon" className="rounded-full" onClick={() => setWide((value) => !value)} aria-label={wide ? "Collapse sidebar" : "Expand sidebar"}>

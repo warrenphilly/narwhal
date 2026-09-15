@@ -46,7 +46,7 @@ function TrackPickers({
         <label className="block text-sm text-white/80">
           Audio
           <select
-            className="mt-1 h-11 w-full rounded-xl border border-white/15 bg-[#0c0c0e] px-3 text-base text-white outline-none"
+            className="mt-1 h-11 w-full cursor-pointer rounded-xl border border-white/15 bg-[#0c0c0e] px-3 text-base text-white outline-none"
             value={audio ?? sounds[0]?.index ?? ""}
             onChange={(event) => onAudio(Number(event.target.value))}
           >
@@ -62,7 +62,7 @@ function TrackPickers({
         <label className="block text-sm text-white/80">
           Subtitles
           <select
-            className="mt-1 h-11 w-full rounded-xl border border-white/15 bg-[#0c0c0e] px-3 text-base text-white outline-none"
+            className="mt-1 h-11 w-full cursor-pointer rounded-xl border border-white/15 bg-[#0c0c0e] px-3 text-base text-white outline-none"
             value={track}
             onChange={(event) => onTrack(event.target.value)}
           >
@@ -779,7 +779,7 @@ export function VideoPlayer({
             <p className="text-sm text-white/85">{playError}</p>
             <button
               type="button"
-              className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
+              className="cursor-pointer rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/15"
               onClick={startFromBeginning}
             >
               Start from beginning
@@ -816,7 +816,7 @@ export function VideoPlayer({
             <Link
               href={playerTitleHref(item)}
               onClick={() => saveAt(displaySeconds(), false)}
-              className="block truncate text-xl font-semibold tracking-tight text-white hover:underline sm:text-2xl"
+              className="block cursor-pointer truncate text-xl font-semibold tracking-tight text-white hover:underline sm:text-2xl"
             >
               {headline}
             </Link>
@@ -856,7 +856,7 @@ export function VideoPlayer({
                   <label className="flex items-center gap-3 text-sm text-white/80">
                     <button
                       type="button"
-                      className="rounded-full border border-white/15 p-2 text-white"
+                      className="cursor-pointer rounded-full border border-white/15 p-2 text-white"
                       onClick={() => setMuted((value) => !value)}
                       aria-label={muted ? "Unmute" : "Mute"}
                     >
@@ -873,7 +873,7 @@ export function VideoPlayer({
                         setVolume(next);
                         setMuted(next === 0);
                       }}
-                      className="h-2 w-full accent-[#00A4DC]"
+                      className="h-2 w-full cursor-pointer accent-[#00A4DC]"
                     />
                   </label>
                   <p className="text-xs font-semibold tracking-wide text-[#AA5CC3] uppercase">View</p>
@@ -883,7 +883,7 @@ export function VideoPlayer({
                         key={option.id}
                         type="button"
                         onClick={() => setView(option.id)}
-                        className={`h-10 rounded-xl border text-sm ${
+                        className={`h-10 cursor-pointer rounded-xl border text-sm ${
                           view === option.id
                             ? "border-[#00A4DC] bg-[#00A4DC]/20 text-white"
                             : "border-white/15 text-white/70 hover:bg-white/8"
@@ -895,7 +895,7 @@ export function VideoPlayer({
                     <button
                       type="button"
                       onClick={() => toggleFullscreen()}
-                      className={`col-span-2 flex h-10 items-center justify-center gap-2 rounded-xl border text-sm ${
+                      className={`col-span-2 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border text-sm ${
                         fullscreen
                           ? "border-[#AA5CC3] bg-[#AA5CC3]/20 text-white"
                           : "border-white/15 text-white/70 hover:bg-white/8"
@@ -921,7 +921,7 @@ export function VideoPlayer({
                           onChange={(event) =>
                             updatePlaybackPrefs({ subtitlePadTop: Number(event.target.value) })
                           }
-                          className="mt-2 h-2 w-full accent-[#AA5CC3]"
+                          className="mt-2 h-2 w-full cursor-pointer accent-[#AA5CC3]"
                         />
                       </label>
                       <label className="block text-sm text-white/80">
@@ -935,7 +935,7 @@ export function VideoPlayer({
                           onChange={(event) =>
                             updatePlaybackPrefs({ subtitlePadBottom: Number(event.target.value) })
                           }
-                          className="mt-2 h-2 w-full accent-[#00A4DC]"
+                          className="mt-2 h-2 w-full cursor-pointer accent-[#00A4DC]"
                         />
                       </label>
                     </div>
@@ -1001,7 +1001,7 @@ export function VideoPlayer({
             <label className="ml-auto flex items-center gap-2">
               <button
                 type="button"
-                className="rounded-full border border-white/15 p-2 text-white"
+                className="cursor-pointer rounded-full border border-white/15 p-2 text-white"
                 onClick={() => setMuted((value) => !value)}
                 aria-label={muted ? "Unmute" : "Mute"}
               >
@@ -1018,7 +1018,7 @@ export function VideoPlayer({
                   setVolume(next);
                   setMuted(next === 0);
                 }}
-                className="h-2 w-24 accent-[#00A4DC] sm:w-36"
+                className="h-2 w-24 cursor-pointer accent-[#00A4DC] sm:w-36"
               />
             </label>
             <Button
@@ -1036,7 +1036,7 @@ export function VideoPlayer({
 
       {paused && synced && (
         <div
-          className="absolute inset-0 z-20 flex items-end bg-gradient-to-t from-black via-black/70 to-transparent px-8 py-8 sm:px-16"
+          className="absolute inset-0 z-20 flex cursor-pointer items-end bg-gradient-to-t from-black via-black/70 to-transparent px-8 py-8 sm:px-16"
           onClick={() => togglePlay()}
         >
           <div className="max-w-2xl pb-28 pt-24">

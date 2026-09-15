@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Play, Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { PageBack } from "@/components/back-button";
 import { ChannelBuilder } from "@/components/channel-builder";
 import { ChannelGuide } from "@/components/channel-guide";
 import { LoginScreen } from "@/components/login-screen";
@@ -55,6 +56,16 @@ export default function ChannelsPage() {
       setReloadKey((value) => value + 1);
     }, [])
   );
+
+  useEffect(() => {
+    const userId = session?.userId;
+    if (!userId) return;
+    function onSync() {
+      setChannels(loadChannels(userId as string));
+    }
+    window.addEventListener("narwhal-sync-applied", onSync);
+    return () => window.removeEventListener("narwhal-sync-applied", onSync);
+  }, [session?.userId]);
 
   useEffect(() => {
     if (!session?.userId) return;
@@ -118,6 +129,9 @@ export default function ChannelsPage() {
   return (
     <AppShell>
       <div className="w-full py-6">
+        <div className="page-gutter">
+          <PageBack />
+        </div>
         <div className="page-gutter flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight">Channels</h1>

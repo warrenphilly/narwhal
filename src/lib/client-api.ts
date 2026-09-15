@@ -66,7 +66,7 @@ async function jfDirect<T>(path: string, init?: RequestInit): Promise<T | null> 
   return parseBody<T>(response);
 }
 
-async function jf<T>(path: string, init?: RequestInit): Promise<T> {
+export async function jf<T>(path: string, init?: RequestInit): Promise<T> {
   // Prefer this device → Jellyfin when signed in locally. Desktop/mobile stay usable
   // even if Narwhal’s /api proxy is down (broken package, cloud, missing cookie).
   const direct = getConnection();

@@ -6,25 +6,26 @@ A laptop Jellyfin client with an Apple TV-style home screen. Browse your library
 
 Pick your computer. No coding required.
 
-### Mac (Apple Silicon — M1 / M2 / M3 / M4)
+| Computer | Download |
+|----------|----------|
+| **Mac** (Apple Silicon M1–M4) | **[Narwhal for Mac (.dmg)](https://github.com/warrenphilly/narwhal/releases/download/v0.2.3/Narwhal-0.2.3-arm64.dmg)** |
+| **Windows** (64-bit) | **[Narwhal for Windows (.exe)](https://github.com/warrenphilly/narwhal/releases/download/v0.2.3/Narwhal-Setup-0.2.3.exe)** |
 
-**→ [Download Narwhal for Mac](https://github.com/warrenphilly/narwhal/releases/download/v0.2.3/Narwhal-0.2.3-arm64.dmg)**
+All versions: [github.com/warrenphilly/narwhal/releases](https://github.com/warrenphilly/narwhal/releases)
+
+### Mac install
 
 1. Open the downloaded `.dmg`
 2. Drag **Narwhal** into **Applications**
 3. Eject the disk image
 4. First launch: right-click Narwhal → **Open** → **Open**
 
-### Windows (64-bit)
-
-**→ [Download Narwhal for Windows](https://github.com/warrenphilly/narwhal/releases/download/v0.2.3/Narwhal-Setup-0.2.3.exe)**
+### Windows install
 
 1. Open the downloaded `.exe`
 2. Click through the installer (Next → Install)
 3. Open **Narwhal** from the Start menu or desktop shortcut
 4. If Windows SmartScreen warns you: **More info** → **Run anyway** (the app is unsigned)
-
-All versions: [github.com/warrenphilly/narwhal/releases](https://github.com/warrenphilly/narwhal/releases)
 
 ---
 
@@ -76,7 +77,7 @@ npm install
 npm run mac
 ```
 
-That writes something like `dist/Narwhal-0.2.0-arm64.dmg`.
+That writes something like `dist/Narwhal-0.2.3-arm64.dmg`.
 
 **Install / update your local copy:**
 
@@ -85,6 +86,8 @@ That writes something like `dist/Narwhal-0.2.0-arm64.dmg`.
 3. Drag **Narwhal** onto **Applications** (replace the old one).
 4. Eject the disk image.
 5. Open **Applications → Narwhal** (first time: right-click → Open).
+
+Or skip building and use the [Mac download link](#download-the-app-no-ide) above.
 
 ## Windows app (developers)
 
@@ -115,20 +118,21 @@ npm start          # http://127.0.0.1:3000
 
 Dev (hot reload): `npm run dev` → **http://127.0.0.1:3000**
 
-### Host on Dockge (home server)
+### Host on Dockge / Docker (home server)
 
 Run Narwhal on the **same LAN as Jellyfin** so phones and browsers can play.
 
-**TrueNAS / Dockge (recommended):** clone into your stack folder, then build locally.
-Remote `https://github.com/...` builds often fail on Dockge.
+#### Easy path (TrueNAS + Dockge)
+
+1. SSH into your NAS (or open **Shell**).
+2. Clone the app next to your other stacks:
 
 ```bash
-# SSH into your NAS (or use Shell)
 cd /mnt/tank/stacks/arr
 git clone https://github.com/warrenphilly/narwhal.git narwhal
 ```
 
-Then under your existing `services:` (same indent as `jellyfin:`), add:
+3. In Dockge, open that stack’s compose file. Under `services:` (same indent as `jellyfin:`), paste:
 
 ```yaml
   narwhal:
@@ -146,15 +150,29 @@ Then under your existing `services:` (same indent as `jellyfin:`), add:
       - PORT=3000
 ```
 
-Click **Update** / **Deploy**. First build takes several minutes.
+(A ready-made snippet also lives in the repo as `compose.snippet.yaml`.)
 
-1. Open `http://YOUR-SERVER-IP:3000` on your phone (home Wi‑Fi).
-2. Sign in with Jellyfin as `http://jellyfin:8096` (same stack) or `http://10.88.111.25:8096`.
+4. Click **Update** / **Deploy**. The first build takes several minutes.
+5. On your phone (home Wi‑Fi), open `http://YOUR-SERVER-IP:3000`.
+6. Sign in to Jellyfin with `http://jellyfin:8096` (same Docker stack) or your NAS LAN IP, e.g. `http://192.168.x.x:8096`.
 
-**Check logs if it won’t start:** in Dockge → `narwhal` → Logs.  
-Or: `docker logs narwhal` and `docker compose -f /mnt/tank/stacks/arr/compose.yaml logs narwhal --tail 100`.
+**Update later**
+
+```bash
+cd /mnt/tank/stacks/arr/narwhal
+git pull
+```
+
+Then in Dockge → **Update** / **Deploy** again so it rebuilds.
+
+**If it won’t start:** Dockge → `narwhal` → Logs.  
+Or: `docker logs narwhal`
 
 **Do not use the Vercel URL for home-LAN playback** — the cloud cannot reach `10.x` / `192.168.x` addresses.
+
+#### Any Docker Compose host
+
+Same service block as above. Put the cloned `narwhal` folder next to your compose file, set `build.context` to that folder, expose port `3000`, and deploy.
 
 ### Deploy on Vercel
 

@@ -130,6 +130,16 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       setPicking(!next.activeId);
     }
     setReady(true);
+
+    const userId = session.userId;
+    function onSync() {
+      const synced = readStore(userId);
+      storeRef.current = synced;
+      setStore(synced);
+      setPicking(!synced.activeId);
+    }
+    window.addEventListener("narwhal-sync-applied", onSync);
+    return () => window.removeEventListener("narwhal-sync-applied", onSync);
   }, [session?.signedIn, session?.userId, session?.userName]);
 
   const scheduleFlush = useCallback(
@@ -138,6 +148,9 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       if (flushTimer.current) window.clearTimeout(flushTimer.current);
       flushTimer.current = window.setTimeout(() => {
         writeStore(session?.userId, storeRef.current);
+        if (session?.userId) {
+          void import("@/lib/narwhal-sync").then((mod) => mod.bumpSyncStamp(session.userId!));
+        }
         flushTimer.current = null;
       }, 500);
     },
@@ -149,6 +162,9 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       storeRef.current = next;
       setStore(next);
       writeStore(session?.userId, next);
+      if (session?.userId) {
+        void import("@/lib/narwhal-sync").then((mod) => mod.bumpSyncStamp(session.userId!));
+      }
     },
     [session?.userId]
   );

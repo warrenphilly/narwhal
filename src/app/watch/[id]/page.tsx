@@ -58,6 +58,9 @@ export default function WatchPage() {
   if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black">
+        <div className="absolute left-4 top-4">
+          <BackButton className="text-white hover:bg-white/10 hover:text-white" />
+        </div>
         <NarwhalSpinner label="Cueing it up…" />
       </div>
     );

@@ -4,8 +4,12 @@
 #   cd /mnt/tank/stacks/arr
 #   git clone https://github.com/warrenphilly/narwhal.git narwhal
 #
-# Then Deploy the stack. Open http://10.88.111.25:3000
-# Sign in to Jellyfin with: http://jellyfin:8096
+# Then Deploy the stack. Open http://YOUR-SERVER-IP:3000
+# Sign in to Jellyfin with: http://jellyfin:8096  (same Docker network)
+#
+# Update later:
+#   cd /mnt/tank/stacks/arr/narwhal && git pull
+# Then click Update / Deploy in Dockge.
 
   narwhal:
     build:

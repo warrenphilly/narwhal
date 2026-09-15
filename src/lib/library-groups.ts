@@ -48,6 +48,7 @@ export function loadGroups(userId: string, tab: MediaTab): GroupStore {
 
 export function saveGroups(userId: string, tab: MediaTab, store: GroupStore) {
   localStorage.setItem(storageKey(userId, tab), JSON.stringify(store));
+  void import("@/lib/narwhal-sync").then((mod) => mod.bumpSyncStamp(userId));
 }
 
 export function groupItems(items: JellyfinItem[], store: GroupStore) {

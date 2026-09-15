@@ -59,6 +59,7 @@ export function loadChannels(userId: string): Channel[] {
 
 export function saveChannels(userId: string, channels: Channel[]) {
   localStorage.setItem(storageKey(userId), JSON.stringify(channels.map(normalizeChannel)));
+  void import("@/lib/narwhal-sync").then((mod) => mod.bumpSyncStamp(userId));
 }
 
 export function createChannel(partial: Omit<Channel, "id">): Channel {

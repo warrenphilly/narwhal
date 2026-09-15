@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { ChevronDown, ExternalLink } from "lucide-react";
+import { ChevronDown, ExternalLink, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSession } from "@/components/session-provider";
 import {
   DEFAULT_PLAYBACK_PREFS,
   loadPlaybackPrefs,
@@ -27,6 +28,7 @@ import {
   type ServiceId,
   type ServiceLink,
 } from "@/lib/service-links";
+import { syncProfileData } from "@/lib/narwhal-sync";
 
 type SessionInfo = { connected: boolean; serverUrl?: string; error?: string };
 
@@ -55,11 +57,14 @@ function AppSettingsDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { session } = useSession();
   const [info, setInfo] = useState<SessionInfo>({ connected: false });
   const [serverUrl, setServerUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [allowInsecure, setAllowInsecure] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [links, setLinks] = useState(loadServiceLinks);
   const [playback, setPlayback] = useState<PlaybackPrefs>(DEFAULT_PLAYBACK_PREFS);
@@ -67,6 +72,7 @@ function AppSettingsDialog({
   useEffect(() => {
     if (!open) return;
     setError(null);
+    setSyncMessage(null);
     setLinks(loadServiceLinks());
     setPlayback(loadPlaybackPrefs());
     fetch("/api/seerr/session", { cache: "no-store" })
@@ -80,8 +86,14 @@ function AppSettingsDialog({
           fetch("/api/seerr/v1/service/radarr", { cache: "no-store" }).then((row) => row.json()).catch(() => []),
           fetch("/api/seerr/v1/service/sonarr", { cache: "no-store" }).then((row) => row.json()).catch(() => []),
         ]);
-        const radarrUrl = Array.isArray(radarr) ? radarr.find((row: { isDefault?: boolean; externalUrl?: string }) => row.isDefault)?.externalUrl || radarr[0]?.externalUrl : "";
-        const sonarrUrl = Array.isArray(sonarr) ? sonarr.find((row: { isDefault?: boolean; externalUrl?: string }) => row.isDefault)?.externalUrl || sonarr[0]?.externalUrl : "";
+        const radarrUrl = Array.isArray(radarr)
+          ? radarr.find((row: { isDefault?: boolean; externalUrl?: string }) => row.isDefault)?.externalUrl ||
+            radarr[0]?.externalUrl
+          : "";
+        const sonarrUrl = Array.isArray(sonarr)
+          ? sonarr.find((row: { isDefault?: boolean; externalUrl?: string }) => row.isDefault)?.externalUrl ||
+            sonarr[0]?.externalUrl
+          : "";
         const next = {
           ...current,
           radarr: { ...current.radarr, url: current.radarr.url || radarrUrl || "" },
@@ -135,15 +147,56 @@ function AppSettingsDialog({
     }
   }
 
+  async function runSync() {
+    if (!session?.userId) {
+      setSyncMessage("Sign in to Jellyfin first.");
+      return;
+    }
+    setSyncBusy(true);
+    setSyncMessage(null);
+    try {
+      const result = await syncProfileData(session.userId);
+      setSyncMessage(
+        result === "uploaded"
+          ? "Uploaded profiles, lists, progress, and channels to Jellyfin."
+          : "Downloaded profiles, lists, progress, and channels from Jellyfin."
+      );
+    } catch (err) {
+      setSyncMessage(err instanceof Error ? err.message : "Sync failed.");
+    } finally {
+      setSyncBusy(false);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>
-            Connect Jellyseerr, then launch Radarr, Sonarr, Prowlarr, or Dockage in your browser.
+            Connect Jellyseerr, sync this profile across devices, then launch Radarr, Sonarr, Prowlarr, or Dockage in
+            your browser.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="space-y-2 rounded-xl border border-zinc-200 p-3 dark:border-white/10">
+          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Profile sync</p>
+          <p className="text-xs text-zinc-500">
+            Saves profiles, watchlists, favorites, watch progress, and channels on your Jellyfin account so other
+            devices can load them.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={syncBusy || !session?.userId}
+            className="h-10 w-full rounded-full"
+            onClick={() => void runSync()}
+          >
+            <RefreshCw data-icon="inline-start" className={syncBusy ? "animate-spin" : undefined} />
+            {syncBusy ? "Syncing…" : "Sync profile data"}
+          </Button>
+          {syncMessage && <p className="text-xs text-zinc-500">{syncMessage}</p>}
+        </div>
 
         <form onSubmit={connect} className="space-y-3">
           <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Jellyseerr</p>
@@ -168,10 +221,10 @@ function AppSettingsDialog({
               required={!info.connected}
             />
           </div>
-          <label className="flex items-start gap-2 text-sm text-zinc-500">
+          <label className="flex cursor-pointer items-start gap-2 text-sm text-zinc-500">
             <input
               type="checkbox"
-              className="mt-0.5"
+              className="mt-0.5 cursor-pointer"
               checked={allowInsecure}
               onChange={(event) => setAllowInsecure(event.target.checked)}
             />
@@ -187,9 +240,7 @@ function AppSettingsDialog({
         <div className="space-y-3 border-t border-zinc-200 pt-4 dark:border-white/10">
           <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Subtitles</p>
           <div className="space-y-1.5">
-            <Label htmlFor="sub-pad-top">
-              Subtitle top padding ({playback.subtitlePadTop}vh)
-            </Label>
+            <Label htmlFor="sub-pad-top">Subtitle top padding ({playback.subtitlePadTop}vh)</Label>
             <input
               id="sub-pad-top"
               type="range"
@@ -198,13 +249,11 @@ function AppSettingsDialog({
               step={0.5}
               value={playback.subtitlePadTop}
               onChange={(event) => updatePlayback({ subtitlePadTop: Number(event.target.value) })}
-              className="h-2 w-full accent-[#AA5CC3]"
+              className="h-2 w-full cursor-pointer accent-[#AA5CC3]"
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="sub-pad-bottom">
-              Subtitle bottom padding ({playback.subtitlePadBottom}vh)
-            </Label>
+            <Label htmlFor="sub-pad-bottom">Subtitle bottom padding ({playback.subtitlePadBottom}vh)</Label>
             <input
               id="sub-pad-bottom"
               type="range"
@@ -213,7 +262,7 @@ function AppSettingsDialog({
               step={0.5}
               value={playback.subtitlePadBottom}
               onChange={(event) => updatePlayback({ subtitlePadBottom: Number(event.target.value) })}
-              className="h-2 w-full accent-[#00A4DC]"
+              className="h-2 w-full cursor-pointer accent-[#00A4DC]"
             />
           </div>
           <p className="text-xs text-zinc-500">
@@ -224,10 +273,7 @@ function AppSettingsDialog({
         <div className="space-y-2 border-t border-zinc-200 pt-4 dark:border-white/10">
           <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">Apps in your browser</p>
           {SERVICE_LABELS.map((service) => (
-            <details
-              key={service.id}
-              className="group rounded-xl border border-zinc-200 dark:border-white/10"
-            >
+            <details key={service.id} className="group rounded-xl border border-zinc-200 dark:border-white/10">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 [&::-webkit-details-marker]:hidden">
                 <span className="flex min-w-0 items-center gap-2">
                   <ChevronDown className="size-4 shrink-0 text-zinc-400 transition-transform group-open:rotate-180" />

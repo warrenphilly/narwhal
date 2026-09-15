@@ -5,7 +5,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 import { cn } from "cn"
 
 import { Button } from "@/components/ui/button"
-import { XIcon } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
@@ -54,7 +54,8 @@ function DialogContent({
         <DialogPrimitive.Popup
           data-slot="dialog-content"
           className={cn(
-            "glass-card glass-edge pointer-events-auto grid w-full max-w-[calc(100%-2rem)] gap-3 rounded-xl p-3 text-sm text-popover-foreground duration-100 outline-none sm:max-w-sm sm:gap-4 sm:p-4 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+            "glass-card glass-edge pointer-events-auto relative grid w-full max-w-[calc(100%-2rem)] gap-3 rounded-xl p-3 text-sm text-popover-foreground duration-100 outline-none sm:max-w-sm sm:gap-4 sm:p-4 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+            showCloseButton && "pt-12 sm:pt-12",
             className
           )}
           {...props}
@@ -66,14 +67,13 @@ function DialogContent({
               render={
                 <Button
                   variant="ghost"
-                  className="absolute top-2 right-2"
-                  size="icon-sm"
+                  className="absolute top-2 left-2 cursor-pointer"
+                  size="sm"
                 />
               }
             >
-              <XIcon
-              />
-              <span className="sr-only">Close</span>
+              <ArrowLeft data-icon="inline-start" />
+              Back
             </DialogPrimitive.Close>
           )}
         </DialogPrimitive.Popup>
