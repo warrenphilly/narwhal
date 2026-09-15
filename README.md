@@ -8,8 +8,8 @@ Pick your computer. No coding required.
 
 | Computer | Download |
 |----------|----------|
-| **Mac** (Apple Silicon M1–M4) | **[Narwhal for Mac (.dmg)](https://github.com/warrenphilly/narwhal/releases/download/v0.2.3/Narwhal-0.2.3-arm64.dmg)** |
-| **Windows** (64-bit) | **[Narwhal for Windows (.exe)](https://github.com/warrenphilly/narwhal/releases/download/v0.2.3/Narwhal-Setup-0.2.3.exe)** |
+| **Mac** (Apple Silicon M1–M4) | **[Narwhal for Mac (.dmg)](https://github.com/warrenphilly/narwhal/releases/download/v0.2.4/Narwhal-0.2.4-arm64.dmg)** |
+| **Windows** (64-bit) | **[Narwhal for Windows (.exe)](https://github.com/warrenphilly/narwhal/releases/download/v0.2.4/Narwhal-Setup-0.2.4.exe)** |
 
 All versions: [github.com/warrenphilly/narwhal/releases](https://github.com/warrenphilly/narwhal/releases)
 
